@@ -64,13 +64,26 @@ if (REQUESTED_RUN) {
       'out/ 会被 cleanup.ps1 自动清理（保留最新 40 个 + 每个设计名最新 1 个），',
       '所以曾经钉住的那次 run 消失是正常的，不是仓库坏了。',
       '',
-      '换一个现存的：VIDEO_RUN=<名字> node scripts/collect-data.mjs',
-      '或者用最新的：VIDEO_RUN= node scripts/collect-data.mjs',
-      '',
-      avail.length ? `现存 ${OUT_PREFIX}* 最新的 ${avail.length} 个：` : `现存 ${OUT_PREFIX}*：一个都没有`,
-      ...avail.map((n) => '  ' + n),
-      '',
-      '注意：换 run 之后，视频里每个数字都来自这一次，不再等于 PINNED_RUN 注释里的那一次。',
+      // 空克隆里「换一个现存的」是句废话说 —— 一个现存的都没有。别让人照着一句空话转圈。
+      ...(avail.length
+        ? [
+            '换一个现存的：VIDEO_RUN=<名字> node scripts/collect-data.mjs',
+            '或者用最新的：VIDEO_RUN= node scripts/collect-data.mjs',
+            '',
+            `现存 ${OUT_PREFIX}* 最新的 ${avail.length} 个：`,
+            ...avail.map((n) => '  ' + n),
+            '',
+            '注意：换 run 之后，视频里每个数字都来自这一次，不再等于 PINNED_RUN 注释里的那一次。',
+          ]
+        : [
+            `这一个克隆里 ${OUT_PREFIX}* 一个都没有 —— 所以现在没有东西可指定。`,
+            '视频数据来自一次真实的流水线运行，空仓库里本来就没有。',
+            '',
+            '先造一次（需要 PowerShell 7 + 嘉立创 EDA Pro，Windows）：',
+            '  node cli/pcb.mjs build designs/d3-sht30-ldo.json',
+            '然后指定它：',
+            '  VIDEO_RUN=<out/ 下新出现的目录名> node scripts/collect-data.mjs',
+          ]),
     ]);
   }
   outName = REQUESTED_RUN;
