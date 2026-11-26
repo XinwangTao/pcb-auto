@@ -88,7 +88,7 @@ Get-CimInstance Win32_Process -Filter "Name='lceda-pro.exe'" |
 ## 验收 = 自己重跑，不是读别人的结论
 
 - `complete` 不是通过。子 agent 的 `STATUS={"status":"ok"}` 也只是自述。
-- 交付一致性用 `verify-delivery.ps1`（19 组判据）。
+- 交付一致性用 `verify-delivery.ps1`（20 组判据，退出码 0 通过 / 1 判据没过 / 2 没能测量）。
 - 产物可打样性用 `node cli/pcb.mjs census --settle 180` 自己重算。
 - 闸门只锚在**稳定子串**上，不要锚整句散文 —— 散文一改，闸门就自腐。
 - 一个在读不到输入时**保持沉默**的检查，不是检查。

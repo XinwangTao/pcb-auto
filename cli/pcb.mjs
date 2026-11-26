@@ -27,6 +27,14 @@ const argv = process.argv.slice(2)
 function parseArgs(argvList, spec) {
   const out = {}
   const positional = []
+  // 不认识的 `--flag` 必须单独收集，**绝不能**当成位置参数。
+  //
+  // 以前它是 `positional.push(a)`：于是 `pcb build x --dry` 里的 `--dry` 会被
+  // 下面那段「按声明顺序填空」的逻辑吃掉，变成 build 的下一个参数的**值**。
+  // 实测后果：`--dry` 落进 `allowPartial`，成了真值 → 静默打开 allowPartial。
+  // 用户以为自己要了一次试跑，实际拿到的是十分钟真构建 + 语义被改过。
+  // 一个拼错的开关不该同时「被忽略」和「改变行为」，更不该不报错。
+  const unknown = []
   for (let i = 0; i < argvList.length; i++) {
     const a = argvList[i]
     if (!a.startsWith('--')) { positional.push(a); continue }
@@ -35,7 +43,7 @@ function parseArgs(argvList, spec) {
     const eq = key.indexOf('=')
     if (eq >= 0) { val = key.slice(eq + 1); key = key.slice(0, eq) }
     const def = spec[key]
-    if (!def) { positional.push(a); continue }
+    if (!def) { unknown.push(a); continue }
     if (def.type === 'boolean') {
       out[key] = val === undefined ? true : !/^(false|0|no)$/i.test(val)
     } else if (def.type === 'integer') {
@@ -54,7 +62,7 @@ function parseArgs(argvList, spec) {
     out[key] = spec[key].type === 'integer' ? Number(p) : spec[key].type === 'boolean' ? p === 'true' : p
     k++
   }
-  return { out, unknown: positional.slice(order.length) }
+  return { out, unknown: unknown.concat(positional.slice(order.length)) }
 }
 
 function usage() {
@@ -119,6 +127,14 @@ if (wantsHelp || !opName) {
 }
 
 if (opName === 'list') {
+  // `list` 不接受任何参数。以前它直接忽略，于是 `pcb list --whatever` 退出 0 ——
+  // 唯一一个「未知开关不报错」的例外。例外会让规则变成建议。
+  const extraList = argv.slice(argv.indexOf(opName) + 1).filter((a) => a !== '--human')
+  if (extraList.length) {
+    process.stderr.write(`list 不接受参数，但收到：${extraList.join(' ')}\n`)
+    process.stdout.write(JSON.stringify({ ok: false, exitCode: 2, op: 'list', unknownArgs: extraList, reason: `list 不接受参数：${extraList.join(' ')}` }) + '\n')
+    process.exit(2)
+  }
   const table = Object.entries(OPS).map(([n, o]) => ({
     name: n,
     summary: o.summary,
@@ -141,7 +157,24 @@ const GLOBAL_FLAGS = new Set(['--human'])
 const rest = argv.slice(argv.indexOf(opName) + 1).filter((a) => !GLOBAL_FLAGS.has(a))
 const { out, unknown } = parseArgs(rest, OPS[opName].args)
 if (unknown.length) {
-  process.stderr.write(`[warn] 忽略了不认识的参数：${unknown.join(' ')}\n`)
+  // 调用错误 ⇒ 退出码 2，和不存在的操作同等对待。
+  //
+  // 这里以前是 `[warn] 忽略了不认识的参数` 然后**继续跑**。对一个要跑 2–20 分钟、
+  // 要写盘、要占 EDA 进程的操作来说，这是最坏的一种「宽容」：用户以为传了个
+  // 开关，实际什么都没发生，而命令已经开工了。别把「我没看懂你的参数」降级成警告。
+  const mine = Object.keys(OPS[opName].args)
+  const msg = []
+  msg.push(`不认识的参数：${unknown.join(' ')}`)
+  // 这些开关在别的操作里存在 —— 直接说明，比让用户去翻 --help 快。
+  for (const u of unknown) {
+    const k = u.replace(/^--/, '').split('=')[0]
+    const owners = Object.entries(OPS).filter(([n, o]) => n !== opName && o.args[k]).map(([n]) => n)
+    if (owners.length) msg.push(`  ${u} 是 ${owners.join(' / ')} 的参数，${opName} 不支持`)
+  }
+  msg.push(`  ${opName} 支持的参数：${mine.length ? mine.map((k) => '--' + k).join(' ') : '（无，只接受位置参数）'}`)
+  process.stderr.write(msg.join('\n') + '\n')
+  process.stdout.write(JSON.stringify({ ok: false, exitCode: 2, op: opName, unknownArgs: unknown, reason: `不认识的参数：${unknown.join(' ')}` }) + '\n')
+  process.exit(2)
 }
 
 const wantHuman = argv.includes('--human')

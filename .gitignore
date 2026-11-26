@@ -89,3 +89,6 @@ desktop.ini
 .obsidian/
 # 零样本普查结果：不许覆盖随仓库发布的证据，但也不该弄脏工作区
 /out/_probe/*.empty.json
+
+# 复核时把新页写到旁路，不动已发布的 out/交付说明.html
+/out/_probe/_dossier-fresh.html

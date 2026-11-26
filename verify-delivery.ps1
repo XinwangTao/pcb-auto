@@ -56,6 +56,13 @@ function Invoke-Step {
     if ($code -eq 0) {
         Add-Result $Name 'PASS' ("exit 0  {0:N1}s" -f $sw.Elapsed.TotalSeconds)
     }
+    elseif ($code -eq 2) {
+        # 退出码 2 统一表示「环境/输入问题，没能测量」，不是「判据没过」。
+        # 以前这里一律算 FAIL：于是在一个还没有产物的克隆里，`verify` 会说
+        # 「交付不一致」—— 而真相是「还没有东西可核」。把「没检」算进
+        # 「失败」的分子，和把它算进「通过」的分母是同一种病。
+        Add-Result $Name 'NOSAMPLE' ("exit 2（没能测量，不是判据没过）  {0:N1}s" -f $sw.Elapsed.TotalSeconds)
+    }
     else {
         Add-Result $Name 'FAIL' ("exit $code  {0:N1}s" -f $sw.Elapsed.TotalSeconds)
     }
@@ -86,6 +93,13 @@ else {
 Write-Host ''
 Write-Host '  1) 离线 DFM 普查（自写 Gerber/Excellon 解析器，不复用流水线代码）'
 $censusProbe = Join-Path $Root 'out\_probe\fab-census.py'
+# 记下跑之前的 mtime。跑完如果它没变，说明量具**没有写出新结果**，
+# 那么下面读到的就是上一次（甚至是从仓库里带出来的）报告。
+# 不做这个判断，就会把一份旧数据当成「本次普查口径」打印出来 ——
+# 全新克隆里那是一条「56 个目录 / 53 可打样」，描述的是作者的机器。
+# （`core/ops.mjs` 的 census 早就这么判了，这里是同一个病的第四处。）
+$censusJson = Join-Path $Root 'out\_probe\fab-census.json'
+$censusBefore = if (Test-Path $censusJson) { (Get-Item $censusJson).LastWriteTimeUtc } else { $null }
 if ($SkipCensus) {
     Add-Result 'fab-census' 'SKIP' '按 -SkipCensus 跳过，沿用上一次的 JSON'
 }
@@ -96,12 +110,30 @@ else {
     Add-Result 'fab-census' 'FAIL' '缺少 out\_probe\fab-census.py'
 }
 
-$censusJson = Join-Path $Root 'out\_probe\fab-census.json'
-if (Test-Path $censusJson) {
+$censusAfter = if (Test-Path $censusJson) { (Get-Item $censusJson).LastWriteTimeUtc } else { $null }
+$censusFresh = ($null -ne $censusBefore) -and ($null -ne $censusAfter) -and ($censusAfter -ne $censusBefore)
+# 本机的产物目录数。census 的样本单位是「out\<name>\_run.json」。
+$localRunDirs = @(Get-ChildItem (Join-Path $Root 'out') -Directory -ErrorAction SilentlyContinue |
+    Where-Object { Test-Path (Join-Path $_.FullName '_run.json') }).Count
+if ((Test-Path $censusJson) -and (-not $censusFresh) -and (-not $SkipCensus)) {
+    # 读到的是磁盘上的旧报告，而且不是作者主动跳过的 —— 它可能描述别人的机器。
+    $cj0 = Get-Content $censusJson -Raw | ConvertFrom-Json
+    $snapN = $cj0.all.n
+    $snapAt = if ($cj0.measured_at) { $cj0.measured_at } else { '未知时刻' }
+    if ($localRunDirs -eq 0) {
+        Add-Result '普查口径' 'NOSAMPLE' ("本机 out/ 没有产物目录。文件里那份 {0} 个目录的快照（测于 {1}）是随仓库发布的，描述的不是这台机器 —— 没法据此判交付" -f $snapN, $snapAt)
+    }
+    else {
+        Add-Result '普查口径' 'NOSAMPLE' ("量具没有写出新报告，读到的是旧快照里的 {0} 个目录（测于 {1}），不能当本次测量" -f $snapN, $snapAt)
+    }
+    Write-Host ("           ≈ 本机实际有 {0} 个带 _run.json 的产物目录" -f $localRunDirs)
+}
+elseif (Test-Path $censusJson) {
     $cj = Get-Content $censusJson -Raw | ConvertFrom-Json
     $inflight = @($cj.in_flight).Count
-    Add-Result '普查口径' 'INFO' ("{0} 个目录：可打样 {1}，有阻断 {2}，解析错 {3}；因在飞跳过 {4} 个（settle {5}s）" -f `
-        $cj.all.n, $cj.all.fab_ok, $cj.all.fab_blocked, $cj.all.fab_error, $inflight, $cj.settle_s)
+    $suffix = if ($SkipCensus) { '（按 -SkipCensus 未重跑，沿用已有 JSON）' } else { '' }
+    Add-Result '普查口径' 'INFO' ("{0} 个目录：可打样 {1}，有阻断 {2}，解析错 {3}；因在飞跳过 {4} 个（settle {5}s）{6}" -f `
+        $cj.all.n, $cj.all.fab_ok, $cj.all.fab_blocked, $cj.all.fab_error, $inflight, $cj.settle_s, $suffix)
     # 阻断项必须是「真出框」一类，不能是解析器自己造的假阻断
     $ids = ($cj.blocker_ids.PSObject.Properties | ForEach-Object { $_.Name }) -join ', '
     Add-Result '阻断类型' 'INFO' $ids
@@ -190,9 +222,15 @@ else {
 # ---------- 3. 成片 ----------
 Write-Host ''
 Write-Host '  3) 成片（ffprobe 实测，不看自述）'
-$vids = @(Get-ChildItem (Join-Path $Root 'video\out') -Filter 'v9-*.mp4' -File |
-          Where-Object { $_.Name -notlike '*superseded*' } |
-          Sort-Object LastWriteTime -Descending)
+# video\out 是 .gitignore 的中间物，克隆里根本不存在 —— 以前这里直接
+# Get-ChildItem 一个不存在的路径，脚本当场抛错退出，连总判定都打印不出来。
+$vidRoot = Join-Path $Root 'video\out'
+$vids = @()
+if (Test-Path $vidRoot) {
+    $vids = @(Get-ChildItem $vidRoot -Filter 'v9-*.mp4' -File -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -notlike '*superseded*' } |
+              Sort-Object LastWriteTime -Descending)
+}
 if ($vids.Count -gt 0) {
     $vid = $vids[0]
     $mkb = [math]::Round($vid.Length / 1MB, 2)
@@ -214,23 +252,33 @@ if ($vids.Count -gt 0) {
         Add-Result 'verify-film' 'FAIL' '缺少 verify-film.ps1'
     }
 }
-else {
+elseif (Test-Path $vidRoot) {
     Add-Result '成片文件' 'FAIL' 'video\out 下没有 v9-*.mp4'
+}
+else {
+    Add-Result '成片文件' 'NOSAMPLE' '克隆里没有 video\out（成片是 .gitignore 的中间物，要在本机渲染才有）'
 }
 
 # ---------- 4. 交付说明页 ----------
 Write-Host ''
-Write-Host '  4) 交付说明页（重新生成并检查它没有说假话）'
+Write-Host '  4) 交付说明页（检查发布页有没有说假话 —— 不重写它）'
 $mk = Join-Path $Root 'out\_probe\make-dossier.py'
+$page = Join-Path $Root 'out\交付说明.html'
+# 生成到旁路，**不动**已发布的那一页。
+# 以前这里是原地重写：复核动作把被复核的证据改写成本机（在别人的克隆里为空）的
+# 语料算出来的一页 0/0，紧接着的跨文件对账读到 0/0，于是报「页面与 README 矛盾」——
+# 它指控的正是它自己刚干的。**复核与刷新是两件事**，不该共用一个命令。
+$fresh = Join-Path $Root 'out\_probe\_dossier-fresh.html'
 if (Test-Path $mk) {
-    $t = Invoke-Step 'make-dossier' $Python @($mk) ''
-    $regenOk = ($t -ne $null)
-    $page = Join-Path $Root 'out\交付说明.html'
+    if (Test-Path $fresh) { Remove-Item $fresh -Force -ErrorAction SilentlyContinue }
+    $t = Invoke-Step 'make-dossier' $Python @($mk, '--out', $fresh) ''
+    $regenOk = (Test-Path $fresh)
     if (-not $regenOk) {
-        # 重生成失败时页面还是上一次的，拿它当证据等于把"没重生成"读成"页面干净"
-        Add-Result '页面判据' 'ERROR' '生成器没跑成功，页面是旧文件，本轮的结构/承诺判据不作数'
+        # 发布页仍然要检：那些判据问的是「这页有没有说假话」，与本机能不能重算无关。
+        # 不能判的是「这页够不够新」，那是没检 —— 记 NOSAMPLE，不许算进通过。
+        Add-Result '发布页新鲜度' 'NOSAMPLE' '生成器没跑成功，无法判断发布页是否还跟得上当前语料'
     }
-    elseif (Test-Path $page) {
+    if (Test-Path $page) {
         $html = Get-Content $page -Raw
         $h2 = ([regex]::Matches($html, '<h2>')).Count
         $tbl = ([regex]::Matches($html, '<table>')).Count
@@ -272,6 +320,25 @@ if (Test-Path $mk) {
             }
             else {
                 Add-Result '限制说得够狠' 'PASS' '验收覆盖缺口与「零人工≠系统没变」两句都在'
+            }
+        }
+        # 新页 vs 发布页：同一件事的两个时刻。不同**不等于**矛盾 ——
+        # 发布页是随仓库发布的快照，语料变了它就该不同，记 WARN 让人知道该刷新。
+        # 真正算 FAIL 的是「两个已发布文件之间不一致」，那条判据在 ⑂ 里。
+        if ($regenOk -and (Test-Path $fresh)) {
+            $fh = [IO.File]::ReadAllText($fresh, [Text.Encoding]::UTF8)
+            $fN = [regex]::Match($fh, '不同想法</div><div class="big">(\d+)').Groups[1].Value
+            $fO = [regex]::Match($fh, '做出了能下单的板</div><div class="big">(\d+)').Groups[1].Value
+            $pN = [regex]::Match($html, '不同想法</div><div class="big">(\d+)').Groups[1].Value
+            $pO = [regex]::Match($html, '做出了能下单的板</div><div class="big">(\d+)').Groups[1].Value
+            if ((-not $fN) -or (-not $fO) -or (-not $pN) -or (-not $pO)) {
+                Add-Result '发布页新鲜度' 'NOSAMPLE' '新页或发布页里找不到那两个数，判据本身失效'
+            }
+            elseif ($fN -eq $pN -and $fO -eq $pO) {
+                Add-Result '发布页新鲜度' 'PASS' ("发布页与当前语料一致：$fN 条想法 → $fO 条可下单")
+            }
+            else {
+                Add-Result '发布页新鲜度' 'WARN' ("发布页是快照（$pN → $pO），当前语料算出来是 $fN → $fO。要刷新就手工跑 make-dossier.py —— 复核不替你做这件事")
             }
         }
     }
@@ -504,10 +571,19 @@ $err = @($Results | Where-Object { $_.State -eq 'ERROR' }).Count
 $pass = @($Results | Where-Object { $_.State -eq 'PASS' }).Count
 $info = @($Results | Where-Object { $_.State -eq 'INFO' }).Count
 $warn = @($Results | Where-Object { $_.State -eq 'WARN' }).Count
+$nosample = @($Results | Where-Object { $_.State -eq 'NOSAMPLE' }).Count
 Write-Host ("   PASS {0}   INFO {1}   WARN {2}   FAIL {3}   ERROR {4}" -f $pass, $info, $warn, $fail, $err)
-if ($fail -eq 0 -and $err -eq 0) {
+if ($nosample -gt 0) {
+    # 「没检」单列，不混进 PASS，也不混进 FAIL。
+    Write-Host ("   NOSAMPLE {0}  （这些判据因为输入为空或缺失而没跑成 —— 它们既不算通过，也不算失败）" -f $nosample)
+}
+if ($fail -eq 0 -and $err -eq 0 -and $nosample -eq 0) {
     Write-Host '   VERDICT=PASS  交付物一致，可以据此复核与复现'
     $verdict = 'PASS'
+}
+elseif ($fail -eq 0 -and $err -eq 0) {
+    Write-Host '   VERDICT=NOSAMPLE  没有判据失败，但有判据没跑成 —— 这不是「交付一致」，是「没法判定」'
+    $verdict = 'NOSAMPLE'
 }
 else {
     Write-Host '   VERDICT=FAIL  有判据没过，上面的 FAIL/ERROR 行就是原因'
@@ -517,5 +593,7 @@ Write-Host '  ══════════════════════
 Write-Host ''
 
 Pop-Location
-if ($verdict -ne 'PASS') { exit 1 }
+# 0 通过 / 1 判据没过（是判定结果）/ 2 没能测量（环境或输入问题）。
+if ($verdict -eq 'FAIL') { exit 1 }
+if ($verdict -eq 'NOSAMPLE') { exit 2 }
 exit 0

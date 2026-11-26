@@ -87,8 +87,8 @@ Two source designs can share one product name, so 44 is a name count, not a uniq
 Other measured facts:
 
 - `designs/` holds design JSON; `scripts/` holds the CommonJS pipeline. Counts drift — run `git ls-files 'designs/*.json' 'scripts/**' | wc -l` instead of trusting a number here.
-- `verify-delivery.ps1 -SkipCensus` → `PASS 18 / INFO 12 / WARN 2 / FAIL 0 / ERROR 0`, `VERDICT=PASS`, exit 0.
-- The full run (with census) reports `PASS 19`.
+- `verify-delivery.ps1` → `VERDICT=PASS`, exit 0. Exit codes: `0` all criteria pass, `1` a criterion failed, `2` **could not measure** (empty corpus / missing intermediate). The `NOSAMPLE` state is reported separately and counted as neither pass nor fail — a checkout with an empty `out/` gets `2`, not a fake `PASS`.
+- Exact `PASS / INFO / WARN / FAIL / ERROR / NOSAMPLE` counts drift with the corpus. Read them from the run, not from this file.
 
 ## Honest limitations (read before trusting anything above)
 

@@ -72,7 +72,7 @@ AI 做 PCB 的公开材料高度同构：一个漂亮的动图、一块布通的
 
 `run-all.ps1` 写出的 `_gates.independent.json` 里是六个独立判据：
 `pipelineSelfOk` / `verifyArtifacts` / `drcIndependent` / `fabcheck` / `artifactsFormat` / `deliverableDocs`。
-交付一致性另有 `verify-delivery.ps1` 的 19 组判据（`PASS 18 / INFO 12 / WARN 2 / FAIL 0 / ERROR 0` 在 `-SkipCensus` 下）。
+交付一致性另有 `verify-delivery.ps1` 的 20 组判据（`PASS / INFO / WARN / FAIL / ERROR / NOSAMPLE` 的当日读数由那次运行自己打印 —— 别在这里引用一个会腐的绝对数）。
 
 关键在于**它们是不同的问题**，不是同一个问题的四种问法。
 
@@ -155,7 +155,7 @@ node cli/pcb.mjs census --settle 180
 # 2) 逐块板复算可下单性（退出码就是答案）
 node cli/pcb.mjs fabcheck examples/d1
 
-# 3) 复算交付一致性（19 组判据，包含跨文件对账）
+# 3) 复算交付一致性（20 组判据，包含跨文件对账）
 pwsh -NoProfile -File verify-delivery.ps1
 ```
 

@@ -154,6 +154,34 @@ check('未知子命令 → 非 0', () => {
   assert(r.code !== 0, `期望非 0，得到 ${r.code}`)
 })
 
+// 未知的 `--flag` 曾经是 `[warn] 忽略了不认识的参数` 然后**继续跑**。
+// 对一个要跑 2–20 分钟、要写盘、要占 EDA 进程的操作来说，这是最坏的宽容。
+check('未知参数 → 退出码 2，且点名它属于哪个操作', () => {
+  const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'fabcheck', 'examples/d1', '--nirvana'])
+  assert(r.code === 2, `期望 2，得到 ${r.code}\n${r.stderr}`)
+  assert(r.stderr.includes('不认识的参数：--nirvana'), `stderr 没点名参数：${r.stderr.slice(0, 200)}`)
+  return 'exit 2'
+})
+
+// 更要紧的一半：未知的 `--flag` 以前会被「按声明顺序填空」的逻辑吃掉，
+// 变成下一个参数的**值**。`pcb build x --dry` 实测让 `--dry` 落进 allowPartial，
+// 成了真值 —— 用户以为要了一次试跑，实际拿到十分钟真构建，而且语义被改过。
+check('未知参数不许被当成下一个参数的值（--dry 不能被吞成 allowPartial）', () => {
+  const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'build', '__no_such_design__.json', '--dry'])
+  assert(r.code === 2, `期望 2，得到 ${r.code} —— 可能已经开工了`)
+  const j = JSON.parse(r.stdout.trim().split('\n').pop())
+  assert(Array.isArray(j.unknownArgs) && j.unknownArgs.includes('--dry'),
+    `--dry 没进 unknownArgs（可能被当成参数值吞了）：${r.stdout.slice(0, 200)}`)
+  assert(!('runDir' in j), '居然带着 runDir 返回，说明它可能真跑了')
+  assert(r.stderr.includes('是 idea-to-design 的参数'), `没说明 --dry 属于哪个操作：${r.stderr.slice(0, 200)}`)
+  return '--dry → unknownArgs，未开工'
+})
+
+check('list 也不接受参数（唯一不留例外的地方）', () => {
+  const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'list', '--whatever'])
+  assert(r.code === 2, `期望 2，得到 ${r.code}`)
+})
+
 console.log('\n\x1b[1m5 · MCP 协议契约\x1b[0m')
 
 const init = mcpSession([

@@ -6,7 +6,11 @@
 需要一页能从头读到尾、每个数字都能点回原始文件的东西。
 
 只读现有数据，不改任何产物。
-用法：python make-dossier.py            # 写 out/交付说明.html
+用法：python make-dossier.py                  # 写 out/交付说明.html（发布路径）
+      python make-dossier.py --out <path>     # 写旁路文件，不动已发布的那一页
+
+为什么要 `--out`：`verify-delivery.ps1` 要复核发布页，就不能顺手把它重写。
+复核和刷新是两件事，塞进一个命令就会「复核把被复核的证据改坏，再指控它不一致」。
 """
 import io, os, re, glob, json, html, hashlib, subprocess, sys
 
@@ -867,10 +871,33 @@ def main():
     H.append("</main></body></html>")
 
     dst = os.path.join(OUT, "交付说明.html")
+    # `--out` 让复核方把新页面写到旁路，不碰已发布的那一页。
+    _argv = sys.argv[1:]
+    _pub = dst
+    if "--out" in _argv:
+        _i = _argv.index("--out")
+        if _i + 1 >= len(_argv):
+            print("  --out 需要一个路径", file=sys.stderr)
+            return 2
+        dst = os.path.abspath(_argv[_i + 1])
+    # 零样本不许覆盖真证据。
+    #
+    # 这一页是**随仓库发布的交付说明**，`交付-README.md` 和 `README.md` 都对账
+    # 它的那两个数。在一个还没有任何产物目录的克隆里重写它，得到的是一页
+    # 「0 个里 0 个」—— 而紧接着的跨文件对账会说「页面与 README 矛盾」。
+    # 用户只是照着文档跑了一次 `pcb verify`，证据就被这次复核自己销毁了。
+    #
+    # 和 `fab-census.json` 同一条规则：被文档引用的产物就是证据。
+    # 退出码 2 = 没能测量（不是判据没过），让上游记成 NOSAMPLE 而不是 PASS。
+    if not agg and os.path.exists(dst) and dst == _pub:
+        print("  拒绝覆盖 %s" % dst)
+        print("  原因：本机 0 个产物目录，重写只会把一页真证据变成一页 0/0。")
+        print("  证据保持原样。要重新生成，先跑出产物目录再来。")
+        return 2
     io.open(dst, "wb").write("\n".join(H).encode("utf-8"))
     print("  写入 %s  %d B" % (dst, os.path.getsize(dst)))
     print("  结果行 %d / 设计 %d / 做成过 %d / 交叉核查 %d 目录"
           % (total, ndesign, ever, len(cons_rows)))
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
