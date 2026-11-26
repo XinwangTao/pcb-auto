@@ -1290,10 +1290,48 @@ try {
     if ((hasUp && hasDown) || (hasLeft && hasRight)) enclosed.push(g);
   }
   log('enclosedGndPads', enclosed.map(p => ({ num: p.num, x: p.x, y: p.y })));
+  // 【尺寸闸门：短路是这块板最贵的错误，这里就是它的现场】
+  // 上面那个「被包围」判据只回答「上下/左右有没有邻居」，**完全不问焊盘自己有多大**。
+  // 实测代价（run 203952）：U3(MAX98357A) 是 0.5mm 间距，相邻盘心 19.7mil，那一排的
+  // 中间引脚天然左右都有邻居 ⇒ 被判成「被包围的 EP 焊盘」⇒ 在一块 10x24 mil 的普通
+  // 引脚上打了外径 19.7 mil 的孔 —— 孔比焊盘还宽，必然压到相邻引脚的铜。
+  // DRC 因此报出 4 条 `SMD Pad to Via cur=0`（625/-2041、591/-2095、729/-1744、
+  // 729/-1676，与 epViaAt 逐点对上），cur=0 = 两块铜直接相接 = 短路。
+  // 所以补一条**可量**的前置条件：焊盘实测包围盒必须在两个方向上都装得下
+  // 「孔外径 + 两侧各一份间距」。装不下不打；读不到包围盒也不打（盲打正是那次
+  // 短路的成因）；两种都留一条账，不沉默跳过。
+  const EP_VIA_H = 11.8, EP_VIA_D = 19.7;
+  // 6 mil 取自本板 DRC 实测 need（SMD Pad to Via need=6），不是口号
+  const EP_VIA_CLEAR = 6;
+  const EP_VIA_NEED = EP_VIA_D + 2 * EP_VIA_CLEAR;   // 31.7 mil
+  const epSkip = [];
   for (const g of enclosed) {
     try {
+      let pbb = null;
+      try { pbb = await eda.pcb_Primitive.getPrimitivesBBox([String(g.id)]); } catch (e) { pbb = null; }
+      const okBB = pbb && Number.isFinite(pbb.minX) && Number.isFinite(pbb.maxX)
+        && Number.isFinite(pbb.minY) && Number.isFinite(pbb.maxY);
+      const pw = okBB ? pbb.maxX - pbb.minX : null;
+      const ph = okBB ? pbb.maxY - pbb.minY : null;
+      const pwR = pw === null ? null : Math.round(pw * 100) / 100;
+      const phR = ph === null ? null : Math.round(ph * 100) / 100;
+      if (pw === null || ph === null) {
+        epSkip.push({ num: g.num, why: 'noBBox', need: EP_VIA_NEED });
+        log('epViaSkip', { num: g.num, at: [g.x, g.y], why: 'noBBox', need: EP_VIA_NEED,
+          whyText: '读不到焊盘包围盒：瞎打孔会压住邻居，正是 run 203952 那 4 条短路的成因' });
+        continue;
+      }
+      if (pw < EP_VIA_NEED || ph < EP_VIA_NEED) {
+        epSkip.push({ num: g.num, w: pwR, h: phR, why: 'padTooSmall', need: EP_VIA_NEED });
+        log('epViaSkip', { num: g.num, at: [g.x, g.y], why: 'padTooSmall',
+          pad: [pwR, phR], need: EP_VIA_NEED,
+          whyText: '焊盘装不下过孔：外径 ' + EP_VIA_D + ' + 两侧间距 ' + EP_VIA_CLEAR
+            + 'x2 = ' + EP_VIA_NEED + ' mil，而该焊盘只有 ' + pwR + 'x' + phR
+            + ' mil ⇒ 打孔必然侵入相邻焊盘的铜' });
+        continue;
+      }
       // 过孔取规则最小值：外径 0.5mm≈19.7mil，孔 0.3mm≈11.8mil
-      // DFN 的 EP 焊盘窄，中心打孔会贴近相邻同排焊盘 → 沿"离最近非GND焊盘最远的方向"偏移
+      // EP 焊盘窄，中心打孔会贴近相邻同排焊盘 → 沿"离最近非GND焊盘最远的方向"偏移
       const near = padList
         .filter(o => o.id !== g.id && String(o.net || '').toUpperCase() !== 'GND')
         .map(o => ({ o, d: Math.hypot(o.x - g.x, o.y - g.y) }))
@@ -1306,7 +1344,7 @@ try {
         vx = g.x + (dx / len) * off;
         vy = g.y + (dy / len) * off;
       }
-      const v = await eda.pcb_PrimitiveVia.create('GND', vx, vy, 11.8, 19.7);
+      const v = await eda.pcb_PrimitiveVia.create('GND', vx, vy, EP_VIA_H, EP_VIA_D);
       if (v) viaCount++;
       let epVid = null;
       try { epVid = v?.getState_PrimitiveId?.() ?? null; } catch (e) { epVid = null; }
@@ -1315,10 +1353,17 @@ try {
         near: near ? Math.round(near.d * 100) / 100 : null,
         nearX: near ? near.o.x : null, nearY: near ? near.o.y : null,
         viaId: epVid ? String(epVid) : null });
-      log('epViaAt', { pad: [g.x, g.y], via: [vx, vy], near: near ? near.d : null });
+      log('epViaAt', { pad: [g.x, g.y], via: [vx, vy], near: near ? near.d : null,
+        padSize: [pwR, phR] });
     } catch (e) { log('viaErr', { at: [g.x, g.y], m: String(e && e.message).slice(0, 120) }); }
   }
-  log('epVias', { count: viaCount });
+  // 【分母必须和分子一起出现】count 仍是「真的建出来的孔数」（语义与改前一致）；
+  // candidates = 判据挑出的候选数 = count + skipped，缺任一项这个数字就读不出意义。
+  const epSkipBy = {};
+  for (const s of epSkip) epSkipBy[s.why] = (epSkipBy[s.why] || 0) + 1;
+  log('epVias', { count: viaCount, candidates: enclosed.length,
+    skipped: epSkip.length, skipBy: epSkipBy,
+    note: 'candidates = count + skipped；skipped 说明判据挑中但物理上打不下孔' });
 } catch (e) { log('preViaErr', String(e && e.message)); }
 await sleep(800);
 
