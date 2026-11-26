@@ -167,6 +167,10 @@ const friendly = (D.friendly || ('AI_' + (D.name || 'Board'))) + '_' + Date.now(
 const errors = [];
 const warns = [];
 const artifacts = [];
+// 环境故障（库服务网络错误/超时）与设计缺陷必须分开记。
+// 实测 2026-11-26T19:13 那轮：1 条 Network Error 派出 13 条下游 errors，
+// 而 `gates` 里只有 errors 一个通道 —— 读盘者无法分辨"板子不行"和"网络断了"。
+const envFaults = [];
 
 async function waitDoc(uuid, ms = 120000) {
   await eda.dmt_EditorControl.openDocument(uuid);
@@ -202,7 +206,19 @@ function toBlob(d) {
 // ---------- 0. 解析器件（唯一可信来源）----------
 phase('resolveParts');
 const lcscList = [...new Set(D.components.map(c => c.lcsc))];
-const devs = await eda.lib_Device.getByLcscIds(lcscList);
+// 库服务是网络依赖：一次抖动会让**整批**器件解析失败，早退成 stage:'resolveParts'，
+// 看起来像"料号不存在"。同一类故障在 add 阶段已实测出现过。
+let devs = null;
+for (let at = 1; at <= 3; at++) {
+  let err = null;
+  try { devs = await eda.lib_Device.getByLcscIds(lcscList); }
+  catch (e) { err = String(e && e.message).slice(0, 160); devs = null; }
+  const got = Array.isArray(devs) ? devs.length : 0;
+  if (got > 0) { if (at > 1) log('resolveRetry', { attempt: at, got, asked: lcscList.length }); break; }
+  log('resolveAttempt', { attempt: at, got, err, asked: lcscList.length });
+  if (at === 3) { envFaults.push(`resolveParts: 重试 3 次仍拿不到器件（asked=${lcscList.length}, last=${err || 'empty'})`); break; }
+  await sleep(800 * at);
+}
 const byLcsc = {};
 for (const d of (devs || [])) {
   const p = d.otherProperty || {};
@@ -492,14 +508,42 @@ for (let i = 0; i < D.components.length; i++) {
         log('valueKindMismatch', { ...shown, declaredKind: A.kind, actualKind: B.kind });
       }
     }
-    r = await eda.sch_SourcePrimitiveComponent.add({
+    const addArgs = {
       projectId: projectUuid, schematicName: schName, pageName,
       libraryUuid: part.libraryUuid, name: part.name,
       x: cx, y: cy, designator: item.des,
       ...(Object.keys(props).length ? { properties: props } : {}),
-    });
+    };
+    // `add` 有**两条**失败通道：抛异常，和返回 { ok:false, error }。
+    // 实测这一轮走的是后者（INTERNAL_ERROR / Network Error!）。只覆盖一条通道的
+    // 重试等于没重试，所以先把两条收敛成同一个形状。
+    const callAdd = async () => {
+      try { return await eda.sch_SourcePrimitiveComponent.add(addArgs); }
+      catch (e) {
+        return { ok: false, error: { code: 'THROWN', message: String(e && e.message).slice(0, 200) } };
+      }
+    };
+    const blob = (x) => { try { return JSON.stringify(x); } catch (_) { return String(x); } };
+    const isTransient = (s) => /Network Error|INTERNAL_ERROR|ETIMEDOUT|ECONNRESET|socket hang up|timeout/i.test(s || '');
+    r = await callAdd();
+    if (!r?.ok) {
+      let msg = blob(r);
+      for (let at = 1; at <= 3 && isTransient(msg); at++) {
+        log('addAttempt', { des: item.des, attempt: at, msg: msg.slice(0, 160) });
+        if (at === 3) break;
+        await sleep(800 * at);
+        r = await callAdd();
+        if (r && r.ok) break;
+        msg = blob(r);
+      }
+      if (!r?.ok) {
+        if (isTransient(msg)) envFaults.push(`add ${item.des}: ${msg}`);
+        log('addFailed', { des: item.des, env: isTransient(msg), msg: msg.slice(0, 200) });
+        errors.push(`add ${item.des}: ${msg}`);
+        continue;
+      }
+    }
   } catch (e) { errors.push(`add ${item.des}: ${e && e.message}`); continue; }
-  if (!r?.ok) { errors.push(`add ${item.des}: ${JSON.stringify(r)}`); continue; }
   const g = await eda.sch_SourcePrimitiveComponent.get({
     projectId: projectUuid, schematicName: schName, pageName, primitiveId: r.value.primitiveId });
   placed.push({ des: r.value.designator, lcsc: item.lcsc, primitiveId: r.value.primitiveId,
@@ -4976,6 +5020,8 @@ try {
       // 于是"这次为什么没通过"只能靠重跑一次来回答（28 分钟，且未必复现）。
       // 个数进了结论、原因没进证据 —— 这跟"读不到输入却保持沉默"是同一类错。
       errors: errors.length, errorList: errors.slice(0, 40),
+      // 环境故障单独成字段：它和 errors 的处置完全相反（重试 vs 改设计）。
+      envFaults: envFaults.length, envFaultList: envFaults.slice(0, 10),
       warns: warns.length, warnList: warns.slice(0, 40),
       mismatches: mismatches.length,
       outlineOk: !!outlineOk,
