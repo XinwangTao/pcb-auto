@@ -95,8 +95,12 @@ Get-CimInstance Win32_Process -Filter "Name='lceda-pro.exe'" |
 
 ## 已知的坑（都踩过，别再踩）
 
-- `fabcheck.js` 的输出里 `"id"` 这个键出现在 **4 个数组**（blockers/warnings/notes/passes）。
-  用正则数 `"id"` 会把阻断数放大 ~19 倍。要 `ConvertFrom-Json` 后取 `@($j.blockers)`。
+- `fabcheck.js` 的输出里 `"id"` 这个键出现在 **4 个数组**（blockers/warnings/notes/passes），
+  而且**每个结果条目恰好一个 `id`**。所以正则数 `"id"` 数到的是**四个数组的总和**，
+  不是阻断数 —— 两者之间没有固定倍数（分母是 0 时倍数根本不存在）。
+  实测（2026-11-26）：`out/AI_RP2040_系统-20261125-033939` 是 20 条结果 / 0 条阻断 / `"id"` 20 次；
+  `examples/d1` 是 1 条阻断 / `"id"` 22 次。干净板子上它会报出「十几条阻断」。
+  要 `ConvertFrom-Json` 后取 `@($j.blockers)`。
 - `fabcheck.js --quiet` 只打一行摘要，**不是 JSON**，别拿去 parse。
 - `--selftest` 需要一个位置参数（好样本目录），不给会崩。
 - `out\` 会被自动清理（`run-overnight.ps1` 每 3 轮跑一次 `scripts\cleanup.ps1`，
