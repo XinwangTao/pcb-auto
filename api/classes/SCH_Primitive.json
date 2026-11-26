@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"原理图 & 符号 / 图元类","remarks":"图元的统一操作","visibility":"public","methods":[{"name":"getPrimitiveTypeByPrimitiveId","comment":"获取指定 ID 的图元的图元类型","visibility":"beta"},{"name":"getPrimitiveByPrimitiveId","comment":"获取指定 ID 的图元的所有属性","visibility":"public"},{"name":"getPrimitivesBBox","comment":"获取图元的 BBox","visibility":"beta"}],"callPath":"sch_Primitive"},"logs":[],"durationMs":141}
+

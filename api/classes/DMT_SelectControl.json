@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"文档树 / 选择控制类","remarks":"在文档树内进行选择焦点的查询、控制","visibility":"public","methods":[{"name":"getCurrentDocumentInfo","comment":"获取当前文档的属性","visibility":"beta"}],"callPath":"dmt_SelectControl"},"logs":[],"durationMs":127}
+

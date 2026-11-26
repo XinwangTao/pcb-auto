@@ -1,0 +1,230 @@
+[
+  {
+    "id": "d5",
+    "design": "LED_RGB_Indicator",
+    "designFile": "designs\\d5-led-indicator.json",
+    "outDir": "out\\LED_RGB_Indicator-20261125-153411",
+    "uuid": "0e44bc1b76977304864329f4e0575ae51753a7c938f73fbe53d18b13ea16fc6d",
+    "declared": [
+      1200,
+      900
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "smart-fit"
+    },
+    "audit": null,
+    "auditMs": 101862
+  },
+  {
+    "id": "d6",
+    "design": "RP2040_Minimal",
+    "designFile": "designs\\d6-rp2040-minimal.json",
+    "outDir": "out\\RP2040_Minimal-20261125-153535",
+    "uuid": "8b9f6c7af547bf9a03d7dd058c09376413ed4c621eba46017b0ea8bfc4527fda",
+    "declared": [
+      1600,
+      1200
+    ],
+    "pipeline": {
+      "drcPassed": "FAIL",
+      "drcDetailCount": 1,
+      "heal": "expand-1.5x-retry"
+    },
+    "audit": null,
+    "auditMs": 41210
+  },
+  {
+    "id": "d7",
+    "design": "RP2040_QSPI_Flash",
+    "designFile": "designs\\d7-rp2040-flash.json",
+    "outDir": "out\\RP2040_QSPI_Flash-20261125-154822",
+    "uuid": "3f62b0c5dd8e02b0d5b425fc131704aa01480caffcacdd089d90cb89a4fd8ed7",
+    "declared": [
+      2400,
+      1800
+    ],
+    "pipeline": {
+      "drcPassed": "FAIL",
+      "drcDetailCount": 1,
+      "heal": "expand-1.5x-retry"
+    },
+    "audit": null,
+    "auditMs": 12943
+  },
+  {
+    "id": "d8",
+    "design": "AI_纯分立_19pl4cd",
+    "designFile": "designs\\d8-led-8ch.json",
+    "outDir": "out\\AI_纯分立_19pl4cd-20261125-155950",
+    "uuid": "548169fb62db5fbaf75ed52a6c16b87eff8c7f00d1ce55bc633fa59046776cb1",
+    "declared": [
+      1400,
+      1000
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "compact-fit"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "548169fb62db5fbaf75ed52a6c16b87eff8c7f00d1ce55bc633fa59046776cb1",
+      "log": [
+        {
+          "k": "openProject",
+          "v": true
+        }
+      ],
+      "boardCount": 0,
+      "pcbCount": 0,
+      "boards": [],
+      "pcbs": [],
+      "primaryPcbUuid": null,
+      "primaryBoardName": null,
+      "perPcb": [],
+      "passed": null,
+      "violations": null,
+      "violationsBefore": null,
+      "multiPcb": false,
+      "saved": false
+    },
+    "auditMs": 12510
+  },
+  {
+    "id": "d9",
+    "design": "AI_纯分立_3pnlif",
+    "designFile": "designs\\d9-resistor-divider.json",
+    "outDir": "out\\AI_纯分立_3pnlif-20261125-160533",
+    "uuid": "2358f7498fef62ce2a42a321204c920e680aa23da255a896ad90bb42b1c434ae",
+    "declared": [
+      800,
+      600
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "expand-1.5x"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "2358f7498fef62ce2a42a321204c920e680aa23da255a896ad90bb42b1c434ae",
+      "log": [
+        {
+          "k": "openProject",
+          "v": true
+        }
+      ],
+      "boardCount": 2,
+      "pcbCount": 2,
+      "boards": [
+        {
+          "name": "Board1",
+          "uuid": "268aca0564ac4590",
+          "schematicUuid": "e63b1775a0140763",
+          "pageCount": 1,
+          "pcbUuid": "4d5b04640adb8252",
+          "pcbName": "PCB1"
+        },
+        {
+          "name": "Board2",
+          "uuid": "5624e77edb351747",
+          "schematicUuid": "ecc16f37b796c686",
+          "pageCount": 1,
+          "pcbUuid": "3c2bdddc34961d20",
+          "pcbName": "PCB2"
+        }
+      ],
+      "pcbs": [
+        {
+          "name": "PCB1",
+          "uuid": "4d5b04640adb8252",
+          "boardName": "Board1"
+        },
+        {
+          "name": "PCB2",
+          "uuid": "3c2bdddc34961d20",
+          "boardName": "Board2"
+        }
+      ],
+      "primaryPcbUuid": "4d5b04640adb8252",
+      "primaryBoardName": "Board1",
+      "perPcb": [
+        {
+          "pcbUuid": "4d5b04640adb8252",
+          "isPrimary": true,
+          "pcbName": "PCB1",
+          "outline": {
+            "x": 0,
+            "y": 0,
+            "w": 1454,
+            "h": 1221
+          },
+          "padCount": 14,
+          "padSpan": {
+            "w": 700,
+            "h": 270
+          },
+          "fillRatio": 0.106,
+          "viaCount": 1,
+          "trackCount": 36,
+          "passedBefore": true,
+          "before": {
+            "total": 0,
+            "byType": {},
+            "byNet": {},
+            "samples": []
+          },
+          "rebuilt": true,
+          "passedAfter": true,
+          "after": {
+            "total": 0,
+            "byType": {},
+            "byNet": {},
+            "samples": []
+          },
+          "passed": true,
+          "stable": true
+        },
+        {
+          "pcbUuid": "3c2bdddc34961d20",
+          "isPrimary": false,
+          "pcbName": "PCB2",
+          "outline": {
+            "x": null,
+            "y": null,
+            "w": null,
+            "h": null
+          },
+          "padCount": 0,
+          "viaCount": 0,
+          "trackCount": 0,
+          "passedBefore": true,
+          "before": {
+            "total": 0,
+            "byType": {},
+            "byNet": {},
+            "samples": []
+          },
+          "rebuilt": true,
+          "passedAfter": true,
+          "after": {
+            "total": 0,
+            "byType": {},
+            "byNet": {},
+            "samples": []
+          },
+          "passed": true,
+          "stable": true
+        }
+      ],
+      "passed": true,
+      "violations": 0,
+      "violationsBefore": 0,
+      "multiPcb": true,
+      "saved": false
+    },
+    "auditMs": 33472
+  }
+]

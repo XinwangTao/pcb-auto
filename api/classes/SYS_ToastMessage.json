@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 吐司消息类","remarks":"在屏幕的边缘弹出简短的消息提醒，会在一定时间后自动消除","visibility":"public","deprecated":"即将移除吐司消息类，合并入 {@link SYS_Message | 消息通知类}","methods":[{"name":"showMessage","comment":"显示吐司消息","visibility":"public"}],"callPath":"sys_ToastMessage"},"logs":[],"durationMs":130}
+

@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"PCB & 封装 / 图元类","remarks":"图元的统一操作","visibility":"public","methods":[{"name":"getPrimitivesBBox","comment":"获取图元的 BBox","visibility":"beta"},{"name":"getPrimitiveBoardLine","comment":"获取图元的边框线","visibility":"beta"},{"name":"findPrimitives","comment":"按条件分页查询局部图元","visibility":"beta"}],"callPath":"pcb_Primitive"},"logs":[],"durationMs":295}
+

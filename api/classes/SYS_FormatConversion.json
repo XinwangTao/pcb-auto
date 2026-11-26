@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 格式转换（Chameleon）类","remarks":"与其它板级 EDA 软件进行交叉文件格式转换","visibility":"public","methods":[{"name":"convertAltiumDesignerLibrariesToEasyEDASingleFile","comment":"转换 Altium Designer 库到单个嘉立创库文件","visibility":"beta"},{"name":"convertAltiumDesignerLibrariesToEasyEDAMultiFiles","comment":"转换 Altium Designer 库到多个嘉立创库文件（每个器件一个文件）","visibility":"beta"},{"name":"convertDisaLibrariesToEasyEDASingleFile","comment":"转换 T/DISA 4001 库到单个嘉立创库文件","visibility":"beta"},{"name":"convertDisaLibrariesToEasyEDAMultiFiles","comment":"转换 T/DISA 4001 库到多个嘉立创库文件（每个器件一个文件）","visibility":"beta"}],"callPath":"sys_FormatConversion"},"logs":[],"durationMs":130}
+

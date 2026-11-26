@@ -1,0 +1,268 @@
+{
+  "generatedAt": "2026-11-24T21:34:04.640Z",
+  "outName": "RP2040_Minimal-20261125-052918",
+  "outDirRel": "out/RP2040_Minimal-20261125-052918",
+  "designId": "d6-rp2040-minimal",
+  "designName": "RP2040_Minimal",
+  "designFriendly": "AI_RP2040_MIN",
+  "idea": "RP2040 最小系统板：3.3V LDO 供电、去耦电容阵列、BOOT 按键、USB 引出、SWD 调试口、状态 LED",
+  "components": [
+    {
+      "des": "C1",
+      "lcsc": "C440198",
+      "value": "10uF"
+    },
+    {
+      "des": "C2",
+      "lcsc": "C440198",
+      "value": "10uF"
+    },
+    {
+      "des": "C3",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "C4",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "C5",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "C6",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "C7",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "D1",
+      "lcsc": "C2297",
+      "value": "LED-Green"
+    },
+    {
+      "des": "H1",
+      "lcsc": "C9900192758",
+      "value": "2.54-1*8"
+    },
+    {
+      "des": "R1",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "R2",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "R3",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "R4",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "U1",
+      "lcsc": "C2040",
+      "value": "RP2040"
+    },
+    {
+      "des": "U2",
+      "lcsc": "C6186",
+      "value": "AMS1117-3.3"
+    },
+    {
+      "des": "U3",
+      "lcsc": "C131025",
+      "value": "W25Q16JVSSIQ"
+    }
+  ],
+  "componentCount": 16,
+  "connectionCount": 68,
+  "nets": [
+    "1V1",
+    "3V3",
+    "5V",
+    "GND",
+    "LED_A",
+    "QSPI_SCLK",
+    "QSPI_SD0",
+    "QSPI_SD1",
+    "QSPI_SD2",
+    "QSPI_SD3",
+    "QSPI_SS",
+    "RUN",
+    "SWCLK",
+    "SWD",
+    "USB_DM",
+    "USB_DP"
+  ],
+  "netCount": 16,
+  "board": {
+    "widthMil": 1950,
+    "heightMil": 1488,
+    "name": "Board1",
+    "sch": "Schematic1"
+  },
+  "drc": {
+    "passed": true,
+    "violations": 0,
+    "schErrors": 0,
+    "schWarns": 26,
+    "mismatches": 0
+  },
+  "elapsedMs": 82152,
+  "elapsedSec": 82.2,
+  "phases": [
+    {
+      "name": "resolveParts",
+      "cum": 0,
+      "dur": 0
+    },
+    {
+      "name": "createProject",
+      "cum": 93,
+      "dur": 93
+    },
+    {
+      "name": "createBoard",
+      "cum": 3114,
+      "dur": 3021
+    },
+    {
+      "name": "placeParts",
+      "cum": 7533,
+      "dur": 4419
+    },
+    {
+      "name": "connect",
+      "cum": 11580,
+      "dur": 4047
+    },
+    {
+      "name": "netlistCheck",
+      "cum": 14404,
+      "dur": 2824
+    },
+    {
+      "name": "pcbImport",
+      "cum": 17702,
+      "dur": 3298
+    },
+    {
+      "name": "autoLayout",
+      "cum": 27181,
+      "dur": 9479
+    },
+    {
+      "name": "preVia",
+      "cum": 33595,
+      "dur": 6414
+    },
+    {
+      "name": "copperPour",
+      "cum": 34447,
+      "dur": 852
+    },
+    {
+      "name": "autoRouting",
+      "cum": 37501,
+      "dur": 3054
+    },
+    {
+      "name": "snapEnds",
+      "cum": 63426,
+      "dur": 25925
+    },
+    {
+      "name": "fixClearance",
+      "cum": 67884,
+      "dur": 4458
+    },
+    {
+      "name": "patchDrc",
+      "cum": 75131,
+      "dur": 7247
+    },
+    {
+      "name": "drc",
+      "cum": 75131,
+      "dur": 0
+    },
+    {
+      "name": "export",
+      "cum": 79500,
+      "dur": 4369
+    }
+  ],
+  "phaseCount": 16,
+  "copperPours": 56,
+  "snappedLines": 0,
+  "clearanceFixes": 0,
+  "routed": {
+    "state": "completed",
+    "ms": 3054
+  },
+  "gerberEntries": 14,
+  "artifacts": [
+    {
+      "file": "Gerber.zip",
+      "label": "Gerber 制造文件",
+      "note": "钻孔 / 丝印 / 钢网",
+      "bytes": 46890,
+      "human": "45.8 KB"
+    },
+    {
+      "file": "Board.pdf",
+      "label": "PCB 版图 PDF",
+      "note": "装配与布线图",
+      "bytes": 515512,
+      "human": "503.4 KB"
+    },
+    {
+      "file": "BOM.xlsx",
+      "label": "物料清单",
+      "note": "LCSC 编号 / 数量",
+      "bytes": 7499,
+      "human": "7.3 KB"
+    },
+    {
+      "file": "PnP.csv",
+      "label": "贴片坐标",
+      "note": "UTF-16LE / TAB",
+      "bytes": 7218,
+      "human": "7.0 KB"
+    },
+    {
+      "file": "Netlist.json",
+      "label": "网表",
+      "note": "连通性快照",
+      "bytes": 43458,
+      "human": "42.4 KB"
+    },
+    {
+      "file": "TestPoints.csv",
+      "label": "测试点",
+      "note": "飞针测试",
+      "bytes": 8305,
+      "human": "8.1 KB"
+    }
+  ],
+  "exportsOk": 6,
+  "exportsTotal": 6,
+  "_source": {
+    "runDir": "out/RP2040_Minimal-20261125-052918",
+    "designPath": "designs\\d6-rp2040-minimal.json"
+  }
+}

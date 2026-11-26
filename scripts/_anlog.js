@@ -1,0 +1,14 @@
+const fs=require('fs');
+const j=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+console.log('  kind='+j.kind+'  ok='+j.ok+'  entries='+j.entries.length);
+const cnt={};
+for(const e of j.entries) cnt[e.s]=(cnt[e.s]||0)+1;
+const keys=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]);
+console.log('  日志键 '+keys.length+' 种');
+console.log('  高频: '+keys.slice(0,18).map(k=>k+'×'+cnt[k]).join('  '));
+const want=['patchRound','patchRoundNet','patchPerErr','patchNoProgress','patchNoObj','patchErr','patchVerify','patchReverted','patchIslandPair','patchPairSynth','patchNoGeo','clearanceFixes','clearanceSkipNoGeo','clearanceReverted','rollbackOk','rollbackLineFail','rollbackModifyFail','trackDoglegFixFail','trackRerouteFixFail','layout','layoutCancelled','layoutCancelConfirm','drcCheck','stitchAnchors','cam','camErr','shotNoFs','shotErr','shotWriteFalse','valueMismatch','valueSyntax','valueUncomparable','viaShrunk','viaDeleted','route'];
+console.log('');
+for(const w of want) if(cnt[w]) console.log('  '+w.padEnd(26)+' ×'+cnt[w]);
+console.log('');
+const pick=(k,n=2)=>{const a=j.entries.filter(e=>e.s===k);if(a.length)for(const e of a.slice(0,n))console.log('  '+k+' => '+JSON.stringify(e.v).slice(0,240));};
+['patchRound','patchRoundNet','patchPerErr','patchNoProgress','clearanceFixes','drcCheck','stitchAnchors','layout','route'].forEach(k=>pick(k,2));

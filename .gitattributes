@@ -1,0 +1,32 @@
+# 默认按文本处理，检出时统一 LF
+* text=auto eol=lf
+
+# PowerShell 在 Windows 上按 CRLF 更稳（部分 pwsh 版本对 LF 的 here-string 有兼容问题）
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制：不要 diff、不要转行尾
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.xlsx binary
+*.mp4 binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+
+# 生成的锁文件不参与 merge 冲突
+*.lock -diff
+pnpm-lock.yaml -diff
+
+# 让 GitHub 把文档和产物按预期统计
+*.md linguist-documentation
+*.html linguist-documentation
+*.pdf linguist-generated
+*.zip linguist-generated

@@ -1,0 +1,4 @@
+
+{"ok":false,"error":{"code":"DOC_QUERY_FAILED","message":"[help] eda.SCH_SourcePin.setNoConnect 存在，但标记为 @alpha（设计阶段接口，不下发给 help）：无法通过 help 查到签名；运行时是否可用以实际调用为准，不要据「help 查不到」推断该方法不存在"}}
+DOC_QUERY_FAILED: [help] eda.SCH_SourcePin.setNoConnect 存在，但标记为 @alpha（设计阶段接口，不下发给 help）：无法通过 help 查到签名；运行时是否可用以实际调用为准，不要据「help 查不到」推断该方法不存在
+

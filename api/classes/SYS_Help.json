@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"Help 渐进式披露类","remarks":"用于渐进式披露外部 API（`eda`）、lc-protocol 格式类型（`format`）与扩展注入接口（`external`）的信息；\n\nAI 可先获取 API 总览（各命名空间下全部类型条目 `{ name, comment }`），\n再按需查询单个命名空间、单个类 / 类型、单个方法的详细用法（入参、出参、返回值），\n无需翻阅大量外部文档","visibility":"public","methods":[{"name":"help","comment":"查询 Help 信息（渐进式）","visibility":"public"}],"callPath":"sys_Help"},"logs":[],"durationMs":139}
+

@@ -1,0 +1,12 @@
+const fs=require('fs');
+const j=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+console.log('  kind='+j.kind+'  ok='+j.ok+'  entries='+j.entries.length);
+const cnt={}; for(const e of j.entries) cnt[e.s]=(cnt[e.s]||0)+1;
+const keys=Object.keys(cnt);
+const watch=['patchRound','patchTotal','patchNoProgress','patchPerErr','patchIslandPair','patchPairSynth','patchNoGeo','clearanceFixes','drcCheck','drcLeafCount','snappedLines','stitchAnchors','layout','route','outlineFit','board'];
+for(const w of watch) if(cnt[w]) console.log('  '+w.padEnd(20)+' ×'+cnt[w]);
+console.log('');
+const pick=(k,n=3)=>{const a=j.entries.filter(e=>e.s===k);if(a.length)for(const e of a.slice(0,n))console.log('  '+k+' => '+JSON.stringify(e.v).slice(0,260));};
+['board','snappedLines','drCLeafCount','drcCheck','clearanceFixes','patchTotal','patchRound','drcLeafCount','route'].forEach(k=>pick(k,2));
+console.log('');
+console.log('  板尺寸: '+JSON.stringify(j.entries.filter(e=>e.s==='board').map(e=>e.v)));

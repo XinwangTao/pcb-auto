@@ -1,0 +1,140 @@
+# pcb-auto
+
+> An unattended pipeline that compiles a Chinese natural-language board idea into an orderable PCB
+> (schematic → layout → autorouting → DRC → Gerber/BOM/PnP). Open source, MIT, Windows-only.
+> Its distinguishing property is not the demo — it is that **every number it publishes carries its
+> denominator and its as-of time**, and it **publishes the errors found in its own documentation**.
+
+This file follows the [llms.txt](https://llmstxt.org/) convention: a machine-readable entry point
+for language models. Everything here is recomputable from the repository.
+
+## What it is
+
+- **Input**: one Chinese sentence, e.g. `做一个 SHT30 温湿度采集板，I2C 经排针引出`.
+- **Output**: a product directory containing Gerber, Excellon drill, BOM, pick-and-place, and a
+  `_run.json` gate summary.
+- **Automation level**: zero human intervention. An overnight loop ran 373 rounds unattended.
+- **Toolchain**: 嘉立创 EDA (LCEDA) driven via its CLI + a documented API; PowerShell, Node, Python.
+
+## Interface: one core, three shells
+
+| Shell | Path | Audience |
+|---|---|---|
+| CLI (zero deps) | `cli/pcb.mjs` | any agent that can run a shell command |
+| MCP server (zero deps) | `mcp/server.mjs` | any MCP client (Claude Code, Cursor, Windsurf, Zed, Codex CLI, Gemini CLI, …) |
+| DSH plugin | `plugin/` | DeepSeek Harness (Cordis bundle) |
+| Claude Code plugin | `.claude-plugin/` + `.mcp.json` | Claude Code |
+
+The five operations live in exactly one place: `core/ops.mjs`. The shells are thin adapters that
+import it. See [docs/SUPPORT.md](docs/SUPPORT.md) for the platform matrix (19 configs, plus
+protocol-level coverage for any MCP or shell client).
+
+## Operations
+
+| Op | Meaning | Exit code |
+|---|---|---|
+| `idea-to-design` | Chinese idea → design JSON (deterministic) | 0 / 1 refused / 2 bad args |
+| `build` | design JSON → manufacturing files (2–20 min) | 0 / 1 failed / 2 bad args |
+| `fabcheck` | **the authority** on "can this be ordered as-is" | 0 orderable / 1 blocked / 2 bad args |
+| `census` | run `fabcheck` over every settled product directory | 0 |
+| `verify` | re-run all delivery consistency assertions | 0 / 1 |
+
+**Critical**: orderability is `fabcheck`'s exit code, never `_run.json.ok`. They answer different
+questions. See [Mistake to avoid](#mistake-to-avoid).
+
+## Published measurements
+
+All measured 2026-11-26 10:08 +08:00, corpus = directories containing a `_run.json`, settle window
+180 s. Recompute with `node cli/pcb.mjs census --settle 180`.
+
+| Metric | Value | Denominator |
+|---|---|---|
+| Product directories in corpus | 56 | dirs with `_run.json`, 0 in flight |
+| Orderable (`fabcheck` exit 0) | **53** | of 56 = 94.6 % |
+| Blocked | **3** | of 56 = 5.4 % |
+| Parse errors | 0 | of 56 |
+| Distinct board names (dir name minus timestamp) | 44 | derived from the 56 directory names |
+| Board names with ≥1 orderable directory | **42** | of 44 = 95.5 % |
+| Board names never orderable | **2** | of 44 — `AI_纯分立_17py4dl` (1 attempt), `AI_OLED_底板_5p5g6m` (2 attempts) |
+| Blocker instances by class | `gerber.coord.outside` ×13, `pnp.outside` ×3, `gerber.copper.thin` ×2, `drill.outside` ×2 | 20 instances over 3 dirs |
+| Self-report vs independent gate: dangerous disagreement (`ok=true` but blocked) | **0** | of 56 |
+| Self-report vs independent gate: pessimistic disagreement (`ok=false` but orderable) | **5** | of 56 |
+
+Retry distribution: 36 board names were orderable on their first product directory, 6 on the
+second, 1 on the third, and 1 needed five. **Re-running helps most of the time but not always** —
+and the "enlarge the board frame" retry strategy is separately known to make DRC worse.
+
+The denominator is not stable by construction: with settle 0 / 180 / live scan you get three
+different, all-legitimate counts. **A count without its settle window and timestamp is not a
+measurement.** This project states that rule in `docs/WHY.md` and enforces it in `verify-delivery.ps1`.
+
+Caveat on "board name": it is derived from the product directory name, **not** from a primary key.
+Two source designs can share one product name, so 44 is a name count, not a unique-design count.
+
+Other measured facts:
+
+- 33 design JSON files under `designs/`; 247 files under `scripts/`.
+- `verify-delivery.ps1 -SkipCensus` → `PASS 18 / INFO 12 / WARN 2 / FAIL 0 / ERROR 0`, `VERDICT=PASS`, exit 0.
+- The full run (with census) reports `PASS 19`.
+
+## Honest limitations (read before trusting anything above)
+
+1. **No board produced by this project has ever been physically manufactured or electrically
+   validated.** Every "orderable" claim is a statement about *files*, not about a working circuit.
+2. **Windows only.** The pipeline needs PowerShell and a Windows-only EDA server process.
+3. **One EDA vendor.** 嘉立创 EDA (LCEDA). Not KiCad, not Altium, not Eagle.
+4. **The autorouter is not reliable enough to trust blind.** In this corpus 2 of 44 board names
+   (4.5 %) never produced an orderable directory, and one of them was tried twice. The retry ladder
+   (four attempts, each with a larger board frame) sometimes makes DRC **worse** — one design went
+   from 1 DRC group to 2, with SMD-pad violations rising from 1 to 46. The ladder is a known
+   negative-expected-value mechanism and is documented as such.
+5. **Documentation carries disclosed errors.** Two independent audits found 6 wrong numbers in the
+   HTML dossier and 7 wrong + 7 stale claims in the README. Rather than silently fix half of them,
+   the delivered README lists each one verbatim under 已知限制. This is deliberate.
+6. **No star counts, download counts, or user testimonials are asserted here.** If you see any in a
+   fork, they were not measured by this project.
+
+## Mistake to avoid
+
+`_run.json.ok` answers "did the pipeline finish without error". `fabcheck` answers "can these files
+be sent to a fab". A board can be `ok=true` yet have almost no copper in the Gerber.
+
+On this corpus the dangerous direction happened **0 times out of 56** — the self-report was
+conservative rather than optimistic. That is a measurement, not a guarantee. Use `fabcheck`.
+
+## Reproduce
+
+```bash
+git clone https://github.com/1716775457damn/pcb-auto
+cd pcb-auto
+node cli/pcb.mjs list
+node cli/pcb.mjs fabcheck out/d1          # exit 1: 1 blocker, a known false positive
+node cli/pcb.mjs census --settle 180      # ~20 s, recomputes the table above
+node cli/pcb.mjs idea-to-design "做一个 SHT30 温湿度采集板" --dry
+```
+
+Building a board (needs the EDA server and the vendor CLI):
+
+```powershell
+pwsh -NoProfile -File run-all.ps1 -Design designs\<name>.json
+```
+
+## Files worth reading
+
+- [docs/WHY.md](docs/WHY.md) — evidence-based comparison with tscircuit, skidl, KiCad `pcbnew`,
+  JITX, Flux, Celus, DeepPCB, and plain "LLM + KiCad" experiments. States what was verified, when,
+  and what could not be verified.
+- [docs/SUPPORT.md](docs/SUPPORT.md) — the platform matrix and its verification levels.
+- [plugin/docs/DETAIL.md](plugin/docs/DETAIL.md) — the DSH plugin contract.
+- [交付-README.md](交付-README.md) — the Chinese delivery record, including the disclosed errors.
+
+## Citation
+
+See [CITATION.cff](CITATION.cff).
+
+## Keywords
+
+PCB automation · EDA automation · natural language to PCB · text to PCB · Gerber generation ·
+design rule check · DFM gate · autorouter · BOM generation · pick-and-place · LLM agent tooling ·
+MCP server · Model Context Protocol · DeepSeek Harness plugin · Claude Code plugin · 嘉立创 EDA ·
+LCEDA · 立创EDA · 中文自然语言到 PCB · 全自动 PCB 设计

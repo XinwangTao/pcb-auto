@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / WebSocket 类","remarks":"与 WebSocket 服务器交互","visibility":"public","methods":[{"name":"register","comment":"注册 WebSocket 连接","visibility":"public"},{"name":"send","comment":"向 WebSocket 服务器发送数据","visibility":"public"},{"name":"close","comment":"关闭 WebSocket 连接","visibility":"public"}],"callPath":"sys_WebSocket"},"logs":[],"durationMs":160}
+

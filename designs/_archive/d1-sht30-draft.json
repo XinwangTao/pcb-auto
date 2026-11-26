@@ -1,0 +1,29 @@
+{
+  "_comment": "设计 #1：SHT30 I2C 温湿度传感器模块（4 线接口：VCC/GND/SDA/SCL）",
+  "_why": "SHT30 有真实厂商+datasheet 的 LCSC 器件(C86346 Sensirion)，I2C 接线简单，是最小可打样完整功能板",
+  "name": "SHT30_I2C_TempHumidity",
+  "friendly": "AI_SHT30_Sensor",
+  "boardWidthMil": 800,
+  "boardHeightMil": 600,
+  "parts": {
+    "SHT30": {
+      "lcsc": "C86346",
+      "name": "SHT30-ARP-B2.5KS",
+      "klass": "Extended Part",
+      "value": "SHT30-ARP-B2.5KS",
+      "mfr": "Sensirion",
+      "footprint": "DFN-8-EP(2.5x2.5)",
+      "symbolUuid": "0d4ba9d1642d486da4ea0367b64c0c8b",
+      "footprintUuid": "3c7cddbf4e3644f7a0d5d2ba4e8b1e0f",
+      "libraryUuid": "0819f05c4eef4c71ace90d822a990e87"
+    }
+  },
+  "components": [
+    { "des": "U1", "part": "SHT30" }
+  ],
+  "connections": [
+    ["U1", "5", "VDD"],
+    ["U1", "8", "GND"],
+    ["U1", "9", "GND"]
+  ]
+}

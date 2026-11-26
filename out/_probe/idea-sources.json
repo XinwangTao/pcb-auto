@@ -1,0 +1,25 @@
+{
+  "_note": "想法原文 → 编译产物 的对应关系。designs/*.json 不存 idea 字段（旧文件 idea 为空），所以这条链的源头必须单独留档，否则无法复核'从一句中文走到一块 PCB'。",
+  "generator": "scripts/idea2design.js",
+  "generator_sha256_12": "4CA54388CFBD",
+  "entries": [
+    {
+      "idea": "做一个锂电池供电的 SHT30 温湿度记录板，TP4056 充电，3.3V 稳压，I2C 经排针引出，带电源指示 LED",
+      "design_file": "designs/a2-gen-做一个锂电池供电的SHT30温湿度记录板.json",
+      "design_name": "AI_传感器___LDO_16p2sh2",
+      "bytes": 3912,
+      "sha256_12": "5B65ABAFA116",
+      "deterministic": "同一句话连编 3 次，3912 B，sha256_12 三次都是 5B65ABAFA116",
+      "audit": "audit-design.js exit 0（16 器件 / 45 连接 / 10 网络；唯一 note 是 AMS1117 TAB 悬空）",
+      "distinct_from_catalog": "器件+连接签名 f99a98609e92，与 designs/ 下 33 个既有设计无一相同",
+      "verified_at": "2026-11-26T07:20"
+    }
+  ],
+  "generator_bytes": 54266,
+  "recompiled_with_4CA54388CFBD": {
+    "ok": true,
+    "output_sha256_12": "5B65ABAFA116",
+    "identical_to_stored": true,
+    "note": "编译器从 4CA45BBD6A2D 修到 4CA54388CFBD（否定剥离）后重编同一条需求，输出逐字节不变"
+  }
+}

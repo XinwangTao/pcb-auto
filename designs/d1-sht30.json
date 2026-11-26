@@ -1,0 +1,81 @@
+{
+  "name": "SHT30_I2C_TempHumidity",
+  "friendly": "AI_SHT30_TempHumidity",
+  "_idea": "做一个 SHT30 温湿度传感器模块，I2C 四线接口（VCC/GND/SDA/SCL）",
+  "_why": "SHT30(C86346) 是 Sensirion 原厂有 datasheet 的真实器件，I2C 4 线接口最简单，能完整验证 选料→原理图→PCB→布线→DRC→Gerber 全链路",
+  "boardWidthMil": 800,
+  "boardHeightMil": 600,
+  "components": [
+    {
+      "des": "U1",
+      "lcsc": "C86346"
+    },
+    {
+      "des": "C1",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "J1",
+      "lcsc": "C9900192758",
+      "value": "2.54-1*8"
+    }
+  ],
+  "connections": [
+    [
+      "U1",
+      "5",
+      "VDD"
+    ],
+    [
+      "U1",
+      "8",
+      "GND"
+    ],
+    [
+      "U1",
+      "9",
+      "GND"
+    ],
+    [
+      "C1",
+      "1",
+      "VDD"
+    ],
+    [
+      "C1",
+      "2",
+      "GND"
+    ],
+    [
+      "J1",
+      "1",
+      "VDD"
+    ],
+    [
+      "J1",
+      "2",
+      "GND"
+    ],
+    [
+      "J1",
+      "3",
+      "SDA"
+    ],
+    [
+      "J1",
+      "4",
+      "SCL"
+    ],
+    [
+      "U1",
+      "2",
+      "SDA"
+    ],
+    [
+      "U1",
+      "3",
+      "SCL"
+    ]
+  ]
+}

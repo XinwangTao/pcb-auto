@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"PCB & 封装 / 可制造性设计（DFM）类","remarks":"DFM 仅在**私有化构建**可用，其它构建下无法执行 DFM 检查\n\n可先调用 {@link PCB_Dfm.getDfmAvailability} 探测当前环境是否支持 DFM，再决定是否调用其余接口","visibility":"public","methods":[{"name":"getDfmRules","comment":"读取 DFM 规则集","visibility":"beta"},{"name":"getDfmAvailability","comment":"判断当前环境是否可执行 DFM 检查","visibility":"beta"},{"name":"checkDfm","comment":"执行 DFM 检查","visibility":"beta"}],"callPath":"pcb_Dfm"},"logs":[],"durationMs":137}
+

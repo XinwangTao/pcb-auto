@@ -1,0 +1,1901 @@
+[
+  {
+    "dir": "NegTest_TinyBoard-20261125-025440",
+    "designName": "NegTest_TinyBoard",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 02:55:52"
+  },
+  {
+    "dir": "AI_RP2040_系统-20261125-033939",
+    "designName": "AI_RP2040_系统",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 03:47:29"
+  },
+  {
+    "dir": "AI_传感器模块-20261125-040723",
+    "designName": "AI_传感器模块",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 04:08:19"
+  },
+  {
+    "dir": "AI_纯分立-20261125-041749",
+    "designName": "AI_纯分立",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 04:19:01"
+  },
+  {
+    "dir": "AI_传感器模块_6psjho-20261125-111305",
+    "designName": "AI_传感器模块_6psjho",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 11:14:24"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_16pck03-20261125-112943",
+    "designName": "AI_传感器___充电___显示_16pck03",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 11:33:04"
+  },
+  {
+    "dir": "AI_锂电池充电板_7pbt8q-20261125-123130",
+    "designName": "AI_锂电池充电板_7pbt8q",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 12:34:10"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-123518",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 12:37:30"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-123731",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 12:39:27"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-123927",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 12:41:09"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-124227",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 12:44:31"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-125113",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 12:54:38"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-125452",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 12:56:16"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-130150",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:13:40"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-131341",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:16:43"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-131644",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:19:22"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-132044",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:24:33"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-132434",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:25:33"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-132534",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:31:21"
+  },
+  {
+    "dir": "SHT30_Header8-20261125-133122",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:32:46"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-133247",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:34:25"
+  },
+  {
+    "dir": "RP2040_Minimal-20261125-133425",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:40:15"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-134016",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:43:35"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261125-134336",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:44:59"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261125-134500",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:46:14"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-134619",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:48:48"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-134849",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:50:50"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-135051",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 13:52:48"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-135858",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:00:34"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-140642",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:12:03"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-141204",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:13:14"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-141315",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:14:28"
+  },
+  {
+    "dir": "SHT30_Header8-20261125-141429",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:15:31"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-141532",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:16:30"
+  },
+  {
+    "dir": "RP2040_Minimal-20261125-141631",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:22:36"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-144903",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:50:24"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-144926",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:51:51"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-145151",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 14:57:11"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-145712",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:00:01"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-150708",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:08:57"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-151459",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:24:37"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-152437",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:27:03"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-152705",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:33:04"
+  },
+  {
+    "dir": "SHT30_Header8-20261125-153305",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:34:10"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-153411",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:35:34"
+  },
+  {
+    "dir": "RP2040_Minimal-20261125-153535",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:40:33"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-154822",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 15:50:50"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261125-155950",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:05:33"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261125-160533",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:08:02"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-160808",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:10:42"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-161043",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:12:43"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-161244",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:15:16"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-162408",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:28:27"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-163848",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:54:20"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-165421",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:56:14"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-165614",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:58:06"
+  },
+  {
+    "dir": "SHT30_Header8-20261125-165806",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 16:59:50"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-165950",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 17:01:36"
+  },
+  {
+    "dir": "RP2040_Minimal-20261125-170136",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 17:20:20"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-172021",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 17:44:29"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-180031",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:04:16"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-180417",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:07:22"
+  },
+  {
+    "dir": "d11-exp",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:10:06"
+  },
+  {
+    "dir": "d11-exp-2558",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:15:59"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-180722",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:16:30"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-181631",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:20:21"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-182024",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:24:40"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-182918",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:31:00"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-183654",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:42:43"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-184244",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:44:52"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-184722",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:50:15"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-185314",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:54:38"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-185516",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 18:58:50"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-185851",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:02:50"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-190607",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:15:09"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-191510",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:18:13"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-192147",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:26:19"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-193042",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:34:01"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-193402",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:38:36"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-193838",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:42:21"
+  },
+  {
+    "dir": "RP2040_Minimal-20261125-194222",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 19:49:55"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261125-201324",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:17:06"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261125-202323",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:26:42"
+  },
+  {
+    "dir": "AI_纯分立_20p4chz-20261125-202929",
+    "designName": "AI_纯分立_20p4chz",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:31:29"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261125-203742",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:40:40"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-204223",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:51:55"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-204525",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:51:58"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-204717",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:52:00"
+  },
+  {
+    "dir": "SHT30_Header8-20261125-204916",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:52:03"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-205057",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:52:33"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-195838",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:55:27"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-205233",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 20:57:06"
+  },
+  {
+    "dir": "RP2040_Minimal-20261125-205714",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:05:47"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-210548",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:08:33"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261125-210833",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:10:32"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261125-211033",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:12:10"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-211335",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:23:00"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-212927",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:32:57"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-213403",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:38:44"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-214200",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 21:54:21"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-215630",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:04:58"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-220517",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:07:48"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-220801",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:16:23"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-221908",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:23:32"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-222351",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:27:31"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-222732",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:32:04"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-223205",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:39:25"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261125-224204",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:45:32"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-224535",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:50:12"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261125-225015",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 22:56:17"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261125-225902",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:05:39"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261125-183101",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:06:55"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261125-230542",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:07:55"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261125-230758",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:10:11"
+  },
+  {
+    "dir": "SHT30_Header8-20261125-231013",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:12:10"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261125-231213",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:14:05"
+  },
+  {
+    "dir": "RP2040_Minimal-20261125-231408",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:20:19"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261125-232022",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:23:04"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261125-225620",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:26:30"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261125-232307",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:26:49"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261125-232527",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:29:01"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261125-233131",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-25 23:34:34"
+  },
+  {
+    "dir": "AI_传感器模块_7pfcbz-20261125-233436",
+    "designName": "AI_传感器模块_7pfcbz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-25 23:38:54"
+  },
+  {
+    "dir": "AI_锂电池充电板_7pepkp-20261125-233857",
+    "designName": "AI_锂电池充电板_7pepkp",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:40:59"
+  },
+  {
+    "dir": "AI_纯分立_20p4chz-20261125-232904",
+    "designName": "AI_纯分立_20p4chz",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:42:04"
+  },
+  {
+    "dir": "AI_传感器___LDO_9pq32s-20261125-234102",
+    "designName": "AI_传感器___LDO_9pq32s",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:50:45"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19pia69-20261125-234319",
+    "designName": "AI_传感器___充电___显示_19pia69",
+    "selfOk": false,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:50:47"
+  },
+  {
+    "dir": "AI_传感器模块_7pfcbz-20261125-234938",
+    "designName": "AI_传感器模块_7pfcbz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-25 23:53:41"
+  },
+  {
+    "dir": "AI_纯分立_6p7j98-20261125-235344",
+    "designName": "AI_纯分立_6p7j98",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-25 23:57:35"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-000341",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:06:55"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261126-000703",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:10:37"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261126-001040",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:13:12"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261126-001315",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:21:53"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261126-002156",
+    "designName": "USBC_Power_ESD",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 00:27:55"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261126-002758",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:33:53"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261126-003356",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:35:53"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261126-003556",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 00:38:04"
+  },
+  {
+    "dir": "SHT30_Header8-20261126-003807",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:40:03"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261126-004006",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:41:59"
+  },
+  {
+    "dir": "RP2040_Minimal-20261126-004202",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 00:45:43"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261126-004546",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 00:48:25"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-004827",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 00:53:00"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261126-005641",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 00:59:01"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-010233",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 01:10:16"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261126-011359",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 01:20:03"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-012004",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 01:29:33"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-012933",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 01:34:07"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261126-013407",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 01:36:20"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261126-013623",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 01:46:20"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-014820",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 01:52:55"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261126-014623",
+    "designName": "USBC_Power_ESD",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 01:53:44"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261126-015302",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 01:56:16"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261126-015619",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 01:59:02"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261126-015905",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 02:02:16"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261126-020219",
+    "designName": "USBC_Power_ESD",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:07:03"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261126-020706",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:12:38"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261126-021241",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 02:15:07"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261126-021510",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:17:18"
+  },
+  {
+    "dir": "SHT30_Header8-20261126-021720",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 02:19:15"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261126-021918",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 02:21:12"
+  },
+  {
+    "dir": "RP2040_Minimal-20261126-022115",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:25:49"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261126-022552",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:28:48"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261126-022851",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:31:09"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261126-023112",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 02:34:55"
+  },
+  {
+    "dir": "AI_纯分立_20p4chz-20261126-023458",
+    "designName": "AI_纯分立_20p4chz",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:37:19"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-023722",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 02:45:56"
+  },
+  {
+    "dir": "AI_传感器模块_7pfcbz-20261126-024559",
+    "designName": "AI_传感器模块_7pfcbz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 02:49:44"
+  },
+  {
+    "dir": "AI_锂电池充电板_7pepkp-20261126-024947",
+    "designName": "AI_锂电池充电板_7pepkp",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:52:11"
+  },
+  {
+    "dir": "AI_传感器___LDO_9pq32s-20261126-025214",
+    "designName": "AI_传感器___LDO_9pq32s",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 02:54:31"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19pia69-20261126-025434",
+    "designName": "AI_传感器___充电___显示_19pia69",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 03:00:42"
+  },
+  {
+    "dir": "AI_传感器模块_7pfcbz-20261126-030045",
+    "designName": "AI_传感器模块_7pfcbz",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:04:34"
+  },
+  {
+    "dir": "AI_纯分立_6p7j98-20261126-030437",
+    "designName": "AI_纯分立_6p7j98",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 03:08:23"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-030826",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:11:46"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-031149",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:17:58"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261126-031806",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:21:43"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261126-032147",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:24:16"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261126-032420",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 03:36:45"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261126-033648",
+    "designName": "USBC_Power_ESD",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:39:16"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261126-033920",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": false,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 03:48:50"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261126-034853",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:51:13"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261126-035117",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 03:53:33"
+  },
+  {
+    "dir": "SHT30_Header8-20261126-035337",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 03:55:34"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261126-040044",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 04:10:27"
+  },
+  {
+    "dir": "AI_纯分立_19pl4cd-20261126-041030",
+    "designName": "AI_纯分立_19pl4cd",
+    "selfOk": true,
+    "designSrc": "none",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 04:12:42"
+  },
+  {
+    "dir": "RP2040_Minimal-20261126-035737",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 04:15:55"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261126-035538",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:15:59"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261126-041246",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:16:32"
+  },
+  {
+    "dir": "AI_纯分立_20p4chz-20261126-041636",
+    "designName": "AI_纯分立_20p4chz",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:19:15"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-041919",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:22:32"
+  },
+  {
+    "dir": "AI_传感器模块_7pfcbz-20261126-042237",
+    "designName": "AI_传感器模块_7pfcbz",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:26:25"
+  },
+  {
+    "dir": "AI_锂电池充电板_8pynvf-20261126-042629",
+    "designName": "AI_锂电池充电板_8pynvf",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:28:39"
+  },
+  {
+    "dir": "AI_传感器___LDO_10pus72-20261126-042843",
+    "designName": "AI_传感器___LDO_10pus72",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:31:03"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_20pvd4t-20261126-043107",
+    "designName": "AI_传感器___充电___显示_20pvd4t",
+    "selfOk": false,
+    "designSrc": "snapshot",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 04:43:30"
+  },
+  {
+    "dir": "AI_传感器模块_7pfcbz-20261126-044333",
+    "designName": "AI_传感器模块_7pfcbz",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:47:24"
+  },
+  {
+    "dir": "AI_纯分立_6p7j98-20261126-044729",
+    "designName": "AI_纯分立_6p7j98",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:51:22"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-045127",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 04:56:25"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261126-045629",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 05:01:47"
+  },
+  {
+    "dir": "SHT30_I2C_TempHumidity-20261126-050157",
+    "designName": "SHT30_I2C_TempHumidity",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 05:09:11"
+  },
+  {
+    "dir": "ESP32C3_Minimal-20261126-050915",
+    "designName": "ESP32C3_Minimal",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 05:13:38"
+  },
+  {
+    "dir": "Crystal_RTC_Clock-20261126-051342",
+    "designName": "Crystal_RTC_Clock",
+    "selfOk": false,
+    "designSrc": "snapshot",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 05:33:25"
+  },
+  {
+    "dir": "USBC_Power_ESD-20261126-053328",
+    "designName": "USBC_Power_ESD",
+    "selfOk": false,
+    "designSrc": "snapshot",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 05:50:38"
+  },
+  {
+    "dir": "AI_传感器___充电___显示_19ptbuz-20261126-055041",
+    "designName": "AI_传感器___充电___显示_19ptbuz",
+    "selfOk": false,
+    "designSrc": "snapshot",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 06:08:56"
+  },
+  {
+    "dir": "SHT30_Module_Full-20261126-060859",
+    "designName": "SHT30_Module_Full",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:12:46"
+  },
+  {
+    "dir": "SHT30_LDO_Module-20261126-061250",
+    "designName": "SHT30_LDO_Module",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:17:01"
+  },
+  {
+    "dir": "LED_RGB_Indicator-20261126-063048",
+    "designName": "LED_RGB_Indicator",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:32:45"
+  },
+  {
+    "dir": "RP2040_Minimal-20261126-063249",
+    "designName": "RP2040_Minimal",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:36:04"
+  },
+  {
+    "dir": "RP2040_QSPI_Flash-20261126-063608",
+    "designName": "RP2040_QSPI_Flash",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:41:56"
+  },
+  {
+    "dir": "AI_纯分立_3pnlif-20261126-064200",
+    "designName": "AI_纯分立_3pnlif",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:45:34"
+  },
+  {
+    "dir": "AI_RP2040_系统_15pqy38-20261125-235738",
+    "designName": "AI_RP2040_系统_15pqy38",
+    "selfOk": true,
+    "designSrc": "designs-by-name",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:51:25"
+  },
+  {
+    "dir": "SHT30_Header8-20261126-061705",
+    "designName": "SHT30_Header8",
+    "selfOk": true,
+    "designSrc": "snapshot",
+    "exit": 0,
+    "verdict": "验收通过",
+    "mtime": "2026-11-26 06:51:46"
+  },
+  {
+    "dir": "AI_纯分立_17py4dl-20261126-064538",
+    "designName": "AI_纯分立_17py4dl",
+    "selfOk": false,
+    "designSrc": "snapshot",
+    "exit": 1,
+    "verdict": "验收未通过",
+    "mtime": "2026-11-26 06:52:45"
+  }
+]

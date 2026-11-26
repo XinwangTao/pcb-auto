@@ -1,0 +1,143 @@
+{
+  "name": "AI_传感器模块_7pfcbz",
+  "friendly": "AI_传感器模块_7pfcbz",
+  "_idea": "做一个 SHT30 温湿度传感器模块，带电源指示 LED，用排针引出",
+  "_compiledBy": "idea2design.js",
+  "_complexity": "传感器模块",
+  "boardWidthMil": 800,
+  "boardHeightMil": 600,
+  "components": [
+    {
+      "des": "U1",
+      "lcsc": "C86346",
+      "value": "SHT30"
+    },
+    {
+      "des": "R1",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "R2",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "C1",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "R3",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "LED1",
+      "lcsc": "C2297",
+      "value": "LED-Green"
+    },
+    {
+      "des": "H1",
+      "lcsc": "C9900192758",
+      "value": "8P"
+    }
+  ],
+  "connections": [
+    [
+      "U1",
+      "5",
+      "VDD"
+    ],
+    [
+      "U1",
+      "8",
+      "GND"
+    ],
+    [
+      "U1",
+      "9",
+      "GND"
+    ],
+    [
+      "U1",
+      "2",
+      "SDA"
+    ],
+    [
+      "U1",
+      "3",
+      "SCL"
+    ],
+    [
+      "R1",
+      "1",
+      "SDA"
+    ],
+    [
+      "R1",
+      "2",
+      "VDD"
+    ],
+    [
+      "R2",
+      "1",
+      "SCL"
+    ],
+    [
+      "R2",
+      "2",
+      "VDD"
+    ],
+    [
+      "C1",
+      "1",
+      "VDD"
+    ],
+    [
+      "C1",
+      "2",
+      "GND"
+    ],
+    [
+      "R3",
+      "1",
+      "VDD"
+    ],
+    [
+      "R3",
+      "2",
+      "LED_A"
+    ],
+    [
+      "LED1",
+      "1",
+      "LED_A"
+    ],
+    [
+      "LED1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "1",
+      "VDD"
+    ],
+    [
+      "H1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "3",
+      "SDA"
+    ],
+    [
+      "H1",
+      "4",
+      "SCL"
+    ]
+  ]
+}

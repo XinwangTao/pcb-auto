@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 单位类","remarks":"控制系统数据单位与单位转换基础函数，当前原理图数据单位跨度等效为 `10mil` 或 `0.01inch`，PCB 数据单位跨度等效为 `mil`","visibility":"public","methods":[{"name":"getFrontendDataUnit","comment":"获取 EDA 前端数据单位跨度","visibility":"beta"},{"name":"milToMm","comment":"单位转换：密尔到毫米","visibility":"public"},{"name":"milToInch","comment":"单位转换：密尔到英寸","visibility":"public"},{"name":"mmToMil","comment":"单位转换：毫米到密尔","visibility":"public"},{"name":"mmToInch","comment":"单位转换：毫米到英寸","visibility":"public"},{"name":"inchToMil","comment":"单位转换：英寸到密尔","visibility":"public"},{"name":"inchToMm","comment":"单位转换：英寸到毫米","visibility":"public"}],"callPath":"sys_Unit"},"logs":[],"durationMs":153}
+

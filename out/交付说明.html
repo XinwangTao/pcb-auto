@@ -1,0 +1,230 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<title>从一句中文到一块 PCB · 交付说明</title>
+<style>
+ :root{--fg:#1a1a1a;--dim:#6b6b6b;--line:#e3e3e3;--ok:#0a7c3f;--bad:#b42318;--bg:#fbfbfa;--acc:#8a5a00}
+ *{box-sizing:border-box}
+ body{margin:0;background:var(--bg);color:var(--fg);
+      font:15px/1.7 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+ main{max-width:980px;margin:0 auto;padding:40px 28px 80px}
+ h1{font-size:27px;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em}
+ h2{font-size:18px;margin:44px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+ h3{font-size:15px;margin:22px 0 6px;color:var(--dim);font-weight:600}
+ .sub{color:var(--dim);font-size:13.5px;margin:0 0 26px}
+ table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+ th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+ th{color:var(--dim);font-weight:600;font-size:12.5px;background:#f4f4f2}
+ td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+ code{font:12.5px/1.5 ui-monospace,Consolas,monospace;background:#f0f0ee;
+      padding:1px 5px;border-radius:3px;word-break:break-all}
+ pre{background:#f0f0ee;padding:12px 14px;border-radius:5px;overflow-x:auto;
+     font:12.5px/1.6 ui-monospace,Consolas,monospace;margin:10px 0}
+ .ok{color:var(--ok);font-weight:600}
+ .bad{color:var(--bad);font-weight:600}
+ .card{background:#fff;border:1px solid var(--line);border-radius:7px;padding:16px 18px;margin:14px 0}
+ .big{font-size:31px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+ .row{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0}
+ .row>div{flex:1 1 168px;background:#fff;border:1px solid var(--line);
+          border-radius:7px;padding:13px 15px}
+ .lbl{font-size:12px;color:var(--dim);margin-bottom:2px}
+ blockquote{margin:12px 0;padding:10px 16px;border-left:3px solid var(--acc);
+            background:#fff;color:#333;font-size:14.5px}
+ .chain{display:flex;gap:0;flex-wrap:wrap;margin:16px 0;font-size:13px}
+ .chain div{flex:1 1 0;min-width:132px;padding:11px 13px;background:#fff;
+            border:1px solid var(--line);border-right:none;position:relative}
+ .chain div:first-child{border-radius:7px 0 0 7px}
+ .chain div:last-child{border-right:1px solid var(--line);border-radius:0 7px 7px 0}
+ .chain b{display:block;font-size:11.5px;color:var(--dim);font-weight:600;margin-bottom:3px}
+ video{width:100%;max-width:340px;border-radius:8px;border:1px solid var(--line);background:#000}
+ a{color:#0b5cad}
+ .warn{background:#fff8e6;border:1px solid #f0dca8;border-radius:7px;padding:12px 16px;margin:14px 0;font-size:14px}
+</style></head><body><main>
+<h1>从一句中文到一块 PCB</h1>
+<p class="sub">板厂可用交付物（Gerber / 钻孔 / BOM / 贴片坐标 / 网表 / 原理图 PDF）由自然语言想法自动生成。<b>跑板过程中没有任何人类操作</b>：所有脚本里没有 <code>Read-Host</code> / <code>pause</code> / stdin 路径，机器在结构上无法停下来等人。但有一件事必须同时说清：<b>流水线代码与设计文件在夜间被 AI 自己改动过多次</b>（至少 5 次 <code>pipeline3.js</code> 替换，循环每次尝试都重读该文件），所以「零人工」不等于「系统一成不变」。两者不是一回事，细节与逐条证据见 <code>out/_build-ledger.md</code>。本页<b>统计量</b>（行数、目录数、比例、想法数）都由 <code>out/_probe/make-dossier.py</code> 从原始文件重算，目录数是活的。文中少数<b>具体坐标/距离</b>是人工核对后写下的常量（如某目录的 Y 区间），各自注明了出处；若有偏差以目录里的原始文件为准。</p>
+<div class="row">
+<div><div class="lbl">设计-轮次结果行</div><div class="big">83</div><div class="lbl">PASS 70 / FAIL 13</div></div>
+<div><div class="lbl">做过板的设计</div><div class="big">42</div><div class="lbl">其中做出过合格板 38 个</div></div>
+<div><div class="lbl">产物目录</div><div class="big">56</div><div class="lbl">含正在构建的；设计文件 33 个</div></div>
+<div><div class="lbl">交叉核查</div><div class="big">34/34</div><div class="lbl">有设计快照的目录</div></div>
+</div>
+<h2>证据链：一条想法是怎么走到 Gerber 的</h2>
+<blockquote>做一个锂电池供电的 SHT30 温湿度记录板，TP4056 充电，3.3V 稳压，I2C 经排针引出，带电源指示 LED</blockquote>
+<div class="chain">
+<div><b>① 中文想法</b>60 字</div>
+<div><b>② 编译成设计</b><code>5B65ABAFA116</code></div>
+<div><b>③ 静态电气审计</b><span class="ok">0 问题</span></div>
+<div><b>④ 流水线建板</b><span class="ok">ok=true</span></div>
+<div><b>⑤ 四层验证</b>见下</div>
+</div>
+<p class="sub">设计文件 <code>designs/a2-gen-做一个锂电池供电的SHT30温湿度记录板.json</code>，3912 B。同一句话连编 3 次字节完全相同（<code>5B65ABAFA116</code>），所以「想法 → 设计」这一步是可复现的，不是随机抽取。</p>
+<p class="sub">产物目录 <code>out/AI_传感器___LDO_16p2sh2-20261126-084018</code>（1 次尝试）</p>
+<h2>真实操作录像</h2>
+<video controls preload="metadata" src="../video/out/v9-074907.mp4"></video>
+<p class="sub">屏幕录像是 AI 实际驱动 EDA 软件的过程，非演示动画。文件 <code>video/out/v9-074907.mp4</code>，17.0 MB，1080x1920 / 30 fps / H.264+AAC，sha256<sub>12</sub> <code>04659B77405C</code>；<code>verify-film.ps1</code> 全部断言 PASS，且给错帧数会 FAIL（可证伪）。注意它打印 <b>23</b> 行，其中 <code>format.size(MB)</code> 一行是<b>自己跟自己比</b>（两边同一个表达式），实际有效断言 22 项。</p>
+<h2>验收：四个互相独立的层</h2>
+<table>
+<tr><th style="width:21%">层</th><th>问的问题</th><th style="width:26%">工具</th></tr>
+<tr><td>① 静态电气</td><td>器件有没有孤立脚、电源和地有没有接上、网络名是否自洽</td>
+    <td><code>scripts/audit-design.js</code></td></tr>
+<tr><td>② 自建流水线门</td><td>网表一致、板框存在、DRC 通过、导出齐全</td>
+    <td><code>pipeline3.js</code> gates</td></tr>
+<tr><td>③ 独立验收</td><td>不采信自述，重算产物并逐项 PASS/FAIL。
+    <b>已知缺陷</b>：它只检查「已出现的」判据，缺失的判据等于通过，
+    所以<b>本页结论不依赖它</b></td>
+    <td><code>accept.ps1</code></td></tr>
+<tr><td>④ 跨产物互证</td><td>设计 = 网表 = 贴片坐标 = BOM；钻孔全在板框内；层全且非空；尺寸与报告一致</td>
+    <td><code>out/_probe/artifact-consistency.py</code></td></tr>
+</table>
+<h3>第④层当前结论</h3>
+<pre># 核查器 sha256_12=A259A53CD74F  13837 B  目标 34 个目录
+共 34 个目录，全判据通过 34 个</pre>
+<h2>一句话想法 &#8594; 一块能下单的板</h2>
+<p class="sub">分母是<b>去重后的中文想法</b>，取「设计文件里的」并上「产物目录里的」两处，否则还没轮到跑的想法会被漏掉。一个想法只要有一个产物目录的离线 DFM 退出码为 0 就算做成。<b>不要用 <code>(designName, idea)</code> 这种复合键去重</b>——同一个想法换个设计名会被算成两条，实测会把 30 条虚增成 34 条。</p>
+<div class="row">
+<div><div class="lbl">不同想法</div><div class="big">30</div></div>
+<div><div class="lbl">做出了能下单的板</div><div class="big">28</div><div class="lbl">93.3%</div></div>
+<div><div class="lbl">做出来但不合格</div><div class="big">2</div><div class="lbl">图元越出自己板框</div></div>
+<div><div class="lbl">正在构建</div><div class="big">0</div><div class="lbl">还没跑完，无判定</div></div>
+<div><div class="lbl">还没轮到跑</div><div class="big">0</div><div class="lbl">本轮排在后面</div></div>
+</div>
+<table><tr><th>想法</th><th>产物目录</th><th>可下单</th><th>状态</th></tr>
+<tr><td>做一个 8 路 LED 流水灯，每个 LED 带限流电阻，用排针引出供电</td><td>1</td><td>0</td><td><span class="bad">不合格</span></td></tr>
+<tr><td>做一个 OLED 显示模块底板，I2C 用排针引出，5V 供电</td><td>2</td><td>0</td><td><span class="bad">不合格</span></td></tr>
+<tr><td>ESP32-C3 最小系统：3.3V LDO 供电、EN 复位 RC、BOOT 上拉、状态 LED、UART 调试排针</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+<tr><td>RP2040 最小系统板：3.3V LDO 供电、去耦电容阵列、BOOT 按键、USB 引出、SWD 调试口、状态 LED</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>USB Type-C 输入：双 VBUS 载流、CC1/CC2 5.1k 下拉做设备标识、USBLC6 ESD 阵列保护 D…</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+<tr><td>三色 LED 指示板：一颗绿色 LED + 三路限流电阻，标准 2.54mm 排针引出色控信号</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 4 路 LED 指示灯板，带排针引出</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 5V 转 3.3V 稳压小板，带 LED 电源指示和排针进出</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 5V 转 3.3V 稳压小板，带 TVS 防浪涌和电源指示</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 8 路 LED 流水灯，每个 LED 带限流电阻</td><td>3</td><td>3</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 RP2040 开发板，带 QSPI Flash、稳压和排针引出</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 RP2040 最小系统板，带 QSPI Flash 和 USB，板载 3.3V LDO 和状态灯</td><td>4</td><td>4</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 SHT30 温湿度传感器模块，I2C 四线接口（VCC/GND/SDA/SCL）</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 SHT30 温湿度传感器模块，带电源指示 LED，用排针引出</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 SHT30 温湿度传感器，带 LED 指示和排针引出</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 SHT30 温湿度模块，I2C 引出，加 TVS 保护</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 SHT30 温湿度采集板，AMS1117 3.3V 稳压供电，I2C 用 5.1k 上拉经排针引出，带电源指示 LE…</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 TP4056 充电的 OLED 便携温湿度记录仪，5.1k 上拉，带电池座和指示 LED</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个 TP4056 锂电池充电板，带电池座和状态灯</td><td>3</td><td>3</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个太阳能充电的 LED 指示灯板，带 TP4056 充电管理和锂电池座</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个太阳能充电的户外温湿度记录仪，带锂电池充电管理和 OLED 显示</td><td>5</td><td>5</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个完整的 SHT30 温湿度传感器模块：SHT30 + 100nF 去耦 + 2×5.1k I2C 上拉 + 4 脚排针…</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个带 LDO 稳压和电源指示灯的 SHT30 温湿度模块：5V 输入 → AMS1117-3.3 → 3.3V 给 SH…</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个带 LDO 稳压和电源指示灯的 SHT30 温湿度模块：5V 输入 → AMS1117-3.3 → 3.3V 给 SH…</td><td>3</td><td>3</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个纯电阻分压电路，5V 转 3.3V</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一个锂电池供电的 SHT30 温湿度记录板，TP4056 充电，3.3V 稳压，I2C 经排针引出，带电源指示 LED</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>做一块 RP2040 主控板，USB 供电，带 LDO 稳压和状态指示灯，排针引出调试口</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+<tr><td>双时钟电路：12MHz 主晶振给 RP2040 XIN/XOUT，32.768kHz RTC 晶振，负载电容匹配，时钟引出排…</td><td>4</td><td>4</td><td><span class="ok">做成</span></td></tr>
+<tr><td>带 2.54mm 标准排针接口的 SHT30 温湿度模块，8 脚排针只用 4 脚（VCC/GND/SDA/SCL），可直接插…</td><td>1</td><td>1</td><td><span class="ok">做成</span></td></tr>
+<tr><td>简单的 LED 指示灯板，限流电阻加排针</td><td>2</td><td>2</td><td><span class="ok">做成</span></td></tr>
+</table>
+<p class="sub"><b>读这张表要分清四种「没成」</b>：「不合格」是板子做出来了、制造文件也在，但铜/钻孔/贴片坐标落到了自己的板框之外（2 条，同一类缺陷）；「在飞」是有产物目录但还没拿到任何离线判定（0 条，正在构建）；「待跑」是想法已经编译成设计、还没轮到上机（0 条）。只有第一种是缺陷，后两种只是在途。</p>
+<h2>能不能直接拿去下单：离线 DFM 普查</h2>
+<p class="sub">用 <code>scripts/fabcheck.js</code> 对<b>全部 56 个产物目录</b>逐个复算（纯离线：自己解 ZIP、读 Gerber、读 Excellon，不联网也不开 EDA）。它此前没有接进流水线闸门，所以这一层是<b>事后独立普查</b>，不是流水线的自述。</p>
+<div class="row">
+<div><div class="lbl">自述 ok=true</div><div class="big">48</div></div>
+<div><div class="lbl">其中可打样</div><div class="big">48</div></div>
+<div><div class="lbl">比例</div><div class="big">100.0%</div></div>
+<div><div class="lbl">有阻断</div><div class="big">0</div></div>
+</div>
+<table><tr><th>批次</th><th class="num">自述 ok=true</th><th class="num">可打样</th><th class="num">比例</th></tr>
+<tr><td>(无)</td><td class="num">2</td><td class="num ok">2</td><td class="num ok">100.0%</td></tr>
+<tr><td>20261125</td><td class="num">7</td><td class="num ok">7</td><td class="num ok">100.0%</td></tr>
+<tr><td>20261126</td><td class="num">39</td><td class="num ok">39</td><td class="num ok">100.0%</td></tr>
+</table>
+<p class="sub">阻断类型：<code>gerber.coord.outside</code>×13、<code>pnp.outside</code>×3、<code>gerber.copper.thin</code>×2、<code>drill.outside</code>×2。</p>
+<p class="sub">反方向同样要说清：<b>8</b> 个自述 <code>ok=false</code> 的目录里，仍有 <b>5</b> 个制造文件通过离线 DFM（3 个有阻断，0 个读不出）。「流水线没过闸」与「板子做不出来」<b>不是同一件事</b>，两个数不能互相替代。</p>
+<p class="sub"><b><code>gerber.coord.outside</code> 一类要特别说明。</b>它指 Gerber 里有点落在<b>这块板自己的板框之外</b>——铜被边框裁掉，是真的画错，不是记录问题。这一项在早先的普查里只命中 1 个目录，是<b>假的少</b>：本工具解析 Gerber 时把格式声明 <code>%FSLAX45Y45*%</code> 里的 <code>X45Y45</code> 当成了坐标，于是板框 bbox 被原点钉住；凡板框不经过 Gerber 原点的板子，bbox 都被撑大，越框的点就落回框内、被静默吞掉。修好解析后由 1 个变成 5 个，其中 <b>5/5</b> 又被一份不复用本工具任何代码的独立 Python 实现复核确认。也就是说：<b>之前不是没问题，是看不见问题。</b>这几个目录同时出现 <code>drill.outside</code> / <code>pnp.outside</code>，是同一件事的三个视角（铜、钻孔、贴片）。再往下量一层，情况比「压了一点边」严重：例如 <code>AI_OLED_底板_5p5g6m</code> 的器件全在 Y −11.4…−6.1mm，而它自己的板框在 Y −67.1…−28.2mm —— <b>两个 Y 区间完全不重叠</b>，板框根本没框住器件。<code>USBC_Power_ESD</code> 更直接：铜横跨 117.06mm，板框只有 67.06mm 宽。反过来看，本脚本另写一份实现，把所有已普查目录的铜 bbox 与各自的 <code>.GKO</code> 比过：<b>56 个里 53 个（94.6%）的铜完全落在框内</b>，所以这个判据不是「对谁都报警」——它只在真出框时才响。</p>
+<p class="sub"><b>但这 3 个不是同一种病。</b>看每层有多少个图元出框：</p>
+<table><tr><th>产物目录</th><th>出框的层（图元数）</th><th class="num">阻断项</th></tr>
+<tr><td><code>AI_OLED_底板_5p5g6m-20261126-071309</code></td><td>GBL 12、GBS 12、GTL 23、GTP 22、GTS 18　＋drill.outside、gerber.copper.thin、pnp.outside</td><td class="num bad">8</td></tr>
+<tr><td><code>AI_OLED_底板_5p5g6m-20261126-092206</code></td><td>GBL 12、GBS 12、GTL 23、GTP 22、GTS 18　＋drill.outside、gerber.copper.thin、pnp.outside</td><td class="num bad">8</td></tr>
+<tr><td><code>AI_纯分立_17py4dl-20261126-064538</code></td><td>GTL 73、GTP 182、GTS 54　＋pnp.outside</td><td class="num bad">4</td></tr>
+</table>
+<p class="sub">凡是<b>某一层的全部图元都出框</b>，说明整块布局相对自己的板框整体位移了（成因在布局/板框同步，不在布线）；只有少数图元出框的，是<b>游离铜或单个器件</b>跑出去了。性质不同、修法也不同。这张表由普查 JSON 现算，目录名不写死在代码里。</p>
+<p class="sub">板框本身是可信的：参与普查的 56 个目录的 <code>.GKO</code> 共 <b>27 种</b>不同尺寸，最常见的三种是 25.40×19.05 mm ×12、40.64×30.48 mm ×5、22.86×17.78 mm ×4。重复的尺寸只出现在<b>同一设计重跑</b>之间，说明它是每块板各自算出来的，不是写死的默认值。而且 <b>56/56</b> 个 <code>.GKO</code> 只有<b>一条</b>闭合轮廓（起笔 D02 恰好一次），所以 bbox 就是板框本身。<b>这两个数是按当前磁盘上的目录现算的</b>，清理掉的目录不在其中。</p>
+<p class="sub">普查原始数据 <code>out/_probe/fab-census.json</code>，可用 <code>python out/_probe/fab-census.py</code> 重算（56 目录约 20 秒）。每行都带 <code>newest_mtime</code>/<code>age_s</code>：最新写入距今不足 180 秒的目录会<b>整目录跳过并单独计数</b>，因为对构建中的目录拍快照量到的是半写的 Gerber —— 上一版普查就因此把 4 个正在建的目录读成了「不能下单」。</p>
+<h2>每个设计做成过几块板</h2>
+<p class="sub">「尝试」是天数口径，「做成过」是能力口径：同一设计多跑几次会有不同结果，因为布线器本身不确定。</p>
+<table><tr><th>设计</th><th class="num">合格目录</th><th class="num">目录总数</th><th>源文件</th></tr>
+<tr><td><code>AI_OLED_底板_5p5g6m</code></td><td class="num bad">0</td><td class="num">2</td><td><code>e-h-oled-base</code></td></tr>
+<tr><td><code>AI_传感器___充电___显示_19ptbuz</code></td><td class="num bad">0</td><td class="num">1</td><td><code>d13-solar-oled-logger</code></td></tr>
+<tr><td><code>AI_纯分立_17py4dl</code></td><td class="num bad">0</td><td class="num">1</td><td><code>e-b-led8-rain</code></td></tr>
+<tr><td><code>USBC_Power_ESD</code></td><td class="num bad">0</td><td class="num">2</td><td><code>d12-usbc-typec</code></td></tr>
+<tr><td><code>Crystal_RTC_Clock</code></td><td class="num ">2</td><td class="num">4</td><td><code>d11-crystal-rtc</code></td></tr>
+<tr><td><code>AI_RP2040_系统</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_RP2040_系统_13pefer</code></td><td class="num ok">1</td><td class="num">1</td><td><code>e-e-rp2040-dev</code></td></tr>
+<tr><td><code>AI_RP2040_系统_15pqy38</code></td><td class="num ok">5</td><td class="num">5</td><td><code>gen-rp2040-v2</code></td></tr>
+<tr><td><code>AI_传感器___LDO_10pus72</code></td><td class="num ok">1</td><td class="num">1</td><td><code>gen-做一个带-LDO-稳压和电源指示灯的-SHT30-温湿度模块</code></td></tr>
+<tr><td><code>AI_传感器___LDO_11p4flb</code></td><td class="num ok">1</td><td class="num">1</td><td><code>a1-gen-做一个-SHT30-温湿度采集板-3V3稳压-排针引出-TVS</code></td></tr>
+<tr><td><code>AI_传感器___LDO_16p2sh2</code></td><td class="num ok">1</td><td class="num">1</td><td><code>a2-gen-做一个锂电池供电的SHT30温湿度记录板</code></td></tr>
+<tr><td><code>AI_传感器___LDO_9pq32s</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_传感器___充电___显示_16pck03</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_传感器___充电___显示_18p4sgg</code></td><td class="num ok">1</td><td class="num">1</td><td><code>a0-gen-做一个-TP4056-充电的-OLED-便携温湿度记录仪</code></td></tr>
+<tr><td><code>AI_传感器___充电___显示_19pia69</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_传感器___充电___显示_20pvd4t</code></td><td class="num ok">1</td><td class="num">1</td><td><code>gen-做一个太阳能充电的户外温湿度记录仪-带锂电池充电管理和-OL</code></td></tr>
+<tr><td><code>AI_传感器模块</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_传感器模块_6peia7</code></td><td class="num ok">1</td><td class="num">1</td><td><code>e-k-sht30-tvs</code></td></tr>
+<tr><td><code>AI_传感器模块_6psjho</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_传感器模块_7pfcbz</code></td><td class="num ok">3</td><td class="num">3</td><td><code>gen-demo</code></td></tr>
+<tr><td><code>AI_稳压板_6pe2os</code></td><td class="num ok">1</td><td class="num">1</td><td><code>e-j-ldo-tvs</code></td></tr>
+<tr><td><code>AI_稳压板_7pf5gw</code></td><td class="num ok">1</td><td class="num">1</td><td><code>e-g-ldo-board</code></td></tr>
+<tr><td><code>AI_纯分立</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_纯分立_19pl4cd</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_纯分立_20p4chz</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_纯分立_3pnlif</code></td><td class="num ok">1</td><td class="num">1</td><td><code>d9-resistor-divider</code></td></tr>
+<tr><td><code>AI_纯分立_4pm9kw</code></td><td class="num ok">1</td><td class="num">1</td><td><code>e-i-resistor-divider</code></td></tr>
+<tr><td><code>AI_纯分立_6p7j98</code></td><td class="num ok">2</td><td class="num">2</td><td><code>gen-led</code></td></tr>
+<tr><td><code>AI_纯分立_9p271i</code></td><td class="num ok">1</td><td class="num">1</td><td><code>e-f-led4</code></td></tr>
+<tr><td><code>AI_锂电池充电板_10prplo</code></td><td class="num ok">1</td><td class="num">1</td><td><code>e-c-solar-led</code></td></tr>
+<tr><td><code>AI_锂电池充电板_7pbt8q</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_锂电池充电板_7pepkp</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>AI_锂电池充电板_8pynvf</code></td><td class="num ok">1</td><td class="num">1</td><td><code>gen-做一个-TP4056-锂电池充电板-带电池座和状态灯</code></td></tr>
+<tr><td><code>ESP32C3_Minimal</code></td><td class="num ok">2</td><td class="num">2</td><td><code>d10-esp32c3</code></td></tr>
+<tr><td><code>LED_RGB_Indicator</code></td><td class="num ok">1</td><td class="num">1</td><td><code>d5-led-indicator</code></td></tr>
+<tr><td><code>NegTest_TinyBoard</code></td><td class="num ok">1</td><td class="num">1</td><td><code>—</code></td></tr>
+<tr><td><code>RP2040_Minimal</code></td><td class="num ok">1</td><td class="num">1</td><td><code>d6-rp2040-minimal</code></td></tr>
+<tr><td><code>RP2040_QSPI_Flash</code></td><td class="num ok">1</td><td class="num">1</td><td><code>d7-rp2040-flash</code></td></tr>
+<tr><td><code>SHT30_Header8</code></td><td class="num ok">1</td><td class="num">1</td><td><code>d4-sht30-header</code></td></tr>
+<tr><td><code>SHT30_I2C_TempHumidity</code></td><td class="num ok">2</td><td class="num">2</td><td><code>d1-sht30</code></td></tr>
+<tr><td><code>SHT30_LDO_Module</code></td><td class="num ok">1</td><td class="num">1</td><td><code>d3-sht30-ldo</code></td></tr>
+<tr><td><code>SHT30_Module_Full</code></td><td class="num ok">1</td><td class="num">1</td><td><code>d2-sht30-module</code></td></tr>
+</table>
+<h2>最终用哪种策略做成的</h2>
+<p class="sub">流水线由弱到强依次尝试，弱策略成功就越早结束。强策略失败率高是正常的：只有弱策略都没成的板才会走到它们。</p>
+<table><tr><th>策略</th><th class="num">PASS</th><th class="num">FAIL</th><th class="num">平均耗时</th></tr>
+<tr><td><code>smart-fit</code></td><td class="num ok">42</td><td class="num ">0</td><td class="num">176 s</td></tr>
+<tr><td><code>expand-1.25x</code></td><td class="num ok">25</td><td class="num bad">2</td><td class="num">276 s</td></tr>
+<tr><td><code>expand-1.25x-retry2</code></td><td class="num ok">0</td><td class="num bad">8</td><td class="num">1040 s</td></tr>
+<tr><td><code>expand-1.25x-retry</code></td><td class="num ok">3</td><td class="num bad">2</td><td class="num">645 s</td></tr>
+<tr><td><code>?</code></td><td class="num ok">0</td><td class="num bad">1</td><td class="num">585 s</td></tr>
+</table>
+<p class="sub"><b>「放不下」之后发生了什么。</b>流水线在 <code>outlineFit</code> 这一步量器件包围盒是否落在板框内；某次尝试判 <code>fits=false</code> 时，<b>这次尝试不导出</b>，改板重试。但<b>重试用尽仍放不下时，产物照样导出了</b>（下面那 2 个就是），真正的最后一道防线是<b>离线 DFM</b>，不是流水线自己。所以 <code>fits=false</code> <b>是扳机，不是闸门</b>——判别要看<b>末次</b>结果，不能看「有没有出现过」。有该记录的目录里，<b>15 次</b>出现过「放不下」：其中 <b>12 次</b>重试后 <code>fits</code> 变真（12 个经离线 DFM 复核可下单），3 次重试到底仍然放不下（3 个被离线 DFM 拦下，无一漏过）。</p>
+<p class="sub">这份交叉核查值得单看一眼：<b>放不下到底的 3 个，全部被离线 DFM 判为不可下单</b>。也就是说「几何放不下」与「制造文件不自洽」这两件独立的事，在样本上完全重合——前者是预警，后者是判据，而两者没有共用一行代码。</p>
+<h2>怎么自己复现</h2>
+<pre># 一句话 → 设计 JSON（同一句话输出字节相同）
+node scripts\idea2design.js "做一个锂电池供电的 SHT30 温湿度记录板，TP4056 充电，3.3V 稳压，I2C 经排针引出，带电源指示 LED" -o designs\x.json
+
+# 设计 JSON → 整条流水线 → 产物目录（含 Gerber / BOM / 贴片坐标 / DRC）
+pwsh -File run-all.ps1 -Design designs\x.json
+
+# 两步合一（不需要先落一个设计文件）
+pwsh -File run-all.ps1 -Idea "做一个 SHT30 温湿度采集板，I2C 经排针引出"
+
+# 独立复核某个产物目录
+pwsh -File accept.ps1 -Design designs\x.json -VerifyOnly
+</pre>
+<div class="warn"><b>口径声明。</b>本页的通过率一律按「设计-轮次结果行」计算（83 行），不重复计入同一设计的多次尝试。<b>「设计」在本页专指 <code>_run.json</code> 里的 <code>designName</code> 去重数</b>（42 个），「做成过」指其中 38 个出现过 <code>ok=true</code> 的目录。这个 42 <b>不等于</b> <code>designs\</code> 下的设计文件数（现为 33 个），也不等于循环日志里的设计名数——早期预跑留下的目录没有对应设计文件，而重名设计又会让一个名字对应多个文件。三个分母回答三个不同的问题，不能互相替代。</div>
+<div class="warn" style="border-color:#c9a227;background:#fffdf3"><b>产物目录会被自动删掉，本页统计的是清理后的存量。</b>无人值守循环每 3 轮结束调用一次 <code>scripts\cleanup.ps1 -Apply</code>，规则是「<b>保留最近 40 个目录 + 每个设计名保留最新 1 份</b>」，外加 EDA 工程只留最近 10 个。日志里本夜共执行 145 次，累计删掉 <b>247</b> 个产物目录和 <b>255</b> 个 EDA 工程。所以你现在数到的目录数会随清理下降；「一个想法做成了几块板」也只看得到<b>每个设计最新的那一次尝试</b>。想看到完整历史，得在跑之前把 <code>-KeepOut</code> 调大或干脆不调清理。</div>
+<h2>已知限制与证据缺口</h2>
+<p class="sub">这一节不是免责声明。每一条都指向具体的文件或算出来的数，目的是让人知道<b>本页哪些话是可以核的、哪些是核不了的</b>。</p>
+<ol>
+<li><b>「通过了独立验收」这句话，有 25 个运行目录没有记录可依。</b>56 个有 <code>_run.json</code> 的目录里，只有 <b>31</b> 个存了 <code>_accept.json</code>。<b>没有记录不等于没通过，也不等于通过 —— 等于没测。</b></li>
+<li><b>两份记录用了同一个键名 <code>drcIndependent</code>，含义不同，读错会以为证据在打架。</b><code>_accept.json</code> 顶层的那个问的是「<b>本次验收这一趟</b>自己跑没跑 DRC」（<code>-VerifyOnly</code> 不跑流水线，所以按设计恒为 false）；<code>_gates.independent.json</code> 里 <code>gates.drcIndependent</code> 问的是「<b>流水线</b>的 DRC 闸是否独立」。实测 <b>31 份 <code>_accept.json</code> 里该字段为 true 的 0 份</b> —— 这不是 0% 通过率，是<b>同名不同义</b>。</li>
+<li><b><code>fabcheck</code> 报的 112 条是「警告」，不是「阻断」，不会让板子失败。</b>其中一类是 <code>gerber.outline.size</code>：<code>_run.json</code> 自述的板框尺寸与 Gerber 实测不符。这类问题<b>能下单但多半会做错</b>，而流水线不拿它当失败。</li>
+<li><b>尝试级的历史已经被自己的清理删掉了。</b>本页所有「做成过几块板」的统计，只能看到<b>每个设计保留下来的那些尝试</b>；同目录现存 <code>_run-N-*.json</code> 共 <b>89</b> 个。早期统计的「整夜 139 次尝试」<b>现在无法复算</b> —— 那些文件已经不在了。引用它时必须注明它来自已删除的证据。</li>
+<li><b>历史设计不一定能复现。</b>想法编译器 <code>idea2design.js</code> 当晚被改过多次；<code>designs/gen-led.json</code> 里有 6 个器件，而当前版本的编译器对同一句话只产出 3 个。<b>产出它的那个编译器版本已经不在了</b>，所以这块板的设计文件不能再生成一次。</li>
+<li><b>「零人工」只覆盖「跑板的时候」，不覆盖「代码变没变」。</b>跑板全程没有 <code>Read-Host</code> / <code>pause</code> / stdin 交互，这一条可查；但流水线与设计文件当晚被改过多次并立即生效（<code>pipeline3.js</code> 每次尝试都重读）。<b>零人工 ≠ 系统一成不变。</b></li>
+</ol>
+<p class="sub" style="margin-top:40px">生成于 2026-11-26 10:10。台账：<code>out/_build-ledger.md</code>。想法源码：<code>out/_probe/idea-sources.json</code>。</p>
+</main></body></html>

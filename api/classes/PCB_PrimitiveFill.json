@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"PCB & 封装 / 填充图元类","visibility":"public","methods":[{"name":"create","comment":"创建填充","visibility":"beta"},{"name":"delete","comment":"删除填充","visibility":"beta"},{"name":"modify","comment":"修改填充","visibility":"beta"},{"name":"get","comment":"获取填充","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有填充的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有填充","visibility":"beta"}],"callPath":"pcb_PrimitiveFill"},"logs":[],"durationMs":137}
+

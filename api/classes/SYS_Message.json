@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 消息通知类","remarks":"生成各种对用户的非侵入式提醒","visibility":"public","methods":[{"name":"showToastMessage","comment":"显示吐司消息","visibility":"public"},{"name":"updateToastMessage","comment":"按 id 更新吐司消息内容","visibility":"beta"},{"name":"closeToastMessage","comment":"按 id 关闭吐司消息","visibility":"beta"},{"name":"showFollowMouseTip","comment":"展示跟随鼠标的提示","visibility":"beta"},{"name":"removeFollowMouseTip","comment":"移除跟随鼠标的提示","visibility":"beta"}],"callPath":"sys_Message"},"logs":[],"durationMs":139}
+

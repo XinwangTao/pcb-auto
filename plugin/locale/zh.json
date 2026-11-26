@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "title": "PCB 全自动",
+    "description": "把一句中文想法编译成能下单的 PCB：原理图、布局、布线、DRC、Gerber/BOM/PnP 导出，全程无人值守。自带四层独立验收，以及一个可以自己重算的失败率 —— 所以它是一个测量结果，不是一个演示。",
+    "detail": "docs/DETAIL.md"
+  },
+  "tools": {
+    "pcb_idea_to_design": "把中文想法编译成设计 JSON",
+    "pcb_build": "跑完整条流水线：设计 JSON → 制造文件",
+    "pcb_fabcheck": "判断一个产物目录能不能直接下单",
+    "pcb_census": "对全部已沉淀的产物目录跑离线 DFM 闸门",
+    "pcb_verify": "重跑全部交付一致性判据"
+  }
+}

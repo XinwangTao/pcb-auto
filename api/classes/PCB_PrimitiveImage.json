@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"PCB & 封装 / 图像图元类","visibility":"public","methods":[{"name":"create","comment":"创建图像","visibility":"public"},{"name":"delete","comment":"删除图像","visibility":"beta"},{"name":"modify","comment":"修改图像","visibility":"beta"},{"name":"get","comment":"获取图像","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有图像的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有图像","visibility":"beta"}],"callPath":"pcb_PrimitiveImage"},"logs":[],"durationMs":135}
+

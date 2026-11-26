@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"原理图 & 符号 / 矩形图元类","visibility":"public","methods":[{"name":"create","comment":"创建矩形","visibility":"public"},{"name":"delete","comment":"删除矩形","visibility":"public"},{"name":"modify","comment":"修改矩形","visibility":"beta"},{"name":"get","comment":"获取矩形","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有矩形的图元 ID","visibility":"public"},{"name":"getAll","comment":"获取所有矩形","visibility":"public"}],"callPath":"sch_PrimitiveRectangle"},"logs":[],"durationMs":134}
+

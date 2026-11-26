@@ -1,0 +1,143 @@
+{
+  "kind": "curated-v9",
+  "count": 11,
+  "generatedAt": "2026-11-25T23:47:04.552Z",
+  "framesDir": [
+    "D:\\Users\\陶鑫旺\\Documents\\deepseek-harness\\default-workspace\\pcb-auto\\out\\frames\\055041\\1-smart-fit",
+    "D:\\Users\\陶鑫旺\\Documents\\deepseek-harness\\default-workspace\\pcb-auto\\out\\frames\\055041\\4-expand-1.25x-retry2",
+    "D:\\Users\\陶鑫旺\\Documents\\deepseek-harness\\default-workspace\\pcb-auto\\out\\frames\\053328\\4-expand-1.25x-retry2",
+    "D:\\Users\\陶鑫旺\\Documents\\deepseek-harness\\default-workspace\\pcb-auto\\out\\frames\\045629\\1-smart-fit"
+  ],
+  "evidence": {
+    "why": "v9 的台词/画面来自 2026-11-25 21:15 → 2026-11-26 06:12 的无人值守运行（含没走通的批次）",
+    "attempts": {
+      "metric": "每次「尝试」一份 _run-<N>-<strategy>.json，按 ok 字段计数",
+      "pattern": "/^_run-\\d+-[A-Za-z][\\w.-]*\\.json$/",
+      "cutoff_mtime": "2026-11-26 06:12:00 +08:00",
+      "cutoff_mtime_utc": "2026-11-25T22:12:00.000Z",
+      "attempts_total": 139,
+      "attempts_ok": 79,
+      "attempts_fail": 60,
+      "batches": 89,
+      "excluded_badly_named": [
+        "AI_传感器___充电___显示_19ptbuz-20261125-225902/_run--smart-fit.json",
+        "AI_传感器___充电___显示_19ptbuz-20261125-225902/_run--expand-1.25x.json"
+      ],
+      "why_excluded": "这两个文件名缺 N，是早期命名；算进去会变成 141/79/62",
+      "not_the_same_metric": [
+        "_run.json 目录副本（含尝试子目录内的）→ 203，是文件份数不是运行数",
+        "日志 [HH:MM:SS] PASS/FAIL 结果行 → 56，是「每次设计运行」不是「每次尝试」"
+      ],
+      "cmd": "$c=[datetime]'2026-11-26 06:12:00'; Get-ChildItem 'pcb-auto\\out' -Directory | %{ Get-ChildItem $_.FullName -File -Filter '_run-*.json' } | ?{ $_.LastWriteTime -le $c -and $_.Name -match '^_run-\\d+-[A-Za-z]' } | %{ Get-Content $_.FullName -Raw | ConvertFrom-Json } | Group-Object ok -NoElement"
+    },
+    "superseded": [
+      {
+        "film": "v9-063118-superseded.mp4",
+        "supersededBy": "v9-064812.mp4",
+        "what": "第 11 段台词是「整夜 106 次，89 次走通」的那一版",
+        "why": "106/89 在任何口径下都复现不出来（当时把窗口统计手抄成两个凭印象的数，89 甚至大于当时的 ok 总数，ok 是单调递增的）。现改为由 countAttempts() 现场数出的 139/79。"
+      },
+      {
+        "film": "v9-064812-superseded.mp4",
+        "supersededBy": "v9-065428.mp4",
+        "what": "第 9 段配的是 055041 第 1 次尝试（2 条 / Connection Error / 3V3）的 DRC 帧",
+        "why": "台词「剩 1 条」对应的是第 4 次尝试（1 条 / Clearance Error / 无网络），违规类型与网络都不同，属于配错帧。现改为 4-expand-1.25x-retry2\\0012-pcb-drc.png。另：第 3 段 note 补上「首次 1800×1300、第 2–4 次 2250×1625」，evidence 增加 gndSheet（第 4 段「地线连成片」的证据与适用范围）。"
+      }
+    ],
+    "gndSheet": {
+      "claim": "第4段「地线连成片」",
+      "pourRebuilt": {
+        "poured": 2
+      },
+      "preserveSilos": false,
+      "drcLeavesByNet": [
+        "{3V3:2}",
+        "{?:2}",
+        "{?:2}",
+        "{?:1}"
+      ],
+      "note": "055041 四次尝试 byNet 均无 GND；DRC 连接检查是权威判据；preserveSilos=false 表示孤岛铜已丢弃",
+      "scope_limit": "仅对本板成立。全语料 63 份 drcLeaves 中 30 份（47.6%）的 byNet 含 GND，所以不能推广成「卤铜总能连通地」",
+      "provenance": "pourRebuilt 见 055041 log；byNet 见 out\\055041\\_log-N-*.json 的 entries[drcLeaves].v.byNet；preserveSilos 位置：scripts\\pipeline3.js L1075-1077 eda.pcb_PrimitivePour.create(net, layer, poly, 'solid', false, …) 第 5 个实参为 false（EDA 侧形参名不在本仓，此处按 API 语义标注）"
+    },
+    "segments": [
+      {
+        "i": 1,
+        "src": "055041/1-smart-fit/0000-sch-wired.png",
+        "label": "原理图连完",
+        "sub": "19 个器件 50 根线，全接上",
+        "backedBy": "055041 _run.json: components 19 / connect.total 50 / shot tag sch-wired"
+      },
+      {
+        "i": 2,
+        "src": "055041/1-smart-fit/0001-pcb-imported.png",
+        "label": "导入 PCB",
+        "sub": "一导入全是飞线，一条没走",
+        "backedBy": "同批 log: shot tag pcb-imported；画面即导入瞬间的未布线飞线"
+      },
+      {
+        "i": 3,
+        "src": "055041/1-smart-fit/0003-pcb-layout.png",
+        "label": "自动布局",
+        "sub": "器件自动摆开，板框定好",
+        "backedBy": "板框 首次 1800×1300，第 2–4 次扩到 2250×1625（_run-N.json boardWidth/HeightMil；log: layoutState completed，outline0 2250×1625）"
+      },
+      {
+        "i": 4,
+        "src": "055041/1-smart-fit/0004-pcb-pour.png",
+        "label": "铺铜",
+        "sub": "两层铜皮铺满，地线连成片",
+        "backedBy": "log: copperPours.count 3 / pourRebuilt.poured 2"
+      },
+      {
+        "i": 5,
+        "src": "055041/1-smart-fit/0005-route-t6s.png",
+        "label": "布线卡住",
+        "sub": "FAST 三轮，34 条还断着",
+        "backedBy": "log: routeIter iter0/1/2 stillUnconnected 34，随后 routeEscalate"
+      },
+      {
+        "i": 6,
+        "src": "055041/1-smart-fit/0007-pcb-routed.png",
+        "label": "换兜底才连上",
+        "sub": "升 COMPLETION，断连才清零",
+        "backedBy": "log: routeEscalate \"FAST 3 轮后仍有断连，升级 COMPLETION 兜底\" → iter3 stillUnconnected 0"
+      },
+      {
+        "i": 7,
+        "src": "055041/4-expand-1.25x-retry2/0008-pcb-bottom.png",
+        "label": "翻到底层",
+        "sub": "29 个过孔，规格统一",
+        "backedBy": "_log-4: routeRulesProof specVia 12/24 / vias 29（画面也取第 4 次，同一次尝试）；第 1 次是 23 个，画面上数得出 —— 拿第 1 次的图配 29 是两件事"
+      },
+      {
+        "i": 8,
+        "src": "055041/4-expand-1.25x-retry2/0010-pcb-clearance.png",
+        "label": "清间距违规",
+        "sub": "修一次，违规 1 个变 10 个",
+        "backedBy": "_log-4: clearanceRound violations 1 fixed 1 → clearanceReverted from 1 to 10（整轮撤回）；第 1 次是 from 1 to 4，与第 4 次不是同一条曲线"
+      },
+      {
+        "i": 9,
+        "src": "055041/4-expand-1.25x-retry2/0012-pcb-drc.png",
+        "label": "DRC 没过",
+        "sub": "剩 1 条，这块板没放行",
+        "backedBy": "_run-4: ok false / drcPassed false / drcLeafCount 1（_log-4 drcLeaves n=1 Clearance Error | Slot Region to Track，byNet {\"?\":1}）；首轮是 n=2 Connection Error {3V3:2}"
+      },
+      {
+        "i": 10,
+        "src": "053328/4-expand-1.25x-retry2/0011-pcb-drc.png",
+        "label": "同夜另一块",
+        "sub": "也只差 1 条，重试 4 次",
+        "backedBy": "053328: 4 个尝试目录全失败，末次 _run.json ok false / drcLeafCount 1"
+      },
+      {
+        "i": 11,
+        "src": "045629/1-smart-fit/0015-pcb-drc.png",
+        "label": "走通的那块",
+        "sub": "整夜 139 次，79 次走通",
+        "backedBy": "窗口内 139 次尝试 ok 79（口径见 ATTEMPT_RE + mtime ≤ 06:12）；045629 _run.json: ok true / drc 0/0"
+      }
+    ]
+  }
+}

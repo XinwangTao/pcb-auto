@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"原理图 & 符号 / 文档操作类","remarks":"对设计文档总体进行的操作","visibility":"public","methods":[{"name":"importChanges","comment":"从 PCB 导入变更","visibility":"public"},{"name":"save","comment":"保存文档","visibility":"public"},{"name":"autoRouting","comment":"自动布线","visibility":"beta"},{"name":"autoLayout","comment":"自动布局","visibility":"beta"},{"name":"getElementsInRegion","comment":"获取区域内的元素","visibility":"public"},{"name":"renderRegion","comment":"渲染区域","visibility":"public"}],"callPath":"sch_Document"},"logs":[],"durationMs":138}
+

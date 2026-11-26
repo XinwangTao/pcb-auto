@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"PCB & 封装 / 尺寸标注图元类","visibility":"public","methods":[{"name":"create","comment":"创建尺寸标注","visibility":"public"},{"name":"delete","comment":"删除尺寸标注","visibility":"beta"},{"name":"modify","comment":"修改尺寸标注","visibility":"beta"},{"name":"get","comment":"获取尺寸标注","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有尺寸标注的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有尺寸标注","visibility":"beta"}],"callPath":"pcb_PrimitiveDimension"},"logs":[],"durationMs":146}
+

@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 定时器类","remarks":"设置定时器","visibility":"public","methods":[{"name":"setIntervalTimer","comment":"设置循环定时器","visibility":"public"},{"name":"clearIntervalTimer","comment":"清除指定循环定时器","visibility":"public"},{"name":"setTimeoutTimer","comment":"设置单次定时器","visibility":"public"},{"name":"clearTimeoutTimer","comment":"清除指定单次定时器","visibility":"public"}],"callPath":"sys_Timer"},"logs":[],"durationMs":133}
+

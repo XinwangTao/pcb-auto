@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"综合库 / 器件类","visibility":"public","methods":[{"name":"create","comment":"创建器件","visibility":"beta"},{"name":"delete","comment":"删除器件","visibility":"beta"},{"name":"modify","comment":"修改器件","visibility":"beta"},{"name":"get","comment":"获取器件的所有属性","visibility":"beta"},{"name":"copy","comment":"复制器件","visibility":"beta"},{"name":"search","comment":"搜索器件","visibility":"beta"},{"name":"batchSearchDevices","comment":"批量模糊搜索器件并直接返回详情","visibility":"beta"},{"name":"searchByProperties","comment":"使用属性精确搜索器件","visibility":"beta"},{"name":"getByLcscIds","comment":"使用立创 C 编号获取器件","visibility":"beta"}],"callPath":"lib_Device"},"logs":[],"durationMs":126}
+

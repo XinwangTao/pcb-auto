@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 右键菜单类","visibility":"public","methods":[{"name":"changeMenu","comment":"修改右键菜单","visibility":"beta"}],"callPath":"sys_RightClickMenu"},"logs":[],"durationMs":124}
+

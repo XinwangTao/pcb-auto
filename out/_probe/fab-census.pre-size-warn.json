@@ -1,0 +1,2158 @@
+{
+  "generated_for": "pcb-auto 交付物可打样性普查",
+  "fabcheck_sha256_12": "A82EDDCF1616",
+  "all": {
+    "n": 217,
+    "fab_ok": 206,
+    "fab_blocked": 11,
+    "fab_error": 0
+  },
+  "self_ok_true": {
+    "n": 194,
+    "fab_ok": 189,
+    "fab_blocked": 5,
+    "fab_error": 0
+  },
+  "self_ok_false": {
+    "n": 23,
+    "fab_ok": 17,
+    "fab_blocked": 6,
+    "fab_error": 0
+  },
+  "by_batch": {
+    "(无)": {
+      "all": {
+        "n": 2,
+        "fab_ok": 2,
+        "fab_blocked": 0,
+        "fab_error": 0
+      },
+      "self_ok_true": {
+        "n": 2,
+        "fab_ok": 2,
+        "fab_blocked": 0,
+        "fab_error": 0
+      }
+    },
+    "20261125": {
+      "all": {
+        "n": 128,
+        "fab_ok": 121,
+        "fab_blocked": 7,
+        "fab_error": 0
+      },
+      "self_ok_true": {
+        "n": 120,
+        "fab_ok": 115,
+        "fab_blocked": 5,
+        "fab_error": 0
+      }
+    },
+    "20261126": {
+      "all": {
+        "n": 87,
+        "fab_ok": 83,
+        "fab_blocked": 4,
+        "fab_error": 0
+      },
+      "self_ok_true": {
+        "n": 72,
+        "fab_ok": 72,
+        "fab_blocked": 0,
+        "fab_error": 0
+      }
+    }
+  },
+  "blocked_but_self_ok": [
+    {
+      "dir": "AI_传感器模块_6psjho-20261125-111305",
+      "blockers": [
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ]
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-141631",
+      "blockers": [
+        {
+          "id": "gerber.outline.size",
+          "msg": "板框 78.84×66.22mm ≠ _run.json 105.11×88.29mm"
+        }
+      ]
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-123518",
+      "blockers": [
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ]
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-141315",
+      "blockers": [
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ]
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-162408",
+      "blockers": [
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTL 有 12 个图元落在板框外（板子做不出来/会被裁掉）"
+        }
+      ]
+    }
+  ],
+  "blocker_ids": {
+    "gerber.outline.size": 6,
+    "drill.empty": 5,
+    "gerber.copper.thin": 4,
+    "gerber.traces.empty": 2,
+    "gerber.coord.outside": 1
+  },
+  "rows": [
+    {
+      "dir": "AI_OLED_底板_5p5g6m-20261126-071309",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "gerber.outline.size",
+          "msg": "板框 59.97×67.10mm ≠ _run.json 25.40×19.05mm"
+        },
+        {
+          "id": "gerber.copper.thin",
+          "msg": "总铜图元 33 < 40，疑似零铜"
+        }
+      ],
+      "n_blockers": 2,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_RP2040_系统-20261125-033939",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_RP2040_系统_13pefer-20261126-070027",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261125-203742",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261125-233131",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261125-235738",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-000341",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-004827",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-010233",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-012004",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-012933",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-014820",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-023722",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-030826",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-031149",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-041919",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-045127",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_RP2040_系统_15pqy38-20261126-045629",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器___LDO_10pus72-20261126-042843",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_传感器___LDO_9pq32s-20261125-234102",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器___LDO_9pq32s-20261126-025214",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器___充电___显示_16pck03-20261125-112943",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19pia69-20261125-234319",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19pia69-20261126-025434",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-132044",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-140642",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-151459",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-163848",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-182024",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-184722",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-192147",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-204223",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-211335",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261125-225902",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261126-002758",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261126-020706",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261126-033920",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_传感器___充电___显示_19ptbuz-20261126-055041",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_传感器___充电___显示_20pvd4t-20261126-043107",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_传感器模块-20261125-040723",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_传感器模块_6psjho-20261125-111305",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_传感器模块_7pfcbz-20261125-233436",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器模块_7pfcbz-20261125-234938",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_传感器模块_7pfcbz-20261126-024559",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器模块_7pfcbz-20261126-030045",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器模块_7pfcbz-20261126-042237",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_传感器模块_7pfcbz-20261126-044333",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_稳压板_7pf5gw-20261126-070858",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立-20261125-041749",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_纯分立_17py4dl-20261126-064538",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "gerber.outline.size",
+          "msg": "板框 65.28×86.22mm ≠ _run.json 44.45×31.75mm"
+        },
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ],
+      "n_blockers": 2,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261125-134336",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261125-155950",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261125-201324",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261125-210833",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261125-232307",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261126-005641",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261126-022851",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_19pl4cd-20261126-041030",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_20p4chz-20261125-202929",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_纯分立_20p4chz-20261125-232904",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_20p4chz-20261126-023458",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_20p4chz-20261126-041636",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261125-134500",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261125-160533",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261125-202323",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261125-211033",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261125-232527",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261126-023112",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261126-041246",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_3pnlif-20261126-064200",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_4pm9kw-20261126-074011",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "gerber.outline.size",
+          "msg": "板框 30.78×42.40mm ≠ _run.json 20.32×15.24mm"
+        },
+        {
+          "id": "gerber.copper.thin",
+          "msg": "总铜图元 30 < 40，疑似零铜"
+        }
+      ],
+      "n_blockers": 2,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_纯分立_6p7j98-20261125-235344",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_6p7j98-20261126-030437",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_纯分立_6p7j98-20261126-044729",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "AI_纯分立_9p271i-20261126-070644",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_锂电池充电板_10prplo-20261126-065757",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_锂电池充电板_7pbt8q-20261125-123130",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "AI_锂电池充电板_7pepkp-20261125-233857",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_锂电池充电板_7pepkp-20261126-024947",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "AI_锂电池充电板_8pynvf-20261126-042629",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-123927",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-131644",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-135051",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-145712",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-161244",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-180722",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-183654",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-190607",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-223205",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261125-225015",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261126-001315",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261126-013623",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261126-015905",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261126-032420",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "Crystal_RTC_Clock-20261126-051342",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-123731",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-131341",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-134849",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-145151",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-161043",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-180417",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-183101",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-185851",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-222732",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261125-224535",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261126-001040",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261126-013407",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261126-015619",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261126-032147",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "ESP32C3_Minimal-20261126-050915",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-125113",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-133247",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-141532",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-153411",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-165950",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-193838",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-205057",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261125-231213",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261126-004006",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261126-021918",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261126-035538",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "LED_RGB_Indicator-20261126-063048",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "NegTest_TinyBoard-20261125-025440",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-133425",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-141631",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "gerber.outline.size",
+          "msg": "板框 78.84×66.22mm ≠ _run.json 105.11×88.29mm"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-153535",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-170136",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-194222",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-205714",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_Minimal-20261125-231408",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_Minimal-20261126-004202",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_Minimal-20261126-022115",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_Minimal-20261126-035737",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_Minimal-20261126-063249",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-134016",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-154822",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-172021",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-195838",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-210548",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-213403",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-214200",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 2
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-215630",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-220517",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-220801",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-221908",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261125-232022",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261126-004546",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261126-022552",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261126-040044",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "RP2040_QSPI_Flash-20261126-063608",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Header8-20261125-133122",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_Header8-20261125-141429",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "SHT30_Header8-20261125-153305",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_Header8-20261125-165806",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_Header8-20261125-204916",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Header8-20261125-231013",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Header8-20261126-003807",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Header8-20261126-021720",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Header8-20261126-035337",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Header8-20261126-061705",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-123518",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 3
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-125452",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-130150",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-134619",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-144903",
+      "batch": "20261125",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "gerber.outline.size",
+          "msg": "板框 29.41×42.49mm ≠ _run.json 20.32×15.24mm"
+        },
+        {
+          "id": "gerber.traces.empty",
+          "msg": "GTL 有 19 个焊盘闪但没有一条 D01 走线：未布线"
+        },
+        {
+          "id": "gerber.copper.thin",
+          "msg": "总铜图元 27 < 40，疑似零铜"
+        }
+      ],
+      "n_blockers": 3,
+      "n_warnings": 3
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-144926",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-160808",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-180031",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-182918",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-185516",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-212927",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-222351",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261125-224204",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261126-000703",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261126-011359",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261126-015302",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261126-031806",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_I2C_TempHumidity-20261126-050157",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-132534",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-141315",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drill.empty",
+          "msg": "有 1 个钻孔文件但里面一个孔都没有"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-152705",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-165614",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-193402",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-204717",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-205233",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261125-230758",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261126-003556",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261126-021510",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261126-035117",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_LDO_Module-20261126-061250",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-132434",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-141204",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-152437",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-165421",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-185314",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 6
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-193042",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-204525",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Module_Full-20261125-230542",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Module_Full-20261126-003356",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Module_Full-20261126-021241",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Module_Full-20261126-034853",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "SHT30_Module_Full-20261126-060859",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-124227",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-135858",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-150708",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-162408",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTL 有 12 个图元落在板框外（板子做不出来/会被裁掉）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-181631",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-184244",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-191510",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "USBC_Power_ESD-20261125-225620",
+      "batch": "20261125",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "USBC_Power_ESD-20261126-002156",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "USBC_Power_ESD-20261126-014623",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "gerber.outline.size",
+          "msg": "板框 29.41×42.49mm ≠ _run.json 38.10×30.48mm"
+        },
+        {
+          "id": "gerber.traces.empty",
+          "msg": "GTL 有 19 个焊盘闪但没有一条 D01 走线：未布线"
+        },
+        {
+          "id": "gerber.copper.thin",
+          "msg": "总铜图元 27 < 40，疑似零铜"
+        }
+      ],
+      "n_blockers": 3,
+      "n_warnings": 2
+    },
+    {
+      "dir": "USBC_Power_ESD-20261126-020219",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "USBC_Power_ESD-20261126-033648",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 1
+    },
+    {
+      "dir": "USBC_Power_ESD-20261126-053328",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 3
+    },
+    {
+      "dir": "d11-exp",
+      "batch": "",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    },
+    {
+      "dir": "d11-exp-2558",
+      "batch": "",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4
+    }
+  ]
+}

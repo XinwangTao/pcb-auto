@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 字体管理类","remarks":"配置嘉立创 EDA 专业版允许调用的系统字体列表","visibility":"public","methods":[{"name":"getFontsList","comment":"获取当前已经配置的字体列表","visibility":"public"},{"name":"addFont","comment":"添加字体到字体列表","visibility":"public"},{"name":"deleteFont","comment":"删除字体列表内的指定字体","visibility":"public"}],"callPath":"sys_FontManager"},"logs":[],"durationMs":127}
+

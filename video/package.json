@@ -1,0 +1,16 @@
+{
+  "name": "pcb-auto-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "render": "remotion render PcbAuto out/ai-pcb-demo.mp4 --codec=h264"
+  },
+  "dependencies": {
+    "@esbuild/win32-x64": "^0.25.0",
+    "@remotion/cli": "^4.0.409",
+    "@remotion/fonts": "^4.0.409",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "remotion": "^4.0.409"
+  }
+}

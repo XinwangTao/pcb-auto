@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"综合库 / 面板库类","visibility":"public","methods":[{"name":"create","comment":"创建面板库","visibility":"beta"},{"name":"delete","comment":"删除面板库","visibility":"beta"},{"name":"modify","comment":"修改面板库","visibility":"beta"},{"name":"get","comment":"获取面板库的所有属性","visibility":"beta"},{"name":"copy","comment":"复制面板库","visibility":"beta"},{"name":"search","comment":"搜索面板库","visibility":"beta"},{"name":"openInEditor","comment":"在编辑器打开文档","visibility":"beta"}],"callPath":"lib_PanelLibrary"},"logs":[],"durationMs":125}
+

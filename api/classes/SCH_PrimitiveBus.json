@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"原理图 & 符号 / 总线图元类","visibility":"public","methods":[{"name":"create","comment":"创建总线","visibility":"beta"},{"name":"delete","comment":"删除总线","visibility":"beta"},{"name":"modify","comment":"修改总线","visibility":"beta"},{"name":"get","comment":"获取总线","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有总线的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有总线","visibility":"beta"}],"callPath":"sch_PrimitiveBus"},"logs":[],"durationMs":136}
+

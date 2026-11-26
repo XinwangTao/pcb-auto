@@ -1,0 +1,196 @@
+{
+  "name": "AI_锂电池充电板_10prplo",
+  "friendly": "AI_锂电池充电板_10prplo",
+  "_idea": "做一个太阳能充电的 LED 指示灯板，带 TP4056 充电管理和锂电池座",
+  "_compiledBy": "idea2design.js",
+  "_complexity": "锂电池充电板",
+  "boardWidthMil": 900,
+  "boardHeightMil": 700,
+  "components": [
+    {
+      "des": "D1",
+      "lcsc": "C191023",
+      "value": "1N5819WS"
+    },
+    {
+      "des": "H1",
+      "lcsc": "C131337",
+      "value": "SOLAR-2P"
+    },
+    {
+      "des": "C1",
+      "lcsc": "C440198",
+      "value": "10uF"
+    },
+    {
+      "des": "U1",
+      "lcsc": "C16581",
+      "value": "TP4056"
+    },
+    {
+      "des": "R1",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "H2",
+      "lcsc": "C131337",
+      "value": "BATT-2P"
+    },
+    {
+      "des": "R2",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "LED1",
+      "lcsc": "C2297",
+      "value": "LED-Red"
+    },
+    {
+      "des": "C2",
+      "lcsc": "C440198",
+      "value": "10uF"
+    },
+    {
+      "des": "C3",
+      "lcsc": "C440198",
+      "value": "10uF"
+    }
+  ],
+  "connections": [
+    [
+      "D1",
+      "2",
+      "SOLAR_IN"
+    ],
+    [
+      "D1",
+      "1",
+      "VIN_CHG"
+    ],
+    [
+      "H1",
+      "1",
+      "SOLAR_IN"
+    ],
+    [
+      "H1",
+      "2",
+      "GND"
+    ],
+    [
+      "C1",
+      "1",
+      "SOLAR_IN"
+    ],
+    [
+      "C1",
+      "2",
+      "GND"
+    ],
+    [
+      "U1",
+      "4",
+      "VIN_CHG"
+    ],
+    [
+      "U1",
+      "3",
+      "GND"
+    ],
+    [
+      "U1",
+      "9",
+      "GND"
+    ],
+    [
+      "U1",
+      "8",
+      "VIN_CHG"
+    ],
+    [
+      "U1",
+      "1",
+      "GND"
+    ],
+    [
+      "U1",
+      "5",
+      "VBAT"
+    ],
+    [
+      "R1",
+      "1",
+      "PROG"
+    ],
+    [
+      "R1",
+      "2",
+      "GND"
+    ],
+    [
+      "U1",
+      "2",
+      "PROG"
+    ],
+    [
+      "H2",
+      "1",
+      "VBAT"
+    ],
+    [
+      "H2",
+      "2",
+      "GND"
+    ],
+    [
+      "R2",
+      "1",
+      "VIN_CHG"
+    ],
+    [
+      "R2",
+      "2",
+      "CHRG_A"
+    ],
+    [
+      "LED1",
+      "1",
+      "CHRG_A"
+    ],
+    [
+      "LED1",
+      "2",
+      "CHRG"
+    ],
+    [
+      "U1",
+      "7",
+      "CHRG"
+    ],
+    [
+      "C2",
+      "1",
+      "VIN_CHG"
+    ],
+    [
+      "C2",
+      "2",
+      "GND"
+    ],
+    [
+      "C3",
+      "1",
+      "VBAT"
+    ],
+    [
+      "C3",
+      "2",
+      "GND"
+    ]
+  ],
+  "noConnect": [
+    "U1.STDBY"
+  ]
+}

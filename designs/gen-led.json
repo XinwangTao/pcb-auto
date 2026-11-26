@@ -1,0 +1,133 @@
+{
+  "name": "AI_纯分立_6p7j98",
+  "friendly": "AI_纯分立_6p7j98",
+  "_idea": "简单的 LED 指示灯板，限流电阻加排针",
+  "_compiledBy": "idea2design.js",
+  "_complexity": "纯分立",
+  "boardWidthMil": 800,
+  "boardHeightMil": 600,
+  "components": [
+    {
+      "des": "R1",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "LED1",
+      "lcsc": "C2297",
+      "value": "LED-Green"
+    },
+    {
+      "des": "R2",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "R3",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "C1",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "H1",
+      "lcsc": "C9900192758",
+      "value": "8P"
+    }
+  ],
+  "connections": [
+    [
+      "R1",
+      "1",
+      "5V"
+    ],
+    [
+      "R1",
+      "2",
+      "LED_A"
+    ],
+    [
+      "LED1",
+      "1",
+      "LED_A"
+    ],
+    [
+      "LED1",
+      "2",
+      "GND"
+    ],
+    [
+      "R2",
+      "1",
+      "5V"
+    ],
+    [
+      "R2",
+      "2",
+      "DIV_MID"
+    ],
+    [
+      "R3",
+      "1",
+      "DIV_MID"
+    ],
+    [
+      "R3",
+      "2",
+      "GND"
+    ],
+    [
+      "C1",
+      "1",
+      "DIV_MID"
+    ],
+    [
+      "C1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "1",
+      "5V"
+    ],
+    [
+      "H1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "3",
+      "LED_A"
+    ],
+    [
+      "H1",
+      "4",
+      "DIV_MID"
+    ],
+    [
+      "H1",
+      "5",
+      "GND"
+    ],
+    [
+      "H1",
+      "6",
+      "GND"
+    ],
+    [
+      "H1",
+      "7",
+      "GND"
+    ],
+    [
+      "H1",
+      "8",
+      "GND"
+    ]
+  ]
+}

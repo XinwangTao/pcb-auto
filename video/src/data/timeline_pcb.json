@@ -1,0 +1,295 @@
+{
+  "voice": "zh-CN-YunxiNeural",
+  "rate": "+8%",
+  "total": 88.022,
+  "lines": [
+    {
+      "i": 1,
+      "text": "一个人，一句需求",
+      "scene": "title",
+      "start": 0.182,
+      "end": 1.927,
+      "duration": 1.745,
+      "slot": 0.0,
+      "slot_duration": 2.76
+    },
+    {
+      "i": 2,
+      "text": "半小时后，它变成了一块真的电路板",
+      "scene": "title",
+      "start": 3.207,
+      "end": 5.68,
+      "duration": 2.473,
+      "slot": 3.02,
+      "slot_duration": 3.48
+    },
+    {
+      "i": 3,
+      "text": "这不是剪辑出来的效果",
+      "scene": "hook",
+      "start": 6.962,
+      "end": 8.286,
+      "duration": 1.324,
+      "slot": 6.76,
+      "slot_duration": 2.376
+    },
+    {
+      "i": 4,
+      "text": "全程没有一个鼠标是我点的",
+      "scene": "hook",
+      "start": 9.631,
+      "end": 11.632,
+      "duration": 2.001,
+      "slot": 9.396,
+      "slot_duration": 3.096
+    },
+    {
+      "i": 5,
+      "text": "第一步，原理图",
+      "scene": "sch",
+      "start": 12.943,
+      "end": 14.299,
+      "duration": 1.356,
+      "slot": 12.752,
+      "slot_duration": 2.352
+    },
+    {
+      "i": 6,
+      "text": "告诉它要什么功能，器件自己选，引脚自己连",
+      "scene": "sch",
+      "start": 15.549,
+      "end": 18.858,
+      "duration": 3.309,
+      "slot": 15.364,
+      "slot_duration": 4.32
+    },
+    {
+      "i": 7,
+      "text": "电源、地、信号，一个网络都不会漏",
+      "scene": "sch",
+      "start": 20.127,
+      "end": 23.316,
+      "duration": 3.189,
+      "slot": 19.944,
+      "slot_duration": 4.176
+    },
+    {
+      "i": 8,
+      "text": "第二步，同步到 PCB",
+      "scene": "pcbimp",
+      "start": 24.565,
+      "end": 26.284,
+      "duration": 1.719,
+      "slot": 24.38,
+      "slot_duration": 2.712
+    },
+    {
+      "i": 9,
+      "text": "原理图怎么改，板子就怎么变",
+      "scene": "pcbimp",
+      "start": 27.541,
+      "end": 30.123,
+      "duration": 2.582,
+      "slot": 27.352,
+      "slot_duration": 3.6
+    },
+    {
+      "i": 10,
+      "text": "不用手动对齐任何东西",
+      "scene": "pcbimp",
+      "start": 31.403,
+      "end": 33.25,
+      "duration": 1.847,
+      "slot": 31.212,
+      "slot_duration": 2.856
+    },
+    {
+      "i": 11,
+      "text": "第三步，自动布局",
+      "scene": "layout",
+      "start": 34.516,
+      "end": 36.02,
+      "duration": 1.504,
+      "slot": 34.328,
+      "slot_duration": 2.52
+    },
+    {
+      "i": 12,
+      "text": "器件按电气关系自己找位置",
+      "scene": "layout",
+      "start": 37.281,
+      "end": 39.523,
+      "duration": 2.242,
+      "slot": 37.108,
+      "slot_duration": 3.24
+    },
+    {
+      "i": 13,
+      "text": "然后铺地，两层板都铺满",
+      "scene": "layout",
+      "start": 40.792,
+      "end": 42.842,
+      "duration": 2.05,
+      "slot": 40.608,
+      "slot_duration": 3.024
+    },
+    {
+      "i": 14,
+      "text": "第四步，自动布线",
+      "scene": "route",
+      "start": 44.083,
+      "end": 45.465,
+      "duration": 1.382,
+      "slot": 43.892,
+      "slot_duration": 2.4
+    },
+    {
+      "i": 15,
+      "text": "信号线、电源线、过孔，全部自己走",
+      "scene": "route",
+      "start": 46.733,
+      "end": 50.087,
+      "duration": 3.354,
+      "slot": 46.552,
+      "slot_duration": 4.344
+    },
+    {
+      "i": 16,
+      "text": "原来这一步最费眼睛，现在它几秒钟就干完",
+      "scene": "route",
+      "start": 51.338,
+      "end": 54.53,
+      "duration": 3.192,
+      "slot": 51.156,
+      "slot_duration": 4.224
+    },
+    {
+      "i": 17,
+      "text": "第五步，查间距",
+      "scene": "drc",
+      "start": 55.834,
+      "end": 57.233,
+      "duration": 1.399,
+      "slot": 55.64,
+      "slot_duration": 2.4
+    },
+    {
+      "i": 18,
+      "text": "间距不够的自己退回去重走，绝不糊弄",
+      "scene": "drc",
+      "start": 58.486,
+      "end": 61.369,
+      "duration": 2.883,
+      "slot": 58.3,
+      "slot_duration": 3.912
+    },
+    {
+      "i": 19,
+      "text": "规则没过，它不会假装通过",
+      "scene": "drc",
+      "start": 62.662,
+      "end": 64.751,
+      "duration": 2.089,
+      "slot": 62.472,
+      "slot_duration": 3.096
+    },
+    {
+      "i": 20,
+      "text": "最后，设计规则检查零违规",
+      "scene": "final",
+      "start": 66.005,
+      "end": 68.328,
+      "duration": 2.323,
+      "slot": 65.828,
+      "slot_duration": 3.312
+    },
+    {
+      "i": 21,
+      "text": "制造文件、BOM、坐标文件，一次导出",
+      "scene": "final",
+      "start": 69.581,
+      "end": 72.597,
+      "duration": 3.016,
+      "slot": 69.4,
+      "slot_duration": 3.984
+    },
+    {
+      "i": 22,
+      "text": "你以为这就完了",
+      "scene": "final",
+      "start": 73.923,
+      "end": 74.82,
+      "duration": 0.897,
+      "slot": 73.644,
+      "slot_duration": 2.064
+    },
+    {
+      "i": 23,
+      "text": "它还自己写了打样清单和装配说明",
+      "scene": "end",
+      "start": 76.158,
+      "end": 78.632,
+      "duration": 2.474,
+      "slot": 75.968,
+      "slot_duration": 3.48
+    },
+    {
+      "i": 24,
+      "text": "从一句想法到一块能打样的板子，中间零人工干预",
+      "scene": "end",
+      "start": 79.887,
+      "end": 83.647,
+      "duration": 3.76,
+      "slot": 79.708,
+      "slot_duration": 4.752
+    },
+    {
+      "i": 25,
+      "text": "这套流水线，现在就在跑",
+      "scene": "end",
+      "start": 84.905,
+      "end": 86.829,
+      "duration": 1.924,
+      "slot": 84.72,
+      "slot_duration": 2.952
+    }
+  ],
+  "scenes": {
+    "title": {
+      "from": 0.182,
+      "to": 5.68
+    },
+    "hook": {
+      "from": 6.962,
+      "to": 11.632
+    },
+    "sch": {
+      "from": 12.943,
+      "to": 23.316
+    },
+    "pcbimp": {
+      "from": 24.565,
+      "to": 33.25
+    },
+    "layout": {
+      "from": 34.516,
+      "to": 42.842
+    },
+    "route": {
+      "from": 44.083,
+      "to": 54.53
+    },
+    "drc": {
+      "from": 55.834,
+      "to": 64.751
+    },
+    "final": {
+      "from": 66.005,
+      "to": 74.82
+    },
+    "end": {
+      "from": 76.158,
+      "to": 86.829
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "name": "pcb-auto",
+  "version": "1.0.0",
+  "description": "Natural-language (Chinese) idea → orderable PCB, unattended. A measurement-first harness: 5 tools, 4 independent acceptance layers, and a published failure rate you can recompute.",
+  "keywords": [
+    "pcb",
+    "eda",
+    "gerber",
+    "ecad",
+    "ai-eda",
+    "llm-eda",
+    "natural-language-to-pcb",
+    "text-to-pcb",
+    "automatic-pcb-layout",
+    "autorouter",
+    "drc",
+    "dfm",
+    "bom",
+    "pick-and-place",
+    "lceda",
+    "easyeda",
+    "kicad",
+    "pcb-design-automation",
+    "ai-agent",
+    "dsh-plugin",
+    "cordis-plugin",
+    "mcp",
+    "chinese",
+    "中文",
+    "硬件自动化"
+  ],
+  "homepage": "https://github.com/1716775457damn/pcb-auto#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/1716775457damn/pcb-auto.git"
+  },
+  "bugs": {
+    "url": "https://github.com/1716775457damn/pcb-auto/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "陶鑫旺",
+    "url": "https://github.com/1716775457damn"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "os": [
+    "win32"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs",
+    "pcb": "node cli/pcb.mjs",
+    "mcp": "node mcp/server.mjs",
+    "install-clients": "node install/install.mjs",
+    "fabcheck": "node scripts/fabcheck.js",
+    "verify": "pwsh -NoProfile -ExecutionPolicy Bypass -File verify-delivery.ps1"
+  },
+  "bin": {
+    "pcb": "cli/pcb.mjs"
+  },
+  "files": [
+    "core",
+    "cli",
+    "mcp",
+    "plugin",
+    "install",
+    "scripts",
+    "designs",
+    "docs",
+    "README.md",
+    "README.en.md",
+    "LICENSE",
+    "llms.txt",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "CITATION.cff"
+  ]
+}

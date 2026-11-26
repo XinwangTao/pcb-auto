@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 消息框类","remarks":"生成消息提示框","visibility":"public","deprecated":"已更名为 {@link SYS_Dialog}","methods":[{"name":"showInformationMessage","comment":"显示消息框","visibility":"public"},{"name":"showConfirmationMessage","comment":"显示确认框","visibility":"public"}],"callPath":"sys_MessageBox"},"logs":[],"durationMs":141}
+

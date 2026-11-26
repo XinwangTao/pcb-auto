@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"文档树 / 面板管理类","remarks":"在当前打开的工程内进行面板管理的相关操作\n\n工程树异步刷新；写操作或读取列表后得到旧数据时，先调用 {@link DMT_Project.waitForReady | waitForReady} 等待后重试","visibility":"public","methods":[{"name":"createPanel","comment":"创建面板","visibility":"beta"},{"name":"modifyPanelName","comment":"修改面板名称","visibility":"public"},{"name":"copyPanel","comment":"复制面板","visibility":"public"},{"name":"getPanelInfo","comment":"获取面板的详细属性","visibility":"public"},{"name":"getAllPanelsInfo","comment":"获取工程内所有面板的详细属性","visibility":"public"},{"name":"getCurrentPanelInfo","comment":"获取当前面板的详细属性","visibility":"public"},{"name":"deletePanel","comment":"删除面板","visibility":"public"}],"callPath":"dmt_Panel"},"logs":[],"durationMs":131}
+

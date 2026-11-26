@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 日志类","visibility":"public","methods":[{"name":"add","comment":"添加日志条目","visibility":"public"},{"name":"clear","comment":"清空日志","visibility":"public"},{"name":"export","comment":"导出日志","visibility":"public"},{"name":"sort","comment":"筛选并获取日志条目","visibility":"public"},{"name":"find","comment":"查找条目","visibility":"public"}],"callPath":"sys_Log"},"logs":[],"durationMs":129}
+

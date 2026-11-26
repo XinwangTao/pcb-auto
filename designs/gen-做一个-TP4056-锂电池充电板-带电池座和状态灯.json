@@ -1,0 +1,166 @@
+{
+  "name": "AI_锂电池充电板_8pynvf",
+  "friendly": "AI_锂电池充电板_8pynvf",
+  "_idea": "做一个 TP4056 锂电池充电板，带电池座和状态灯",
+  "_compiledBy": "idea2design.js",
+  "_complexity": "锂电池充电板",
+  "boardWidthMil": 900,
+  "boardHeightMil": 700,
+  "components": [
+    {
+      "des": "U1",
+      "lcsc": "C16581",
+      "value": "TP4056"
+    },
+    {
+      "des": "R1",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "H1",
+      "lcsc": "C131337",
+      "value": "BATT-2P"
+    },
+    {
+      "des": "R2",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "LED1",
+      "lcsc": "C2297",
+      "value": "LED-Red"
+    },
+    {
+      "des": "H2",
+      "lcsc": "C131337",
+      "value": "5V-IN-2P"
+    },
+    {
+      "des": "C1",
+      "lcsc": "C440198",
+      "value": "10uF"
+    },
+    {
+      "des": "C2",
+      "lcsc": "C440198",
+      "value": "10uF"
+    }
+  ],
+  "connections": [
+    [
+      "U1",
+      "4",
+      "5V"
+    ],
+    [
+      "U1",
+      "3",
+      "GND"
+    ],
+    [
+      "U1",
+      "9",
+      "GND"
+    ],
+    [
+      "U1",
+      "8",
+      "5V"
+    ],
+    [
+      "U1",
+      "1",
+      "GND"
+    ],
+    [
+      "U1",
+      "5",
+      "VBAT"
+    ],
+    [
+      "R1",
+      "1",
+      "PROG"
+    ],
+    [
+      "R1",
+      "2",
+      "GND"
+    ],
+    [
+      "U1",
+      "2",
+      "PROG"
+    ],
+    [
+      "H1",
+      "1",
+      "VBAT"
+    ],
+    [
+      "H1",
+      "2",
+      "GND"
+    ],
+    [
+      "R2",
+      "1",
+      "5V"
+    ],
+    [
+      "R2",
+      "2",
+      "CHRG_A"
+    ],
+    [
+      "LED1",
+      "1",
+      "CHRG_A"
+    ],
+    [
+      "LED1",
+      "2",
+      "CHRG"
+    ],
+    [
+      "U1",
+      "7",
+      "CHRG"
+    ],
+    [
+      "H2",
+      "1",
+      "5V"
+    ],
+    [
+      "H2",
+      "2",
+      "GND"
+    ],
+    [
+      "C1",
+      "1",
+      "5V"
+    ],
+    [
+      "C1",
+      "2",
+      "GND"
+    ],
+    [
+      "C2",
+      "1",
+      "VBAT"
+    ],
+    [
+      "C2",
+      "2",
+      "GND"
+    ]
+  ],
+  "noConnect": [
+    "U1.STDBY"
+  ]
+}

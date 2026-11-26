@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 外部请求类","remarks":"向外部服务器发起安全的 cURL 请求","visibility":"public","methods":[{"name":"request","comment":"发起即时请求","visibility":"public"}],"callPath":"sys_ClientUrl"},"logs":[],"durationMs":133}
+

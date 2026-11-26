@@ -1,0 +1,50 @@
+{
+  "_comment": "AI 全自动选出的 BOM —— 全部 Basic Part，全部经 lib_Device.getByLcscIds 验证过封装/阻值/类别",
+  "_generated": "2026-11-24",
+  "_verified_by": "pcb-auto/scripts/tool-bom-picker.js",
+  "board": "USB-C powered AMS1117-3.3 LDO + LED indicator",
+  "parts": {
+    "C_10uF_0805": {
+      "lcsc": "C440198", "name": "GRM21BR61H106KE43L", "klass": "Basic Part",
+      "footprint": "0805", "value": "10uF", "rating": "50V X5R",
+      "symbolUuid": "2e54d9f6ef024fd6a073cb020500c9e8",
+      "footprintUuid": "ccb32feceadc4298b406326a506ce8e7",
+      "libraryUuid": "0819f05c4eef4c71ace90d822a990e87"
+    },
+    "C_100nF_0402": {
+      "lcsc": "C1525", "name": "CL05B104KO5NNNC", "klass": "Basic Part",
+      "footprint": "0402", "value": "100nF", "rating": "16V X7R",
+      "symbolUuid": "5d54ad1e3ff64cdb9e7c9f449679d79f",
+      "footprintUuid": "14a08379d3874582bdd84020bde81eba",
+      "libraryUuid": "0819f05c4eef4c71ace90d822a990e87"
+    },
+    "R_1k_0402": {
+      "lcsc": "C11702", "name": "0402WGF1001TCE", "klass": "Basic Part",
+      "footprint": "0402", "value": "1kΩ", "rating": "±1% 62.5mW",
+      "symbolUuid": "18e085fc20b941a69c01086555a38f6c",
+      "footprintUuid": "df9dfd54cabd403f88cae9927dcd418d",
+      "libraryUuid": "0819f05c4eef4c71ace90d822a990e87"
+    },
+    "R_5k1_0402": {
+      "lcsc": "C25905", "name": "0402WGF5101TCE", "klass": "Basic Part",
+      "footprint": "0402", "value": "5.1kΩ", "rating": "±1% 62.5mW",
+      "symbolUuid": "9807320b9dfe4ddb9f43a24d13de0ff6",
+      "footprintUuid": "df9dfd54cabd403f88cae9927dcd418d",
+      "libraryUuid": "0819f05c4eef4c71ace90d822a990e87"
+    },
+    "LDO_3V3": {
+      "lcsc": "C6186", "name": "AMS1117-3.3_C6186", "klass": "Basic Part",
+      "footprint": "SOT-223", "value": "", "rating": "1A LDO",
+      "symbolUuid": "06f50e10ab7d460599b3fe3ee8717a78",
+      "footprintUuid": "20c29e37a9b84b4197418483096f9c05",
+      "libraryUuid": "0819f05c4eef4c71ace90d822a990e87"
+    },
+    "LED_0805_G": {
+      "lcsc": "C2297", "name": "KT-0805G", "klass": "Basic Part",
+      "footprint": "0805", "value": "", "rating": "green Vf 2.6-3.1V",
+      "symbolUuid": "c160a17d5e9d4c0bbeddfb2820de45f2",
+      "footprintUuid": "7ff5a6319a234ee3b7e4db4f322e8738",
+      "libraryUuid": "0819f05c4eef4c71ace90d822a990e87"
+    }
+  }
+}

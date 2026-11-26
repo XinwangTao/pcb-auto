@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "title": "PCB Auto",
+    "description": "Compile a Chinese natural-language board idea into an orderable PCB: schematic, layout, routing, DRC and Gerber/BOM/PnP export, unattended. Ships four independent acceptance layers and a recomputable failure rate — so the answer is a measurement, not a demo.",
+    "detail": "docs/DETAIL.md"
+  },
+  "tools": {
+    "pcb_idea_to_design": "Compile a Chinese board idea into a design JSON",
+    "pcb_build": "Run the full pipeline from a design JSON to fabrication artifacts",
+    "pcb_fabcheck": "Decide whether a product directory can be ordered as-is",
+    "pcb_census": "Run the DFM gate over every settled product directory",
+    "pcb_verify": "Re-run every delivery consistency assertion"
+  }
+}

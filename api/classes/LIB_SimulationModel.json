@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"综合库 / 仿真模型类","visibility":"public","methods":[{"name":"create","comment":"创建仿真模型","visibility":"beta"},{"name":"delete","comment":"删除仿真模型","visibility":"beta"},{"name":"modify","comment":"修改仿真模型","visibility":"beta"},{"name":"get","comment":"获取仿真模型的所有属性","visibility":"beta"},{"name":"copy","comment":"复制仿真模型","visibility":"beta"},{"name":"search","comment":"搜索仿真模型","visibility":"beta"}],"callPath":"lib_SimulationModel"},"logs":[],"durationMs":122}
+

@@ -1,0 +1,602 @@
+[
+  {
+    "id": "d1",
+    "design": "SHT30_I2C_TempHumidity",
+    "designFile": "designs\\d1-sht30.json",
+    "outDir": "out\\SHT30_I2C_TempHumidity-20261125-144926",
+    "uuid": "0a68c267c3829b9818c17673818a6482f72662ccb10e1f7265f205dc6390ccbd",
+    "declared": [
+      800,
+      600
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "smart-fit"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "0a68c267c3829b9818c17673818a6482f72662ccb10e1f7265f205dc6390ccbd",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "7730cb58dd72a97b",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 1200,
+        "h": 900
+      },
+      "padSpan": {
+        "w": 700,
+        "h": 239
+      },
+      "fillRatio": 0.155,
+      "padCount": 19,
+      "passedBefore": true,
+      "before": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "rebuilt": true,
+      "passedAfter": true,
+      "after": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "passed": true,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 60921
+  },
+  {
+    "id": "d10",
+    "design": "ESP32C3_Minimal",
+    "designFile": "designs\\d10-esp32c3.json",
+    "outDir": "out\\ESP32C3_Minimal-20261125-145151",
+    "uuid": "6acb11a63d5056553fcb55e68e22b53a94329dd9af54ee651452e67cdde41031",
+    "declared": [
+      1600,
+      1300
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "expand-1.5x"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "6acb11a63d5056553fcb55e68e22b53a94329dd9af54ee651452e67cdde41031",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "d25cd9a15b8cae49",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 2400,
+        "h": 1950
+      },
+      "padSpan": {
+        "w": 1350,
+        "h": 1240
+      },
+      "fillRatio": 0.358,
+      "padCount": 59,
+      "passedBefore": true,
+      "before": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "rebuilt": true,
+      "passedAfter": true,
+      "after": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "passed": true,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 78783
+  },
+  {
+    "id": "d11",
+    "design": "Crystal_RTC_Clock",
+    "designFile": "designs\\d11-crystal-rtc.json",
+    "outDir": "out\\Crystal_RTC_Clock-20261125-145712",
+    "uuid": "d0fe62a6a7b266974f7df238ee906a611975fee1e0dcbc81507b11c7be85afbe",
+    "declared": [
+      1400,
+      1100
+    ],
+    "pipeline": {
+      "drcPassed": "FAIL",
+      "drcDetailCount": 1,
+      "heal": "expand-1.5x-retry"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "d0fe62a6a7b266974f7df238ee906a611975fee1e0dcbc81507b11c7be85afbe",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "abf4bc90d8f7698e",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 2558,
+        "h": 2148
+      },
+      "padSpan": {
+        "w": 700,
+        "h": 734
+      },
+      "fillRatio": 0.094,
+      "padCount": 85,
+      "passedBefore": false,
+      "before": {
+        "total": 4,
+        "byType": {
+          "Clearance Error": 2,
+          "Connection Error": 2
+        },
+        "samples": [
+          {
+            "t": "Clearance Error",
+            "net": null,
+            "o1": "(GND): e352",
+            "o2": "(XTAL_IN): U1_20",
+            "pos": {
+              "x": 210.69,
+              "y": -63.10691499999999
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          },
+          {
+            "t": "Clearance Error",
+            "net": null,
+            "o1": "(GND): e352",
+            "o2": ": U1_18",
+            "pos": {
+              "x": 210.69,
+              "y": -61.877015
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          },
+          {
+            "t": "Connection Error",
+            "net": "GND",
+            "o1": "(GND): e340",
+            "o2": null,
+            "pos": {
+              "x": 210.591575,
+              "y": -61.676475
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          },
+          {
+            "t": "Connection Error",
+            "net": "GND",
+            "o1": "(GND): U1_19",
+            "o2": null,
+            "pos": {
+              "x": 210.69007999999997,
+              "y": -62.46532999999999
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          }
+        ]
+      },
+      "rebuilt": true,
+      "passedAfter": false,
+      "after": {
+        "total": 4,
+        "byType": {
+          "Clearance Error": 2,
+          "Connection Error": 2
+        },
+        "samples": [
+          {
+            "t": "Clearance Error",
+            "net": null,
+            "o1": "(GND): e352",
+            "o2": "(XTAL_IN): U1_20",
+            "pos": {
+              "x": 210.69,
+              "y": -63.10691499999999
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          },
+          {
+            "t": "Clearance Error",
+            "net": null,
+            "o1": "(GND): e352",
+            "o2": ": U1_18",
+            "pos": {
+              "x": 210.69,
+              "y": -61.877015
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          },
+          {
+            "t": "Connection Error",
+            "net": "GND",
+            "o1": "(GND): e340",
+            "o2": null,
+            "pos": {
+              "x": 210.591575,
+              "y": -61.676475
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          },
+          {
+            "t": "Connection Error",
+            "net": "GND",
+            "o1": "(GND): U1_19",
+            "o2": null,
+            "pos": {
+              "x": 210.69007999999997,
+              "y": -62.46532999999999
+            },
+            "minDistance": null,
+            "actualDistance": null,
+            "layer": null,
+            "rule": null
+          }
+        ]
+      },
+      "passed": false,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 76526
+  },
+  {
+    "id": "d12",
+    "design": "USBC_Power_ESD",
+    "designFile": "designs\\d12-usbc-typec.json",
+    "outDir": "out\\USBC_Power_ESD-20261125-150708",
+    "uuid": "b979103d76a23b11e66f57369b7ae1e22d384307197693e7421536175097f5bc",
+    "declared": [
+      1500,
+      1200
+    ],
+    "pipeline": {
+      "drcPassed": "FAIL",
+      "drcDetailCount": 2,
+      "heal": "expand-1.5x-retry"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "b979103d76a23b11e66f57369b7ae1e22d384307197693e7421536175097f5bc",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "5dfb4354b16c1194",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 2640,
+        "h": 2217
+      },
+      "padSpan": {
+        "w": 1426,
+        "h": 2017
+      },
+      "fillRatio": 0.492,
+      "padCount": 50,
+      "passedBefore": true,
+      "before": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "rebuilt": true,
+      "passedAfter": true,
+      "after": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "passed": true,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 60517
+  },
+  {
+    "id": "d13",
+    "design": "AI_传感器___充电___显示_19ptbuz",
+    "designFile": "designs\\d13-solar-oled-logger.json",
+    "outDir": "out\\AI_传感器___充电___显示_19ptbuz-20261125-151459",
+    "uuid": "f11daea9128638f44e8145a53432633f6b56b67bf3aba4ecd637e8e26828ea02",
+    "declared": [
+      1800,
+      1300
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "expand-2.0x"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "f11daea9128638f44e8145a53432633f6b56b67bf3aba4ecd637e8e26828ea02",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "8629f12d6d08b811",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 4236,
+        "h": 3558
+      },
+      "padSpan": {
+        "w": 693,
+        "h": 2173
+      },
+      "fillRatio": 0.1,
+      "padCount": 56,
+      "passedBefore": true,
+      "before": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "rebuilt": true,
+      "passedAfter": true,
+      "after": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "passed": true,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 58637
+  },
+  {
+    "id": "d2",
+    "design": "SHT30_Module_Full",
+    "designFile": "designs\\d2-sht30-module.json",
+    "outDir": "out\\SHT30_Module_Full-20261125-152437",
+    "uuid": "23b9ce1b2a7fe65259214550b5ff07e04917bdafa727c6a43f5066c24bef71a5",
+    "declared": [
+      1000,
+      800
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "smart-fit"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "23b9ce1b2a7fe65259214550b5ff07e04917bdafa727c6a43f5066c24bef71a5",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "02561772cae34f03",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 1000,
+        "h": 800
+      },
+      "padSpan": {
+        "w": 700,
+        "h": 267
+      },
+      "fillRatio": 0.234,
+      "padCount": 23,
+      "passedBefore": true,
+      "before": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "rebuilt": true,
+      "passedAfter": true,
+      "after": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "passed": true,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 79402
+  },
+  {
+    "id": "d3",
+    "design": "SHT30_LDO_Module",
+    "designFile": "designs\\d3-sht30-ldo.json",
+    "outDir": "out\\SHT30_LDO_Module-20261125-152705",
+    "uuid": "030ebb6802c5c845f3bec5a18904c355f5f2d54e1a1b9df5e03de9c49de73518",
+    "declared": [
+      1200,
+      900
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "compact-fit"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "030ebb6802c5c845f3bec5a18904c355f5f2d54e1a1b9df5e03de9c49de73518",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "3be65caa995d9c43",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 1355,
+        "h": 1138
+      },
+      "padSpan": {
+        "w": 342,
+        "h": 720
+      },
+      "fillRatio": 0.16,
+      "padCount": 27,
+      "passedBefore": true,
+      "before": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "rebuilt": true,
+      "passedAfter": true,
+      "after": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "passed": true,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 90702
+  },
+  {
+    "id": "d4",
+    "design": "SHT30_Header8",
+    "designFile": "designs\\d4-sht30-header.json",
+    "outDir": "out\\SHT30_Header8-20261125-153305",
+    "uuid": "1ba684ae8dbbd0c616c0a18464739433a938336a8f9f399efaa131af43d9f63a",
+    "declared": [
+      900,
+      700
+    ],
+    "pipeline": {
+      "drcPassed": "PASS",
+      "drcDetailCount": 0,
+      "heal": "smart-fit"
+    },
+    "audit": {
+      "ok": true,
+      "uuid": "1ba684ae8dbbd0c616c0a18464739433a938336a8f9f399efaa131af43d9f63a",
+      "log": [
+        {
+          "k": "openProject",
+          "v": {
+            "ret": true
+          }
+        }
+      ],
+      "pcbUuid": "7862c569e019931d",
+      "pcbName": "PCB1",
+      "pcbCount": 2,
+      "outline": {
+        "x": 0,
+        "y": 0,
+        "w": 1088,
+        "h": 914
+      },
+      "padSpan": {
+        "w": 700,
+        "h": 267
+      },
+      "fillRatio": 0.188,
+      "padCount": 23,
+      "passedBefore": true,
+      "before": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "rebuilt": true,
+      "passedAfter": true,
+      "after": {
+        "total": 0,
+        "byType": {},
+        "samples": []
+      },
+      "passed": true,
+      "stable": true,
+      "saved": false
+    },
+    "auditMs": 128258
+  }
+]

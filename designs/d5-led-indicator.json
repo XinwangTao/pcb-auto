@@ -1,0 +1,29 @@
+{
+  "name": "LED_RGB_Indicator",
+  "friendly": "AI_RGB_IND",
+  "_idea": "三色 LED 指示板：一颗绿色 LED + 三路限流电阻，标准 2.54mm 排针引出色控信号",
+  "_why": "验证与 I2C 完全不同拓扑的电路：纯分立器件、单端信号、多个同型号并联电阻、无 IC。若流水线只对 IC+I2C 有效，这个会挂。",
+  "boardWidthMil": 1200,
+  "boardHeightMil": 900,
+  "components": [
+    { "des": "D1", "lcsc": "C2297", "value": "LED-Green" },
+    { "des": "R1", "lcsc": "C11702", "value": "1k" },
+    { "des": "R2", "lcsc": "C11702", "value": "1k" },
+    { "des": "R3", "lcsc": "C25905", "value": "5.1k" },
+    { "des": "J1", "lcsc": "C9900192758", "value": "2.54mm-8P" }
+  ],
+  "connections": [
+    ["D1", "1", "5V"],
+    ["D1", "2", "LED_A"],
+    ["R1", "1", "LED_A"],
+    ["R1", "2", "GND"],
+    ["R2", "1", "5V"],
+    ["R2", "2", "SIG2"],
+    ["R3", "1", "SIG2"],
+    ["R3", "2", "GND"],
+    ["J1", "1", "5V"],
+    ["J1", "2", "GND"],
+    ["J1", "3", "LED_A"],
+    ["J1", "4", "SIG2"]
+  ]
+}

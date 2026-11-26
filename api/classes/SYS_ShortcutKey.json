@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 快捷键类","remarks":"注册与管理系统快捷键","visibility":"public","methods":[{"name":"registerShortcutKey","comment":"注册快捷键","visibility":"beta"},{"name":"unregisterShortcutKey","comment":"反注册快捷键","visibility":"beta"},{"name":"getShortcutKeys","comment":"查询快捷键列表","visibility":"beta"}],"callPath":"sys_ShortcutKey"},"logs":[],"durationMs":133}
+

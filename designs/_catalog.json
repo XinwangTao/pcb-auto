@@ -1,0 +1,435 @@
+{
+  "_note": "真实器件目录。每一条都经 lib_Device.getByLcscIds 实际校验存在，含原厂/datasheet 标记。AI 凭这份目录把自然语言想法组装成 design JSON。",
+  "_fields": {
+    "lcsc": "立创商城编号",
+    "name": "器件型号",
+    "class": "Basic Part=基础库(无贴片费) / Extended Part=扩展库",
+    "trusted": "有原厂+datasheet，可放心下单",
+    "designator": "位号前缀（来自器件库真实值，连接器是 H 不是 J）",
+    "role": "功能角色，用于想法匹配",
+    "netHints": "该器件典型接法提示"
+  },
+  "parts": [
+    {
+      "lcsc": "C86346",
+      "name": "SHT30-ARP-B2.5KS",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "U",
+      "role": "温湿度传感器",
+      "package": "DFN-8-EP",
+      "tags": [
+        "i2c",
+        "sensor",
+        "temperature",
+        "humidity",
+        "温湿度"
+      ],
+      "pins": {
+        "SDA": "2",
+        "SCL": "3",
+        "VDD": "5",
+        "GND": "8",
+        "EP": "9"
+      },
+      "netHints": "I2C 从机，SDA/SCL 需上拉 4.7k"
+    },
+    {
+      "lcsc": "C2040",
+      "name": "RP2040",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "U",
+      "role": "MCU 主控",
+      "package": "QFN-56",
+      "tags": [
+        "mcu",
+        "usb",
+        "qspi",
+        "raspberry",
+        "主控"
+      ],
+      "pins": {
+        "IOVDD": [
+          "1",
+          "10",
+          "22",
+          "33",
+          "42",
+          "49"
+        ],
+        "DVDD": [
+          "23",
+          "50"
+        ],
+        "VREG_VOUT": "45",
+        "VREG_IN": "44",
+        "ADC_AVDD": "43",
+        "USB_VDD": "48",
+        "GND": [
+          "57",
+          "19"
+        ],
+        "USB_DP": "47",
+        "USB_DM": "46",
+        "XIN": "20",
+        "XOUT": "21",
+        "RUN": "26",
+        "SWCLK": "24",
+        "SWD": "25",
+        "TESTEN": "19",
+        "QSPI_SCLK": "52",
+        "QSPI_SD0": "53",
+        "QSPI_SD1": "55",
+        "QSPI_SD2": "54",
+        "QSPI_SD3": "51",
+        "QSPI_SS": "56"
+      },
+      "netHints": "需要 3V3(IOVDD/ADC_AVDD/VREG_IN/USB_VDD) + 1V1(DVDD/VREG_VOUT)，9 个 GND"
+    },
+    {
+      "lcsc": "C6186",
+      "name": "AMS1117-3.3",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "U",
+      "role": "LDO 稳压器",
+      "package": "SOT-223",
+      "tags": [
+        "ldo",
+        "regulator",
+        "3v3",
+        "power",
+        "稳压"
+      ],
+      "pins": {
+        "GND": "1",
+        "VOUT": "2",
+        "VIN": "3",
+        "TAB": "4"
+      },
+      "netHints": "5V 进 3V3 出，输入输出各配 10uF"
+    },
+    {
+      "lcsc": "C2297",
+      "name": "KT-0805G",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "LED",
+      "role": "LED 指示灯（绿）",
+      "package": "0805",
+      "tags": [
+        "led",
+        "indicator",
+        "status",
+        "指示"
+      ],
+      "pins": {
+        "A": "1",
+        "K": "2"
+      },
+      "netHints": "阳极串限流电阻 1k 到电源，阴极接地"
+    },
+    {
+      "lcsc": "C11702",
+      "name": "0402WGF1001TCE",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "R",
+      "role": "电阻 1k",
+      "package": "0402",
+      "tags": [
+        "resistor",
+        "res",
+        "电阻",
+        "1k",
+        "限流",
+        "上拉"
+      ],
+      "netHints": "LED 限流 / 通用上拉"
+    },
+    {
+      "lcsc": "C25905",
+      "name": "0402WGF5101TCE",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "R",
+      "role": "电阻 5.1k",
+      "package": "0402",
+      "tags": [
+        "resistor",
+        "res",
+        "电阻",
+        "5.1k",
+        "usb",
+        "cc"
+      ],
+      "netHints": "USB-C CC 下拉 5.1k"
+    },
+    {
+      "lcsc": "C14663",
+      "name": "CC0603KRX7R9BB104",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "C",
+      "role": "电容 100nF",
+      "package": "0603",
+      "tags": [
+        "capacitor",
+        "cap",
+        "电容",
+        "100nf",
+        "去耦",
+        "decoupling"
+      ],
+      "netHints": "每个电源引脚就近去耦"
+    },
+    {
+      "lcsc": "C440198",
+      "name": "GRM21BR61H106KE43L",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "C",
+      "role": "电容 10uF",
+      "package": "0603",
+      "tags": [
+        "capacitor",
+        "cap",
+        "电容",
+        "10uf",
+        "滤波",
+        "bulk"
+      ],
+      "netHints": "电源输入/输出滤波"
+    },
+    {
+      "lcsc": "C1525",
+      "name": "CL05B104KO5NNNC",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "C",
+      "role": "电容 100nF 0402",
+      "package": "0402",
+      "tags": [
+        "capacitor",
+        "cap",
+        "电容",
+        "100nf",
+        "小封装"
+      ],
+      "netHints": "高密度板去耦"
+    },
+    {
+      "lcsc": "C20610231",
+      "name": "KH-2.54PH-1X22P-L13.5-WT",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "H",
+      "role": "排针 22P 2.54mm",
+      "package": "THT",
+      "tags": [
+        "header",
+        "connector",
+        "排针",
+        "22p",
+        "2.54"
+      ],
+      "netHints": "可只连前几个引脚"
+    },
+    {
+      "lcsc": "C9900192758",
+      "name": "2.54-1*8-BLACK",
+      "class": "Extended Part",
+      "trusted": false,
+      "designator": "H",
+      "role": "排针 8P 2.54mm（社区件）",
+      "package": "THT",
+      "tags": [
+        "header",
+        "connector",
+        "排针",
+        "8p",
+        "2.54"
+      ],
+      "netHints": "社区上传件无原厂/datasheet，下单前需复核"
+    },
+    {
+      "lcsc": "C2843303",
+      "name": "SL9305",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "LED",
+      "role": "红外接收/发射 930nm",
+      "package": "SMD",
+      "tags": [
+        "ir",
+        "infrared",
+        "红外",
+        "光电"
+      ],
+      "netHints": "光电器件"
+    },
+    {
+      "lcsc": "C2827625",
+      "name": "TPNSQA6V8AW5T2G",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "D",
+      "role": "TVS 二极管 5V",
+      "package": "SOD-523",
+      "tags": [
+        "tvs",
+        "esd",
+        "protection",
+        "保护",
+        "防静电"
+      ],
+      "netHints": "USB/接口 ESD 保护，并联到地"
+    },
+    {
+      "lcsc": "C131025",
+      "name": "W25Q16JVSSIQ",
+      "class": "IC",
+      "trusted": true,
+      "designator": "U",
+      "role": "QSPI NOR Flash 2MB",
+      "package": "SOIC-8",
+      "tags": [
+        "flash",
+        "qspi",
+        "storage",
+        "rp2040",
+        "boot"
+      ],
+      "pins": {
+        "CS": 1,
+        "DO_IO1": 2,
+        "WP_IO2": 3,
+        "GND": 4,
+        "DI_IO0": 5,
+        "CLK": 6,
+        "HOLD_IO3": 7,
+        "VCC": 8
+      },
+      "netHints": {
+        "VCC": "3V3",
+        "GND": "GND"
+      },
+      "note": "RP2040 启动必需外挂 Flash；引脚映射由 d7-rp2040-flash 实测验证"
+    },
+    {
+      "lcsc": "C16581",
+      "name": "TP4056-42-ESOP8",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "U",
+      "role": "锂电池充电管理 IC",
+      "package": "ESOP-8",
+      "tags": [
+        "charger",
+        "battery",
+        "lipo",
+        "li-ion",
+        "充电",
+        "锂电",
+        "电池",
+        "充电管理",
+        "tp4056",
+        "power",
+        "solar",
+        "太阳能",
+        "光伏",
+        "mppt"
+      ],
+      "pins": {
+        "TEMP": "1",
+        "PROG": "2",
+        "GND": "3",
+        "VCC": "4",
+        "BAT": "5",
+        "STDBY": "6",
+        "CHRG": "7",
+        "CE": "8",
+        "EP": "9"
+      },
+      "netHints": "VCC=5V 输入，BAT 接电池，PROG 接 1.2k 定 1A 充电电流，CE 接 VCC 使能，CHRG#/STDBY# 接状态灯"
+    },
+    {
+      "lcsc": "C5248080",
+      "name": "HS96L03W2C03",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "DS",
+      "role": "0.96 寸 OLED 显示屏 (I2C)",
+      "package": "4P 排针模组",
+      "tags": [
+        "oled",
+        "display",
+        "screen",
+        "ssd1306",
+        "ssd1315",
+        "i2c",
+        "显示",
+        "屏幕",
+        "显示屏"
+      ],
+      "pins": {
+        "GND": "1",
+        "VCC": "2",
+        "SCL": "3",
+        "SDA": "4"
+      },
+      "netHints": "I2C 显示，VCC 3V3，SCL/SDA 与主控同总线，需上拉"
+    },
+    {
+      "lcsc": "C191023",
+      "name": "1N5819WS",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "D",
+      "role": "肖特基二极管 40V/1A",
+      "package": "SOD-323",
+      "tags": [
+        "diode",
+        "schottky",
+        "rectifier",
+        "二极管",
+        "肖特基",
+        "整流",
+        "防反接",
+        "solar",
+        "太阳能",
+        "光伏",
+        "mppt"
+      ],
+      "pins": {
+        "K": "1",
+        "A": "2"
+      },
+      "netHints": "太阳能板防反接串在输入，或作续流二极管"
+    },
+    {
+      "lcsc": "C131337",
+      "name": "B2B-PH-K-S(LF)(SN)",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "H",
+      "role": "锂电池接口 2P 2.0mm",
+      "package": "PH-2P",
+      "tags": [
+        "battery",
+        "connector",
+        "battery-holder",
+        "电池",
+        "电池座",
+        "锂电接口",
+        "连接器"
+      ],
+      "pins": {
+        "1": "1",
+        "2": "2"
+      },
+      "netHints": "1=电池正，2=电池负（GND）"
+    }
+  ]
+}

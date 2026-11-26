@@ -1,0 +1,11 @@
+const L=[];
+const r=await eda.lib_Device.getByLcscIds(['C2040']);
+const d=Array.isArray(r)?r[0]:(r?.lists?.[0]||r?.value?.[0]);
+const g=await eda.lib_Symbol.getGeometry(d.symbolUuid, d.libraryUuid);
+L.push('keys='+Object.keys(g||{}).join(','));
+if(g?.ok) L.push('valKeys='+Object.keys(g.value||{}).join(','));
+L.push('pinsType='+Array.isArray(g?.pins)+' valPins='+Array.isArray(g?.value?.pins));
+const pins = g?.pins || g?.value?.pins || [];
+L.push('count='+pins.length);
+for(const p of pins) L.push(p.pinNumber+'|'+p.pinName+'|'+p.side);
+return L;

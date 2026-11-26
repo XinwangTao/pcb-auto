@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"原理图 & 符号 / 二进制内嵌对象图元类","visibility":"public","methods":[{"name":"create","comment":"创建二进制内嵌对象","visibility":"beta"},{"name":"delete","comment":"删除二进制内嵌对象","visibility":"beta"},{"name":"modify","comment":"修改二进制内嵌对象","visibility":"beta"},{"name":"get","comment":"获取二进制内嵌对象","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有二进制内嵌对象的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有二进制内嵌对象","visibility":"beta"}],"callPath":"sch_PrimitiveObject"},"logs":[],"durationMs":132}
+

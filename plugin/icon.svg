@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="PCB Auto">
+  <title>PCB Auto</title>
+  <defs>
+    <linearGradient id="board" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0e7c4a"/>
+      <stop offset="1" stop-color="#075634"/>
+    </linearGradient>
+    <linearGradient id="trace" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#f5c542"/>
+      <stop offset="1" stop-color="#ffdf7e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 板框 -->
+  <rect x="16" y="16" width="224" height="224" rx="20" fill="url(#board)"/>
+  <rect x="16" y="16" width="224" height="224" rx="20" fill="none" stroke="#0a6b41" stroke-width="2"/>
+
+  <!-- 铜走线（直角折弯，像真实布线） -->
+  <path d="M48 196 V132 H96 V88 H156"
+        fill="none" stroke="url(#trace)" stroke-width="9"
+        stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M208 60 V112 H160 V164 H112 V208"
+        fill="none" stroke="url(#trace)" stroke-width="9"
+        stroke-linecap="square" stroke-linejoin="miter" opacity="0.55"/>
+
+  <!-- 焊盘 / 过孔 -->
+  <circle cx="48" cy="196" r="12" fill="#ffdf7e" stroke="#0a6b41" stroke-width="3"/>
+  <circle cx="156" cy="88" r="12" fill="#ffdf7e" stroke="#0a6b41" stroke-width="3"/>
+  <circle cx="208" cy="60" r="10" fill="#ffdf7e" stroke="#0a6b41" stroke-width="3"/>
+  <circle cx="112" cy="208" r="10" fill="#ffdf7e" stroke="#0a6b41" stroke-width="3"/>
+
+  <!-- 中央芯片 -->
+  <rect x="96" y="120" width="46" height="46" rx="5" fill="#0b1f16" stroke="#ffdf7e" stroke-width="3"/>
+  <g fill="#ffdf7e">
+    <rect x="88" y="128" width="8" height="5" rx="1"/>
+    <rect x="88" y="140" width="8" height="5" rx="1"/>
+    <rect x="88" y="152" width="8" height="5" rx="1"/>
+    <rect x="142" y="128" width="8" height="5" rx="1"/>
+    <rect x="142" y="140" width="8" height="5" rx="1"/>
+    <rect x="142" y="152" width="8" height="5" rx="1"/>
+  </g>
+
+  <!-- 基准点 -->
+  <circle cx="38" cy="38" r="6" fill="none" stroke="#ffdf7e" stroke-width="3" opacity="0.8"/>
+</svg>

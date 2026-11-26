@@ -1,0 +1,128 @@
+{
+  "name": "AI_OLED_底板_5p5g6m",
+  "friendly": "AI_OLED_底板_5p5g6m",
+  "_idea": "做一个 OLED 显示模块底板，I2C 用排针引出，5V 供电",
+  "_compiledBy": "idea2design.js",
+  "_complexity": "OLED 底板",
+  "boardWidthMil": 800,
+  "boardHeightMil": 600,
+  "components": [
+    {
+      "des": "DS1",
+      "lcsc": "C5248080",
+      "value": "OLED-0.96"
+    },
+    {
+      "des": "C1",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "R1",
+      "lcsc": "C11702",
+      "value": "1k"
+    },
+    {
+      "des": "LED1",
+      "lcsc": "C2297",
+      "value": "LED-Green"
+    },
+    {
+      "des": "H1",
+      "lcsc": "C9900192758",
+      "value": "8P"
+    }
+  ],
+  "connections": [
+    [
+      "DS1",
+      "2",
+      "5V"
+    ],
+    [
+      "DS1",
+      "1",
+      "GND"
+    ],
+    [
+      "DS1",
+      "3",
+      "SCL"
+    ],
+    [
+      "DS1",
+      "4",
+      "SDA"
+    ],
+    [
+      "C1",
+      "1",
+      "5V"
+    ],
+    [
+      "C1",
+      "2",
+      "GND"
+    ],
+    [
+      "R1",
+      "1",
+      "5V"
+    ],
+    [
+      "R1",
+      "2",
+      "LED_A"
+    ],
+    [
+      "LED1",
+      "1",
+      "LED_A"
+    ],
+    [
+      "LED1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "1",
+      "5V"
+    ],
+    [
+      "H1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "3",
+      "SCL"
+    ],
+    [
+      "H1",
+      "4",
+      "SDA"
+    ],
+    [
+      "H1",
+      "5",
+      "LED_A"
+    ],
+    [
+      "H1",
+      "6",
+      "GND"
+    ],
+    [
+      "H1",
+      "7",
+      "GND"
+    ],
+    [
+      "H1",
+      "8",
+      "GND"
+    ]
+  ]
+}

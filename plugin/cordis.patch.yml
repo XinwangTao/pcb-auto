@@ -1,0 +1,19 @@
+# pcb-auto · DeepSeek Harness bundle
+#
+# 装载五个工具：pcb_idea_to_design / pcb_build / pcb_fabcheck / pcb_census / pcb_verify
+#
+# 不需要写 root —— 插件会从自身位置往上找 core/ops.mjs。
+# 以 link 方式安装时（pnpm link / plugin_manager 的 link:）插件文件就在仓库内，
+# 所以自动探测一定成立。只有「把 plugin/ 复制到别处」时才需要设 root。
+- insert:
+    - id: pcb-auto
+      name: '@pcb-auto/dsh-plugin'
+      config:
+        # 单次 build 的硬上限，默认 45 分钟。超过会 abort 子进程。
+        timeoutMs: 2700000
+
+        # ── 以下通常不需要，仅在特定环境才填 ──────────────────────────
+        # root: 'D:/path/to/pcb-auto'        # 插件复制到别处时，指向仓库根
+        # pwsh: 'C:/Program Files/PowerShell/7/pwsh.exe'
+        # node: 'C:/Program Files/nodejs/node.exe'
+        # python: 'C:/Python312/python.exe'

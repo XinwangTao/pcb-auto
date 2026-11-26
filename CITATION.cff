@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use this pipeline, its DFM gate, or its published measurements, please cite it as below."
+title: "pcb-auto: an unattended natural-language-to-PCB pipeline with an independent DFM gate"
+abstract: >-
+  pcb-auto compiles a single Chinese natural-language board idea into fabrication-ready PCB
+  artifacts (Gerber, Excellon drill, BOM, pick-and-place) with no human intervention, by driving
+  the 嘉立创 EDA (LCEDA) CLI. Its contribution is measurement discipline rather than a demo: a
+  standalone offline DFM gate that independently decides orderability, four acceptance layers, and
+  a published corpus whose every figure carries its denominator, its settle window, and its as-of
+  time. At the citation date the corpus held 56 settled product directories: 53 orderable, 3
+  blocked; 42 of 44 board names produced at least one orderable directory; and the self-reported
+  pass flag disagreed with the independent gate in the dangerous direction zero times but in the
+  pessimistic direction five times. No board from this corpus has been physically manufactured.
+authors:
+  - family-names: "陶"
+    given-names: "鑫旺"
+    alias: "1716775457damn"
+    website: "https://github.com/1716775457damn"
+version: "1.0.0"
+date-released: "2026-11-26"
+license: MIT
+repository-code: "https://github.com/1716775457damn/pcb-auto"
+url: "https://github.com/1716775457damn/pcb-auto"
+keywords:
+  - PCB automation
+  - EDA automation
+  - natural language to PCB
+  - Gerber generation
+  - design rule check
+  - DFM gate
+  - autorouter
+  - LLM agent
+  - Model Context Protocol
+  - 嘉立创 EDA
+  - LCEDA
+  - 中文自然语言到 PCB
+  - 全自动 PCB 设计
+references:
+  - type: software
+    title: "tscircuit: code electronics with React"
+    authors:
+      - family-names: "tscircuit contributors"
+    url: "https://github.com/tscircuit"
+    notes: >-
+      The closest open-source analogue: a TypeScript/React declarative electronics toolchain with
+      autorouting and manufacturing export. Cited here for comparison; not affiliated.

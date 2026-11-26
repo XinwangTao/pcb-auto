@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 存储类","remarks":"可以进行扩展的用户配置存储、浏览器本地存储的操作接口","visibility":"public","methods":[{"name":"getExtensionAllUserConfigs","comment":"获取扩展所有用户配置","visibility":"public"},{"name":"setExtensionAllUserConfigs","comment":"设置扩展所有用户配置","visibility":"public"},{"name":"clearExtensionAllUserConfigs","comment":"清除扩展所有用户配置","visibility":"public"},{"name":"getExtensionUserConfig","comment":"获取扩展用户配置","visibility":"public"},{"name":"setExtensionUserConfig","comment":"设置扩展用户配置","visibility":"public"},{"name":"deleteExtensionUserConfig","comment":"删除扩展用户配置","visibility":"public"}],"callPath":"sys_Storage"},"logs":[],"durationMs":141}
+

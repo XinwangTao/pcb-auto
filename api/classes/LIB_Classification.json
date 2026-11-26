@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"综合库 / 库分类索引类","visibility":"public","methods":[{"name":"createPrimary","comment":"创建一级分类","visibility":"beta"},{"name":"createSecondary","comment":"创建二级分类","visibility":"beta"},{"name":"getIndexByName","comment":"获取指定名称的分类的分类索引","visibility":"beta"},{"name":"getNameByUuid","comment":"获取指定 UUID 的分类的名称","visibility":"beta"},{"name":"getNameByIndex","comment":"获取指定索引的分类的名称","visibility":"beta"},{"name":"getAllClassificationTree","comment":"获取所有分类信息组成的树","visibility":"beta"},{"name":"deleteByUuid","comment":"删除指定 UUID 的分类","visibility":"beta"},{"name":"deleteByIndex","comment":"删除指定索引的分类","visibility":"beta"}],"callPath":"lib_Classification"},"logs":[],"durationMs":138}
+

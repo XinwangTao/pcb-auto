@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 加载与进度条类","visibility":"public","methods":[{"name":"showProgressBar","comment":"显示进度条或设置进度条进度","visibility":"public"},{"name":"destroyProgressBar","comment":"销毁进度条","visibility":"public"},{"name":"showLoading","comment":"显示无进度加载覆盖","visibility":"public"},{"name":"destroyLoading","comment":"销毁无进度加载覆盖","visibility":"public"}],"callPath":"sys_LoadingAndProgressBar"},"logs":[],"durationMs":130}
+

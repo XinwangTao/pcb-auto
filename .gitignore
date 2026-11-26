@@ -1,0 +1,80 @@
+# ── 产物：可重跑生成，体积大，不入库 ───────────────────────────────
+# 注意 out/ 下有 3 类东西：
+#   out/<designName>-<date>-<time>/  产物目录（数百 MB）  → 忽略
+#   out/_probe/                      量具（量具本身就是源码）→ 保留
+#   out/交付说明.html, out/_build-ledger.md  交付文档      → 保留
+/out/*
+!/out/_probe/
+!/out/交付说明.html
+!/out/_build-ledger.md
+!/out/CORPUS.md
+
+# ── 视频工程与成片 ────────────────────────────────────────────────
+# 视频工程（src/ + scripts/）入库，**构建输出全部不入库**：
+#   video/out/         成片、抽帧、灰度原始数据、contact sheet —— 都是可重跑的中间物
+#   video/public/*.wav edge-tts 配音（87 MB，一条命令重生成）
+#   video/public/*.png 从录屏抽的帧
+# 保留：video/public/real/*.mp4 录屏原片（「AI 真的在操作软件」的证据）、
+#       .mp3 背景音乐、.ttf 字体（渲染必需）、video/src/、video/scripts/。
+/video/out/
+/video/public/**/*.wav
+/video/public/v7/img/*.png
+/video/public/*/img/*.png
+/video/*.mp4
+/video/node_modules/
+
+# ── 运行期状态 ────────────────────────────────────────────────────
+/logs/
+/diag-out/
+/projects/
+*.log
+.pipeline.lock
+
+# ── 本机会话 ──────────────────────────────────────────────────────
+.session
+.session-gui
+.session-probe
+.boardtest-session
+.padprobe-session
+.record-on
+.record-off
+
+# ── 备份不是版本控制 ──────────────────────────────────────────────
+# 改前副本只允许放在 out/_probe/ 下、且**文件名里带 sha256_12**（这样能证明它对应哪一版）。
+# 散在源码目录里的 .prev/.bak/.lastgood 一律不入库 —— 它们没有出处，也就没有价值。
+*.prev.js
+*.prev.ps1
+*.prev.mjs
+*.bak
+*.lastgood
+designs/_catalog.bak.json
+
+# ── 凭据：**绝对不许入库** ────────────────────────────────────────
+_send_feishu.ps1
+_send_feishu2.ps1
+_send_video.ps1
+_launch.bat
+*.env
+.env
+*.secrets
+app_secret*
+
+# ── 依赖 ──────────────────────────────────────────────────────────
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# ── 编辑器 / 系统 ─────────────────────────────────────────────────
+# .vscode/ 里只有 MCP 配置是**交付物**：VS Code 用户复制一份就有工具。
+# 用 /* + 反向规则，因为「整个目录被忽略」时 git 不会进去找例外。
+.vscode/*
+!/.vscode/mcp.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Obsidian / 本地笔记 ───────────────────────────────────────────
+.obsidian/

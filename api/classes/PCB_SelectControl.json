@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"PCB & 封装 / 选择控制类","remarks":"获取或操作选择的元素","visibility":"public","methods":[{"name":"getAllSelectedPrimitives_PrimitiveId","comment":"查询所有已选中图元的图元 ID","visibility":"beta"},{"name":"getAllSelectedPrimitives","comment":"查询所有已选中图元的图元对象","visibility":"beta"},{"name":"getSelectedPrimitives","comment":"查询选中图元的所有参数","visibility":"beta"},{"name":"doSelectPrimitives","comment":"使用图元 ID 选中图元","visibility":"beta"},{"name":"doCrossProbeSelect","comment":"进行交叉选择","visibility":"beta"},{"name":"doCrossProbeSelectByObject","comment":"进行交叉选择"},{"name":"clearSelected","comment":"清除选中","visibility":"beta"},{"name":"getCurrentMousePosition","comment":"获取当前鼠标在画布上的位置","visibility":"beta"}],"callPath":"pcb_SelectControl"},"logs":[],"durationMs":128}
+

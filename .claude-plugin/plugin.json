@@ -1,0 +1,25 @@
+{
+  "name": "pcb-auto",
+  "displayName": "PCB Auto",
+  "description": "Compile a Chinese natural-language board idea into an orderable PCB: schematic, layout, routing, DRC, and Gerber/BOM/PnP export, unattended. Comes with five tools, four independent acceptance layers, and a failure rate you can recompute yourself. Every number carries its denominator and as-of time.",
+  "version": "1.0.0",
+  "author": {
+    "name": "陶鑫旺",
+    "url": "https://github.com/1716775457damn"
+  },
+  "homepage": "https://github.com/1716775457damn/pcb-auto",
+  "repository": "https://github.com/1716775457damn/pcb-auto",
+  "license": "MIT",
+  "keywords": [
+    "pcb",
+    "eda",
+    "gerber",
+    "hardware",
+    "automation",
+    "dfm",
+    "autorouter",
+    "chinese",
+    "lceda",
+    "easyeda"
+  ]
+}

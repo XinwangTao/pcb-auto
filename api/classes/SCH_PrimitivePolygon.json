@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"原理图 & 符号 / 多边形（折线）图元类","visibility":"public","methods":[{"name":"create","comment":"创建多边形","visibility":"beta"},{"name":"delete","comment":"删除多边形","visibility":"beta"},{"name":"modify","comment":"修改多边形","visibility":"beta"},{"name":"get","comment":"获取多边形","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有多边形的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有多边形","visibility":"beta"}],"callPath":"sch_PrimitivePolygon"},"logs":[],"durationMs":129}
+

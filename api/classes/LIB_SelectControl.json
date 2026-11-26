@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"综合库 / 选择控制类","visibility":"public","methods":[{"name":"getSelectedLibraryRowInfo","comment":"获取当前底部库选中行的信息","visibility":"beta"}],"callPath":"lib_SelectControl"},"logs":[],"durationMs":132}
+

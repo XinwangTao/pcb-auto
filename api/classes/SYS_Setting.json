@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 设置类","visibility":"public","methods":[{"name":"restoreDefault","comment":"全局恢复默认设置","visibility":"beta"}],"callPath":"sys_Setting"},"logs":[],"durationMs":139}
+

@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"PCB & 封装 / 焊盘图元类","visibility":"public","methods":[{"name":"create","comment":"创建焊盘","visibility":"public"},{"name":"delete","comment":"删除焊盘","visibility":"beta"},{"name":"modify","comment":"修改焊盘","visibility":"beta"},{"name":"get","comment":"获取焊盘","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有焊盘的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有焊盘","visibility":"beta"}],"callPath":"pcb_PrimitivePad"},"logs":[],"durationMs":138}
+

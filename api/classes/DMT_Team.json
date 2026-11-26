@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"文档树 / 团队类","remarks":"本类接口仅在 **在线模式** 下可用，客户端半离线 / 全离线环境下调用将失败","visibility":"public","methods":[{"name":"getAllTeamsInfo","comment":"获取所有直接团队的详细属性","visibility":"public"},{"name":"getAllInvolvedTeamInfo","comment":"获取所有参与的团队的详细属性","visibility":"public"},{"name":"getCurrentTeamInfo","comment":"获取当前团队的详细属性","visibility":"public"}],"callPath":"dmt_Team"},"logs":[],"durationMs":135}
+

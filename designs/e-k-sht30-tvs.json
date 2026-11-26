@@ -1,0 +1,128 @@
+{
+  "name": "AI_传感器模块_6peia7",
+  "friendly": "AI_传感器模块_6peia7",
+  "_idea": "做一个 SHT30 温湿度模块，I2C 引出，加 TVS 保护",
+  "_compiledBy": "idea2design.js",
+  "_complexity": "传感器模块",
+  "boardWidthMil": 800,
+  "boardHeightMil": 600,
+  "components": [
+    {
+      "des": "U1",
+      "lcsc": "C86346",
+      "value": "SHT30"
+    },
+    {
+      "des": "R1",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "R2",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "C1",
+      "lcsc": "C14663",
+      "value": "100nF"
+    },
+    {
+      "des": "H1",
+      "lcsc": "C9900192758",
+      "value": "8P"
+    },
+    {
+      "des": "D1",
+      "lcsc": "C2827625",
+      "value": "TPNSQA6V8AW5T2G"
+    }
+  ],
+  "connections": [
+    [
+      "U1",
+      "5",
+      "VDD"
+    ],
+    [
+      "U1",
+      "8",
+      "GND"
+    ],
+    [
+      "U1",
+      "9",
+      "GND"
+    ],
+    [
+      "U1",
+      "2",
+      "SDA"
+    ],
+    [
+      "U1",
+      "3",
+      "SCL"
+    ],
+    [
+      "R1",
+      "1",
+      "SDA"
+    ],
+    [
+      "R1",
+      "2",
+      "VDD"
+    ],
+    [
+      "R2",
+      "1",
+      "SCL"
+    ],
+    [
+      "R2",
+      "2",
+      "VDD"
+    ],
+    [
+      "C1",
+      "1",
+      "VDD"
+    ],
+    [
+      "C1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "1",
+      "VDD"
+    ],
+    [
+      "H1",
+      "2",
+      "GND"
+    ],
+    [
+      "H1",
+      "3",
+      "SDA"
+    ],
+    [
+      "H1",
+      "4",
+      "SCL"
+    ],
+    [
+      "D1",
+      1,
+      "VDD"
+    ],
+    [
+      "D1",
+      2,
+      "GND"
+    ]
+  ]
+}

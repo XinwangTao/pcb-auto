@@ -1,0 +1,120 @@
+{
+  "voice": "zh-CN-YunxiNeural",
+  "rate": "+8%",
+  "total": 30.7,
+  "frames": 921,
+  "seglen": 3.033333333333333,
+  "lines": [
+    {
+      "i": 1,
+      "tag": "sch-wired",
+      "text": "文档里的器件，AI 逐条连成网表",
+      "segment_start": 0.0,
+      "start": 0.15,
+      "end": 2.711,
+      "speech": 2.561,
+      "slot": 0.0,
+      "slot_duration": 3.576
+    },
+    {
+      "i": 2,
+      "tag": "pcb-imported",
+      "text": "网表进 PCB，器件自动落板框",
+      "segment_start": 3.033,
+      "start": 3.183,
+      "end": 5.585,
+      "speech": 2.402,
+      "slot": 3.696,
+      "slot_duration": 3.408
+    },
+    {
+      "i": 3,
+      "tag": "pcb-layout",
+      "text": "按网络关系排布，缩短走线距离",
+      "segment_start": 6.067,
+      "start": 6.217,
+      "end": 8.911,
+      "speech": 2.694,
+      "slot": 7.224,
+      "slot_duration": 3.672
+    },
+    {
+      "i": 4,
+      "tag": "pcb-pour",
+      "text": "双面覆铜，GND 铺满整板",
+      "segment_start": 9.1,
+      "start": 9.25,
+      "end": 11.528,
+      "speech": 2.278,
+      "slot": 11.016,
+      "slot_duration": 3.288
+    },
+    {
+      "i": 5,
+      "tag": "pcb-routing",
+      "text": "布线器开始逐条走线",
+      "segment_start": 12.133,
+      "start": 12.283,
+      "end": 13.899,
+      "speech": 1.616,
+      "slot": 14.424,
+      "slot_duration": 2.64
+    },
+    {
+      "i": 6,
+      "tag": "pcb-routing",
+      "text": "走线继续蔓延，过孔自动生成",
+      "segment_start": 15.167,
+      "start": 15.317,
+      "end": 17.943,
+      "speech": 2.626,
+      "slot": 17.184,
+      "slot_duration": 3.6
+    },
+    {
+      "i": 7,
+      "tag": "pcb-routed",
+      "text": "全部网络连通，布线完成",
+      "segment_start": 18.2,
+      "start": 18.35,
+      "end": 20.506,
+      "speech": 2.156,
+      "slot": 20.904,
+      "slot_duration": 3.144
+    },
+    {
+      "i": 8,
+      "tag": "pcb-bottom",
+      "text": "翻到底层，另一面的铜也走完了",
+      "segment_start": 21.233,
+      "start": 21.383,
+      "end": 23.677,
+      "speech": 2.294,
+      "slot": 24.168,
+      "slot_duration": 3.288
+    },
+    {
+      "i": 9,
+      "tag": "pcb-stitched",
+      "text": "孤立铜皮补过孔，GND 接回去",
+      "segment_start": 24.267,
+      "start": 24.417,
+      "end": 26.804,
+      "speech": 2.387,
+      "slot": 27.576,
+      "slot_duration": 3.384
+    },
+    {
+      "i": 10,
+      "tag": "pcb-drc",
+      "text": "零违规通过，制造文件一次导出",
+      "segment_start": 27.3,
+      "start": 27.45,
+      "end": 29.703,
+      "speech": 2.253,
+      "slot": 31.08,
+      "slot_duration": 3.24
+    }
+  ],
+  "warnings": []
+}

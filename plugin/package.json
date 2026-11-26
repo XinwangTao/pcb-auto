@@ -1,0 +1,31 @@
+{
+  "name": "@pcb-auto/dsh-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Expose the pcb-auto pipeline as DeepSeek Harness tools: idea → design → board → fabrication verdict.",
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "docs",
+    "icon.svg"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "os": [
+    "win32"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

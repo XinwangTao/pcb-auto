@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 对话框类","remarks":"生成对话框窗口","visibility":"public","methods":[{"name":"createDesignPortal","comment":"创建组件化弹出窗口的通信入口","visibility":"public"},{"name":"showInformationMessage","comment":"弹出消息窗口","visibility":"public"},{"name":"showConfirmationMessage","comment":"弹出确认窗口","visibility":"public"},{"name":"showInputDialog","comment":"弹出输入窗口","visibility":"beta"},{"name":"showSelectDialog","comment":"弹出选择窗口","visibility":"beta"},{"name":"insertScriptToDialog","comment":"向指定原生弹窗注入函数"}],"callPath":"sys_Dialog"},"logs":[],"durationMs":176}
+

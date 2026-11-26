@@ -1,0 +1,112 @@
+    // 只在**真的不同**时告警。实测库里的值是 "1kΩ"/"5.1kΩ"，设计写 "1k"/"5.1k"，
+    // 直接字符串比较会把 4 个器件全报成冲突，日志被噪声淹没，真冲突反而看不见。
+    // 比较前先把**等价的工程写法**折成同一个量（漏掉一种 = 静默漏报）：
+    //   100nF == 0.1uF == 100000pF    5.1kΩ -> 5100Ω   4R7 -> 4.7Ω   1k2 -> 1200Ω
+    //   2n2 -> 2.2nF                  10µF -> 10uF     1R -> 1Ω      0Ω -> 0Ω
+    // 旧实现在这里有 4 个坑，全部已修：
+    //   a) 整体 toUpperCase() → 10M(兆) 与 10m(毫) 塌成同一个，真实差异被放过；
+    //   b) [RKMNPV] 当小数点时没排除料号 → 1N4148 被读成 1.4148N；
+    //   c) 紧跟的 ([NPU])$ -> $1F 又把 b) 的产物补成"合法标称值" 1.4148NF，
+    //      于是料号被当成数值参与比较；
+    //   d) 100nF 与 0.1uF 归一化后不相等 → 假"错料"（直接 push errors，整轮 ok:false）。
+    // 现在改成「先分类、再按量纲归一化」，并把**语法错**与**值不相等**拆成不同日志键。
+    if (item.value && real) {
+      // 分类 + 归一化。kind 的含义：
+      //   num    → 可与同 kind 按 (dim, v) 比数值
+      //   code   → 料号（1N4148 / 2N3904 / SS34 / MPN），只做字符串比较，绝不按数值解释
+      //   marker → NC/DNP 这类装配标记，不是取值
+      //   empty  → 空白
+      //   bad    → 像数值却写坏了（1.2.3），这是**语法错**，不是错料
+      const parseValue = (s) => {
+        const VCH = /^[0-9.RrKkMmNnPpUuFfHhVv]+$/;   // 只由"数值+单位"字符组成 → 可能是写坏的数值
+        const MULT = { M: 1e6, m: 1e-3, K: 1e3, k: 1e3, U: 1e-6, u: 1e-6, N: 1e-9, n: 1e-9, P: 1e-12, p: 1e-12 };
+        // µ(U+00B5) / μ(U+03BC) 必须先换成 u：两者的大写都是希腊字母 Μ，会和 M(兆) 混淆。
+        // 这里**不整体大写** —— M 与 m 的区别（10^6 / 10^-3）要留到 MULT 里判。
+        const t = String(s == null ? '' : s).trim()
+          .replace(/[µμ]/g, 'u')
+          .replace(/[Oo][Hh][Mm][Ss]?/g, '')          // 5.1kOHM / 5.1kohms
+          .replace(/Ω/g, '')
+          .replace(/[\s\u00a0]+/g, '');
+        if (!t) return { kind: 'empty', token: '' };
+        // NC/DNP 是装配标记，不是标称值：与任何取值都不可比，更不许算错料。
+        if (/^(NC|DNP|DNM|NONE|N\/A|NA|TBD|NULL|-+|\?+)$/i.test(t)) return { kind: 'marker', token: t.toUpperCase() };
+        // JEDEC 料号族（1N4148 / 1N4007 / 2N3904 / 1N60）必须在小数点规则**之前**拦下，
+        // 否则 1N4148 会被读成 1.4148nF。判据用 JEDEC 命名「1N/2N/3N + ≥2 位数字」：
+        // 阈值取 2 位，才能同时放过电容的 1N5（=1.5nF）。
+        if (/^[1-3][Nn]\d{2,}/.test(t)) return { kind: 'code', token: t.toUpperCase() };
+        let num = null, unit = '';
+        // R/K/M/N/P/U 作小数点占位（4R7=4.7Ω、1N5=1.5nF、1k2=1.2kΩ、2n2=2.2nF、1M5=1.5MΩ）。
+        // 只在「数字-字母-数字」形状下生效，所以 10M / 10K 走下面的普通分支。
+        const rkm = t.match(/^(\d+)([RrKkMmNnPpUu])(\d+)([A-Za-z]*)$/);
+        if (rkm) { num = Number(rkm[1] + '.' + rkm[3]); unit = rkm[2] + rkm[4]; }
+        else {
+          const plain = t.match(/^(\d+(?:\.\d+)?)([A-Za-z]*)$/);
+          // 不是"数字开头"的串按料号处理（LM358 / SS34 / CL10B104KO5NNNC 都是这一族）。
+          if (!plain) return (VCH.test(t) && /^[0-9]/.test(t)) ? { kind: 'bad', token: t } : { kind: 'code', token: t.toUpperCase() };
+          num = Number(plain[1]); unit = plain[2];
+        }
+        // 拆「前缀 + 基准」：F=电容、H=电感、V=电压、R=电阻；没有基准字母就是「只有前缀」。
+        const last = unit.slice(-1);
+        const hasBase = /[FfHhVvRr]/.test(last);
+        const base = hasBase ? last.toUpperCase() : '';
+        const pre = hasBase ? unit.slice(0, -1) : unit;
+        if (pre && !(pre in MULT))   // 10KK / 1M5X 这类：前缀不是合法 SI 前缀
+          return (VCH.test(t) && /^[0-9]/.test(t)) ? { kind: 'bad', token: t } : { kind: 'code', token: t.toUpperCase() };
+        // 量纲：写了 F/H/V/R 就按它定；只写前缀时，N/P/U 量级按电容读（沿用旧实现
+        // ([NPU])$ -> $1F 的意图：2n2=2.2nF、8P=8pF），M/K 量级按电阻读。
+        // 按"大写 M = 10^6"的规则，'MF' 读作兆法；毫法必须写 'mF'。
+        const dim = base === 'F' ? 'C' : base === 'H' ? 'L' : base === 'V' ? 'V'
+          : base === 'R' ? 'R' : /[UNPunp]/.test(pre) ? 'C' : 'R';
+        // 10 位有效数字归一：100nF(=1e-7) 与 0.1uF(0.1*1e-6 在 IEEE754 里有尾差) 必须落在同一个数上。
+        return { kind: 'num', dim, bare: !unit,
+          v: Number((num * (pre ? MULT[pre] : 1)).toPrecision(10)), token: t.toUpperCase() };
+      };
+      const A = parseValue(item.value), B = parseValue(real);
+      const shown = { des: item.des, lcsc: item.lcsc, declared: String(item.value), actual: real };
+      if (A.kind === 'bad' || B.kind === 'bad') {
+        // 写法坏了 ≠ 值不一样：前者改写法，后者才是错料。独立日志键，避免把"写错"当"错料"去换物料。
+        log('valueSyntax', { ...shown, badSide: A.kind === 'bad' ? 'declared' : 'actual',
+          badToken: (A.kind === 'bad' ? A.token : B.token) });
+        warns.push(`valueSyntax ${item.des}(${item.lcsc}): 取值写法无法解析 ` +
+          `${A.kind === 'bad' ? '设计' : '器件实际'}="${A.kind === 'bad' ? item.value : real}"`);
+      } else if (A.kind === 'empty' || B.kind === 'empty' || A.kind === 'marker' || B.kind === 'marker') {
+        // NC/DNP/空白不是标称值：静默跳过。这类器件每板都有，记日志只会淹没真问题。
+      } else if (A.kind === 'num' && B.kind === 'num') {
+        if (A.dim === B.dim && A.v === B.v) {
+          // 数值等价（100nF==0.1uF==100000pF、4R7==4.7Ω、1k2==1.2kΩ）：不报
+        } else if (A.bare || B.bare) {
+          // 有一侧没写单位 → 量纲是猜的（104 既是 100nF 的 EIA 三位码，也是 100kΩ 的电阻码）。
+          // 这种情况**不判错料**，只留痕：按数值硬比会重演旧实现的假"错料"。
+          log('valueUncomparable', { ...shown, declaredNorm: A.token, actualNorm: B.token,
+            dimDeclared: A.dim, dimActual: B.dim });
+        } else if (A.dim === B.dim) {
+          // 同量纲且数值确实不同 = 真错料（100nF vs 1uF、4.7k vs 1k）。
+          log('valueMismatch', { ...shown, declaredNorm: A.token, actualNorm: B.token });
+          // 只 log 不够：这是**交付物自相矛盾**级别的问题，必须进 warns 让人看见。
+          warns.push(`valueMismatch ${item.des}(${item.lcsc}): 设计写 ${item.value}，器件实际 ${real}`);
+          // 但 warns 不参与 ok 判定 → 会带着错料"成功"出货。
+          // 实测证据：SHT30_LDO_Module-20261125-193402 的 Netlist 里
+          //   R1/R2  Value=4.7k  Supplier=C11702  MPN=0402WGF1001TCE（1kΩ）
+          // 设计标 4.7k、实际装 1k，而该次运行 ok:true。
+          // BOM 标称与实际物料不符 = 板子做出来必然错件，这不是警告是**致命**。
+          // 注意：这类设计由 run-all.ps1 按 idea 现场生成，**从不经过 audit-design.js**
+          //（那道 fail-closed 闸门只审 designs\*.json），所以这里是唯一能拦住它的地方。
+          errors.push(`错料 ${item.des}(${item.lcsc}): 设计写 ${item.value}，器件实际 ${real}`);
+        } else {
+          // 两侧都带单位但量纲不同（1nF vs 1nH）：把量纲抹平会造出假等/假不等，只记录。
+          log('valueDimMismatch', { ...shown, dimDeclared: A.dim, dimActual: B.dim });
+        }
+      } else if (A.kind === 'code' && B.kind === 'code') {
+        // 料号走**字符串**比较：1M/1m 的兆/毫在这里没有意义，不做任何数值解释。
+        // 用"包含"而不是等号：库里 Value 常带厂牌/封装后缀（1N4148 vs 1N4148WS-7-F）。
+        if (!(A.token === B.token || A.token.includes(B.token) || B.token.includes(A.token))) {
+          // 料号后缀差异太常见，只 warn 不 error —— 否则会把一批正常料报成错料。
+          log('valueCodeMismatch', { ...shown, declaredNorm: A.token, actualNorm: B.token });
+          warns.push(`valueCodeMismatch ${item.des}(${item.lcsc}): 设计写 ${item.value}，器件实际 ${real}`);
+        }
+      } else {
+        // 一边数值一边料号：多数是库里 Value 直接填了 MPN（电容常见 CL10B104KB8NNNC），
+        // 按错料报会把每个电容都报出来 —— 只留日志，交人工复核。
+        log('valueKindMismatch', { ...shown, declaredKind: A.kind, actualKind: B.kind });
+      }
+    }

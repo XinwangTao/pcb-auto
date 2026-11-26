@@ -1,0 +1,32 @@
+let layoutState = null;
+try {
+  const job = await eda.pcb_Document.startAutoLayout();
+  // 420000 是硬上限，与外部 590s 掐断线不匹配：布局一旦慢，调用会被外部掐断，
+  // 而 render 里的代码仍在跑 → 幽灵调用。改成以剩余预算为上界。
+  if (job?.jobId) {
+    const r = await waitJob(job.jobId, Math.max(Math.min(420000, left() - 240000), 30000), 'layout');
+    layoutState = r.state; log('layout', r);
+    // 等超时不等于布局停了。不取消就往下走，覆铜/布线是在**一块还在被改写的板子**上干活，
+    // 之后所有判定（覆铜是否重建完、DRC、断连）都建在中间态上 —— 本项目已被这类误判坑过多次。
+    // cancelAutoJob 是协作式取消（置位取消标记后返回，引擎在检查点退出；写回前被取消则已算出的
+    // 几何不落画布），且 api-types.d.ts 明确它同时适用于 startAutoLayout 作业。
+    // 关键：这里**不把 layoutState 改成 completed** —— 取消 = 布局没做完，
+    // 所以 computeOK() 里的 layoutState === 'completed' 仍为假，取消过的布局不可能假通过。
+    if (r.state === 'TIMEOUT' || r.state === 'ERR') {
+      try {
+        const cc = await eda.pcb_Document.cancelAutoJob(job.jobId);
+        log('layoutCancelled', { state: r.state, ok: cc });
+        // 协作式取消是"请求"不是"完成"：再等一小会儿确认它真进终态。
+        // 上限同时受剩余预算约束（扣掉 120s 收尾），预算不够时上限为 0 → 立即返回，不抢收尾时间。
+        const rc = await waitJob(job.jobId, Math.max(Math.min(20000, left() - 120000), 0), 'layout-cancel');
+        log('layoutCancelConfirm', { state: rc.state, ms: rc.ms, partial: rc.st?.partial });
+        // 唯一例外：作业在取消生效前就自己正常跑完了 —— 这不是"因为取消成功就写 completed"，
+        // 而是作业自己报告的终态（只有 completed 代表几何已提交）。
+        if (rc.state === 'completed' && rc.st?.partial !== true) {
+          layoutState = 'completed';
+          log('layoutCompletedAfterCancel', { why: 'job finished before cancel took effect' });
+        }
+      } catch (e) { log('layoutCancelErr', { m: String(e && e.message).slice(0, 80) }); }
+    }
+  }
+} catch (e) { errors.push('autoLayout: ' + (e && e.message)); }

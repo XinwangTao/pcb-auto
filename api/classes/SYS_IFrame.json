@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"系统 / 内联框架窗口类","visibility":"public","methods":[{"name":"openIFrame","comment":"打开内联框架窗口","visibility":"beta"},{"name":"closeIFrame","comment":"关闭内联框架窗口","visibility":"beta"},{"name":"hideIFrame","comment":"隐藏内联框架窗口","visibility":"beta"},{"name":"showIFrame","comment":"显示内联框架窗口","visibility":"beta"},{"name":"modifyIFrame","comment":"调整内联框架窗口的标题、宽高与位置","visibility":"beta"}],"callPath":"sys_IFrame"},"logs":[],"durationMs":129}
+

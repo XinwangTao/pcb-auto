@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"原理图 & 符号 / 圆弧图元类","visibility":"public","methods":[{"name":"create","comment":"创建圆弧","visibility":"beta"},{"name":"delete","comment":"删除圆弧","visibility":"beta"},{"name":"modify","comment":"修改圆弧","visibility":"beta"},{"name":"get","comment":"获取圆弧","visibility":"beta"},{"name":"getAllPrimitiveId","comment":"获取所有圆弧的图元 ID","visibility":"beta"},{"name":"getAll","comment":"获取所有圆弧","visibility":"beta"}],"callPath":"sch_PrimitiveArc"},"logs":[],"durationMs":124}
+

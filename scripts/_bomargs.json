@@ -1,0 +1,8 @@
+{"specs":[
+ {"key":"C_10uF_0805","kw":"10uF 0805","footprint":"0805","value":"10uF","minVoltage":10},
+ {"key":"C_100nF_0402","kw":"100nF 0402","footprint":"0402","value":"100nF","minVoltage":16},
+ {"key":"R_1k_0402","kw":"1k 0402","footprint":"0402","value":"1kΩ","descHas":"电阻"},
+ {"key":"R_5k1_0402","kw":"5.1k 0402","footprint":"0402","value":"5.1kΩ","descHas":"电阻"},
+ {"key":"LDO_3V3","kw":"AMS1117-3.3","footprint":"SOT-223","value":"3.3V"},
+ {"key":"LED_0805","kw":"LED 0805","footprint":"0805","descHas":"发光"}
+]}

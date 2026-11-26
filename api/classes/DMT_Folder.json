@@ -1,0 +1,3 @@
+
+{"ok":true,"value":{"title":"文档树 / 文件夹类","remarks":"本类接口仅在 **在线模式** 下可用，客户端半离线 / 全离线环境下调用将失败\n\n工程树异步刷新；写操作或读取列表后得到旧数据时，先调用 {@link DMT_Project.waitForReady | waitForReady} 等待后重试","visibility":"public","methods":[{"name":"createFolder","comment":"创建文件夹","visibility":"beta"},{"name":"modifyFolderName","comment":"修改文件夹名称","visibility":"public"},{"name":"modifyFolderDescription","comment":"修改文件夹描述","visibility":"beta"},{"name":"moveFolderToFolder","comment":"移动文件夹","visibility":"public"},{"name":"getAllFoldersUuid","comment":"获取所有文件夹的 UUID","visibility":"public"},{"name":"getFolderInfo","comment":"获取文件夹详细属性","visibility":"public"},{"name":"deleteFolder","comment":"删除文件夹","visibility":"public"}],"callPath":"dmt_Folder"},"logs":[],"durationMs":127}
+
