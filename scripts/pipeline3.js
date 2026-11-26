@@ -2479,7 +2479,17 @@ let geoIdx = null;
 const geoOwnerOk = new Set();
 const ensureGeoIdx = async () => {
   if (geoIdx) return geoIdx;
-  const sets = { pad: new Set(), line: new Set(), via: new Set(), region: new Set(), polyline: new Set(), fill: new Set() };
+  const sets = {
+    pad: new Set(), line: new Set(), via: new Set(),
+    region: new Set(), polyline: new Set(),
+    // 【fill 与 pour 不是同一个东西，两个都要】实测 2026-11-26T17:23 run 171654：
+    //   pcb_PrimitiveFill.getAllPrimitiveId(L) 对 L∈{1,2,12,15,16,17} 全部返回 0 条，
+    //   而 pouredCount = 2（pcb_PrimitivePoured 真返回 2 条）。
+    // 只索引 fill 的后果：板上有 2 块实铜，几何索引里一块都没有，
+    // 于是 resolveByOwner 里那个 `owner === 'pour'` 分支永远不可达 ——
+    // 写好了的代码配一个永远为空的集合，等于死代码，而读起来是对的。
+    fill: new Set(), pour: new Set(), poured: new Set(),
+  };
   const errs = [];
   const load = async (key, api) => {
     try {
@@ -2493,6 +2503,8 @@ const ensureGeoIdx = async () => {
   await load('region', eda.pcb_PrimitiveRegion);
   await load('polyline', eda.pcb_PrimitivePolyline);
   await load('fill', eda.pcb_PrimitiveFill);
+  await load('pour', eda.pcb_PrimitivePour);
+  await load('poured', eda.pcb_PrimitivePoured);
   if (errs.length) log('geoIndexErr', { errs });
   geoIdx = sets;
   return sets;
@@ -2562,11 +2574,13 @@ const resolveByOwner = async (owner, id, obType) => {
       pts: [[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]]],
     };
   }
-  if (owner === 'region' || owner === 'polyline' || owner === 'fill' || owner === 'pour') {
+  if (owner === 'region' || owner === 'polyline' || owner === 'fill'
+    || owner === 'pour' || owner === 'poured') {
     const api = owner === 'region' ? eda.pcb_PrimitiveRegion
       : owner === 'polyline' ? eda.pcb_PrimitivePolyline
         : owner === 'fill' ? eda.pcb_PrimitiveFill
-          : eda.pcb_PrimitivePour;
+          : owner === 'pour' ? eda.pcb_PrimitivePour
+            : eda.pcb_PrimitivePoured;
     const obj = await api.get(id);
     // 【必须按类选访问器 —— 四个类的几何访问器不是同一个名字】api-types.d.ts 实证：
     //   Region  → getState_ComplexPolygon()  L19652
