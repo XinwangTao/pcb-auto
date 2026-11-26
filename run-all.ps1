@@ -645,6 +645,47 @@ function Reset-Session([string]$why) {
   catch { Log "重建会话失败：$($_.Exception.Message)" 'Red'; return $null }
 }
 
+# ── 扩板只扩能扩的那一维 ────────────────────────────────────────────────
+# 缺陷实测（2026-11-26T17:44 run 171654 attempt 4）：expand-1.25x 把 1300x3700 扩到
+# 1625x4625，结果 gates.errorList 里多出一条**本脚本自己造的**错：
+#   antennaKeepout: 天线未悬出板边 overhang=-664mil（板边 -4630 / 器件 -3966.5）
+# 设计里 `_antennaKeepout.y0 = -3700` 正是板的下边缘 —— 天线段从**下边缘**悬出。
+# H 从 3700 扩到 4625，下边缘移到 -4625，器件留在原地，天线就被埋进板内。
+#
+# 而 FAILURES.md 第 20 条量过：同网表 1000 mil 宽 0 条走线、1300 mil 宽 602 条 ——
+# **板宽**才是布线的限制因素，高度只用来容纳天线悬出。两维一起乘 1.25 等于
+# 「把有用的那一维扩了，同时把有害的那一维也扩了」。
+#
+# 第二种情况：`_placement` 钉死了器件坐标的设计（本设计 26 个器件、
+# placementMode=="explicit"、maxErrMil==0），扩板时器件一个都不动，于是
+# 面积 +56% 换来 DRC 直方图**逐位相同**（32->32，七类一项不差，三次尝试一致）。
+# 对这类设计扩 H 是几何上不可能改变任何一条违规的操作。
+$expandW = [int]($baseW * 1.25)
+$expandH = [int]($baseH * 1.25)
+$expandWhy = 'both'
+$ak = $designObj._antennaKeepout
+if ($ak -and ($null -ne $ak.y0) -and ([Math]::Abs([double]$ak.y0 + [double]$baseH) -lt 100)) {
+  # 天线区贴下边缘 —— 扩 H 会把天线埋进板内，这不是假设，是已经实测到的 -664 mil
+  $expandH = [int]$baseH
+  $expandWhy = ('x-only(天线在下边缘 y0={0})' -f $ak.y0)
+} else {
+  # 【必须先判 null】`@($null.PSObject.Properties).Count` 等于 **1**，不是 0 ——
+  # `@($null)` 是「含一个 $null 元素的数组」。少了这个判断，没有 `_placement` 的设计
+  # 也会被当成「钉死了 1 个器件」，于是扩板对所有设计都变成单维，
+  # 包括那些扩板本来有效的自动布局设计（70% 通过率就来自它们）。
+  # 这条是反向对照用例测出来的，不是看代码看出来的。
+  $plCount = 0
+  if ($null -ne $designObj._placement) {
+    try { $plCount = @($designObj._placement.PSObject.Properties).Count } catch { $plCount = 0 }
+  }
+  if ($plCount -gt 0) {
+    # 器件坐标全钉死 —— 扩板不会移动任何一个器件，违规集合不变
+    $expandH = [int]$baseH
+    $expandWhy = ('x-only(_placement 钉死 {0} 个器件)' -f $plCount)
+  }
+}
+Log ("  扩板策略：{0}  W {1}->{2}  H {3}->{4}" -f $expandWhy, $baseW, $expandW, $baseH, $expandH) 'DarkGray'
+
 $healPlans = @(
   # 第 1 步：最小板框。**这一段是主战场**：语料里 27 个"多尝试目录"中有 19 个
   # 在第 2 步就通过（见下面的实测表），而这个"第 2 步"在历史链里一直是扩板。
@@ -666,14 +707,14 @@ $healPlans = @(
   # 仍然成立的部分：布线是非确定性的。同一设计、同一板框、同一代码，独立运行结果不同
   # （d12：第 1 轮 smart-fit 失败、第 2 轮 152.3s 通过；d1 两轮皆过；d11 一过一败）。
   # 所以"失败"只等于"这几次骰子不好"，不等于"这块板布不出来"。
-  @{ w = $baseW * 1.25; h = $baseH * 1.25; tag = 'expand-1.25x' },
+  @{ w = $expandW; h = $expandH; tag = 'expand-1.25x' },
   # 第 3 步：**同尺寸重跑**（2026-11-26 02:1x 加）。
   # 依据：实测 `AI_RP2040_系统_15pqy38-20261126-023722` 在 2250x1625 上
   # 第 2 步 4 处违规、第 3 步同尺寸重跑直接归零通过 —— 换一个骰子确实能救回来。
   # 通过的设计在循环末尾 break，走不到这一级，所以对已通过的设计零成本。
   # 扩展名仍是 expand-1.25x 系（尺寸不变），tag 只用于日志/帧目录/遥测文件名，
   # 没有任何下游按 tag 分支（已 grep 核实）。
-  @{ w = $baseW * 1.25; h = $baseH * 1.25; tag = 'expand-1.25x-retry' },
+  @{ w = $expandW; h = $expandH; tag = 'expand-1.25x-retry' },
   # 第 4 步：**再摇一次同尺寸**（2026-11-26 04:0x 加，放在末尾而不是插到第 2 步）。
   # 动机来自"近失"目录：有些设计三步跑完只差 **2 处违规**且 routeState=completed ——
   #   AI_传感器___充电___显示_19ptbuz-20261126-033920  1 处（11→9→1）
@@ -681,7 +722,7 @@ $healPlans = @(
   #   USBC_Power_ESD-20261126-020219                  1 处
   # 它们已经烧了 3 次尝试（~570s），再给一次 ~150s 的机会，期望高于整轮作废。
   # 代价只在**三步全失败**的设计上（语料 7/27），其余一律 break，不额外花钱。
-  @{ w = $baseW * 1.25; h = $baseH * 1.25; tag = 'expand-1.25x-retry2' }
+  @{ w = $expandW; h = $expandH; tag = 'expand-1.25x-retry2' }
 )
 
 # 面积美学：板框是估出来的，过大会导致器件挤在中间、四周大片空白（看着不专业、多花打样费）。
