@@ -182,6 +182,28 @@ check('list 也不接受参数（唯一不留例外的地方）', () => {
   assert(r.code === 2, `期望 2，得到 ${r.code}`)
 })
 
+// 「支持任何平台」说的是接入协议，不是运行依赖 —— README 里那张依赖表说
+// idea-to-design 只需要 Node。这句话必须有 CI 证据，否则它就是一句断言。
+// 这条同时钉住两件事：它在**没有 python、没有 EDA** 的 runner 上能跑，
+// 以及同一个想法给出同一份设计（确定性）。
+check('idea-to-design 只靠 Node 就能跑，且同一句话给出同一份设计', () => {
+  const idea = '做一个 SHT30 温湿度采集板，I2C 经排针引出'
+  const a = run([join(ROOT, 'cli', 'pcb.mjs'), 'idea-to-design', idea, '--dry'], { timeout: 180_000 })
+  assert(a.code === 0, `--dry 期望 0，得到 ${a.code}\n${a.stderr.slice(0, 300)}`)
+  const ja = JSON.parse(a.stdout.trim().split('\n').pop())
+  assert(ja.ok === true && ja.exitCode === 0, 'ok/exitCode 不一致')
+  assert(ja.components >= 4 && ja.connections >= 10,
+    `器件 ${ja.components} / 连接 ${ja.connections} —— 少得不像一块板`)
+  assert(/\bGND\b/.test(ja.netsList) && /\bVDD\b/.test(ja.netsList),
+    `网络里没有 VDD/GND：${ja.netsList}`)
+  // 确定性：同一句话两次调用，规格数字必须一样。不写盘（--dry），所以没有副作用。
+  const b = run([join(ROOT, 'cli', 'pcb.mjs'), 'idea-to-design', idea, '--dry'], { timeout: 180_000 })
+  const jb = JSON.parse(b.stdout.trim().split('\n').pop())
+  assert(jb.components === ja.components && jb.connections === ja.connections && jb.parts === ja.parts,
+    `同一句话给出两种设计：${ja.components}/${ja.connections} vs ${jb.components}/${jb.connections}`)
+  return `${ja.complexity} · ${ja.components} 器件 / ${ja.connections} 连接 / ${ja.nets} 网络`
+})
+
 console.log('\n\x1b[1m5 · MCP 协议契约\x1b[0m')
 
 const init = mcpSession([
