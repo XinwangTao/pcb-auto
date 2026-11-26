@@ -37,6 +37,22 @@
       "expect": { "exit": 1, "mustInclude": ["gerber.outline.d01"] }
     },
     {
+      "name": "gerber.outline.multicontour",
+      "base": "test/mutants/base",
+      "note": "把一个闭合矩形轮廓劈成两段开放折线：在**第一段** D01 之后插入一条同坐标的 D02（lazy 前缀 [\\s\\S]*? 让它落在最左的那条 D01 上，$2D01*$2D02* 复读该点，所以不锚任何具体坐标）。这条是「逐轮廓闭合」判据的回归证明 —— 旧的『全文件首个 D02 起点 vs 全文件末个 D01 终点』在这里算出的差恒为 0（两端都还是矩形起点），会**判通过**；只有逐轮廓才看得见两段都断了。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "Gerber.zip",
+          "entry": "Gerber_BoardOutlineLayer.GKO",
+          "regex": true,
+          "find": "([\\s\\S]*?)(X-?\\d+Y-?\\d+)D0?1\\*",
+          "with": "$1$2D01*$2D02*"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["gerber.outline.closed"] }
+    },
+    {
       "name": "gerber.copper.empty",
       "base": "test/mutants/base",
       "note": "整层 GTL 换成只剩文件头的空铜层（0 个 D01/D03）。",

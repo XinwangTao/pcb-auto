@@ -419,17 +419,61 @@ function check(dir, opts) {
         }
         if (g.d01 + g.d03 < 3) B('gerber.outline.d01', `板框 GKO 只有 ${g.d01} 段 D01，板框未成形`, { d01: g.d01 });
         else {
-          // 闭合：最后一段 D01 的终点必须回到 D02 起点
-          const line = byExt.get('GKO').data.toString('utf8');
-          const firstMove = line.match(/X(-?\d+(?:\.\d+)?)Y(-?\d+(?:\.\d+)?)D0?2\*/);
-          const lastDraw = [...line.matchAll(/X(-?\d+(?:\.\d+)?)Y(-?\d+(?:\.\d+)?)D0?1\*/g)].pop();
-          if (!firstMove || !lastDraw) B('gerber.outline.closed', '板框找不到 D02 起点或 D01 终点，无法确认闭合');
+          // 闭合：**逐轮廓**判定。旧实现（取全文件第一个 D02 起点比全文件最后一个 D01
+          // 终点）只在 GKO 恰好只有一个轮廓时成立，而这个前提是错的：GKO 是
+          // BoardOutlineLayer，同一个文件里同时承载 BoardOutline 与 BoardCutout
+          // （见 Gerber 文件头 `G04 Object Configs:` 一行自己列了 BoardCutout）。
+          // 带槽孔的板子必然有 >=2 个轮廓，于是旧实现拿**外框的起点**去比**槽的终点**。
+          // 实测 ESP32S3_Wireless_Mic_V3-20261126-175901 报「差 89.6047mm」，而它 GKO 里
+          // 两个轮廓各自闭合、缺口都是 0.000000mm —— 那唯一的阻断项是量具自己的缺陷。
+          // 全语料复核（2026-11-26，70 个 Gerber.zip / 78 个轮廓）：旧实现判未闭合 8 个，
+          // 逐轮廓判 0 个，真阳性 0 个。这 8 个全是「矩形 + 一个 stadium 槽」。
+          // 注意不是把容差放宽：是旧实现**原理上没有**正确能力。
+          const line = byExt.get('GKO').data.toString('utf8')
+            // 先剥掉参数块与注释，否则 `%FSLAX45Y45*%` 里的 `X45Y45` 会被当成坐标。
+            .replace(/%[^*]*\*%/g, ' ')
+            .replace(/G04[^*]*\*/g, ' ');
+          // `[^XD]*?` 负责吸收圆弧（G02/G03）夹带的 I/J 参数：一次带圆弧的画线长成
+          // `G02X..Y..I..J..D01*`，只写 `X..Y..D01` 会把槽轮廓的封闭段整段漏掉，
+          // 那样算出来的「闭合」是假的。排除 X 和 D 是为了不跨越到下一条命令。
+          const contours = [];
+          let cur = null;
+          for (const m of line.matchAll(/X(-?\d+(?:\.\d+)?)Y(-?\d+(?:\.\d+)?)[^XD]*?D0?([123])\*/g)) {
+            const pt = g.toMm(m[1], m[2]);
+            const d = m[3];
+            if (d === '2') {
+              if (cur) contours.push(cur);
+              cur = { start: pt, last: pt, draws: 0 };
+            } else if (d === '3') {
+              // 区域填充的闪光点不是轮廓线：它只定位，不画线
+              if (!cur) cur = { start: pt, last: pt, draws: 0 };
+            } else if (cur) {
+              cur.last = pt;
+              cur.draws += 1;
+            }
+          }
+          if (cur) contours.push(cur);
+          // **必须滤掉 0 画线的空轮廓**。文件末尾那条 `X..Y..D02*` 会留下一个
+          // start===last 的空轮廓，缺口恒为 0；若把它算进分母，「末段 D01 改成 D02」
+          // 这类真断口会被这个空轮廓静默放行 —— 那正是 test/mutants 里
+          // gerber.outline.closed 的突变形状，等于把闸门自己弄瞎。
+          const drawn = contours.filter((c) => c.draws > 0);
+          if (!drawn.length) B('gerber.outline.closed', '板框找不到任何画线段（D02 起点 + D01 终点），无法确认闭合');
           else {
-            const p0 = g.toMm(firstMove[1], firstMove[2]);
-            const p1 = g.toMm(lastDraw[1], lastDraw[2]);
-            const gap = Math.hypot(p0.x - p1.x, p0.y - p1.y);
-            if (gap > EPS_MM) B('gerber.outline.closed', `板框未闭合：末段 D01 终点与首段 D02 起点差 ${gap.toFixed(4)}mm`, { from: [r3(p0.x), r3(p0.y)], to: [r3(p1.x), r3(p1.y)] });
-            else P('gerber.outline', `GKO 闭合，${g.d01} 段 D01，尺寸 ${board ? board.w.toFixed(2) : '?'}×${board ? board.h.toFixed(2) : '?'}mm`);
+            const measured = drawn.map((c) => ({ c, gap: Math.hypot(c.start.x - c.last.x, c.start.y - c.last.y) }));
+            const unclosed = measured.filter((x) => x.gap > EPS_MM);
+            const worst = measured.reduce((a, b) => (b.gap > a.gap ? b : a));
+            if (unclosed.length) {
+              B('gerber.outline.closed', `板框有轮廓未闭合：${unclosed.length}/${drawn.length} 个轮廓，最大缺口 ${worst.gap.toFixed(4)}mm`, {
+                contours: drawn.length,
+                unclosed: unclosed.length,
+                gap: r3(worst.gap),
+                from: [r3(worst.c.start.x), r3(worst.c.start.y)],
+                to: [r3(worst.c.last.x), r3(worst.c.last.y)],
+              });
+            } else {
+              P('gerber.outline', `GKO 闭合，${drawn.length} 个轮廓（${g.d01} 段 D01），尺寸 ${board ? board.w.toFixed(2) : '?'}×${board ? board.h.toFixed(2) : '?'}mm`);
+            }
           }
         }
         // 与 _run.json 实际板框对齐（±0.1mm）
