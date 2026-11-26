@@ -229,6 +229,37 @@ def main():
             ids[b["id"]] = ids.get(b["id"], 0) + 1
     summary["blocker_ids"] = dict(sorted(ids.items(), key=lambda kv: -kv[1]))
 
+    # ── 零样本不许覆盖真测量 ─────────────────────────────────────────
+    # `out/_probe/fab-census.json` 同时是**随仓库发布的证据**（交付-README.md
+    # 里「53 个可打样 / 3 个有阻断」以它为来源）和这个脚本的输出路径。
+    #
+    # 于是在一个没有产物的克隆里跑一次，它会被改写成「0 个目录」：
+    # 证据没了，`git status` 多一条 M，而 `0 个目录` 看起来像完美的成绩单。
+    # smoke 第 8 组用「跑前备份、跑后还原」绕过了这件事 —— 那保护的是测试，
+    # 不是用户。真正该保护的是**证据本身**。
+    if not rows and os.path.exists(OUT):
+        _old_n = 0
+        try:
+            with io.open(OUT, "r", encoding="utf-8") as _fh:
+                _old_n = int((json.load(_fh).get("all") or {}).get("n") or 0)
+        except Exception:
+            _old_n = 0
+        if _old_n:
+            _empty_path = OUT[:-5] + ".empty.json" if OUT.endswith(".json") else OUT + ".empty.json"
+            _tmp0 = _empty_path + ".tmp"
+            with io.open(_tmp0, "wb") as _fh:
+                _fh.write(json.dumps(summary, ensure_ascii=False, indent=2).encode("utf-8"))
+                _fh.flush()
+                os.fsync(_fh.fileno())
+            os.replace(_tmp0, _empty_path)
+            print("  没有可测量的产物目录（out/ 下没有带 _run.json 的目录）。")
+            print("  这不是「全部可下单」，是**没有样本** —— 所以没有覆盖")
+            print("    %s" % OUT)
+            print("  它记录的是 %d 个目录，是随仓库发布的证据。" % _old_n)
+            print("  本次的空结果写到了：%s" % _empty_path)
+            print("  要一次真实测量，请先跑出产物（见 examples/README.md）。")
+            return
+
     # 原子写：中途崩了也不能留下半截 JSON —— 那会让下游把残缺当完整。
     _tmp = OUT + ".tmp"
     with io.open(_tmp, "wb") as _fh:

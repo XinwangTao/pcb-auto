@@ -162,6 +162,30 @@ function newestRunDir(root, designName) {
   return best
 }
 
+/**
+ * `out/` 下带 `_run.json` 的产物目录数 —— 也就是「本机语料有多大」。
+ *
+ * 单独一个函数是因为 `census` 必须能回答「**我的**语料」而不是「报告里写的」。
+ * 两者在全新克隆里不一样：报告是随仓库发布的快照，本地是 0。
+ *
+ * @param {string} root
+ * @returns {number}
+ */
+function countRunDirs(root) {
+  const outDir = join(root, 'out')
+  if (!existsSync(outDir)) return 0
+  let n = 0
+  try {
+    for (const entry of readdirSync(outDir, { withFileTypes: true })) {
+      if (entry.isDirectory() && existsSync(join(outDir, entry.name, '_run.json'))) n++
+    }
+  } catch {
+    // 读不到 `out/` 就是 0 个样本。**不要**在这里假装成功。
+    return 0
+  }
+  return n
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 操作 1：想法 → 设计 JSON
 // ─────────────────────────────────────────────────────────────────────────────
@@ -361,6 +385,35 @@ export async function census(args = {}, opt = {}) {
 
   const st = j.self_ok_true || {}
   const ids = j.blocker_ids || {}
+
+  // 报告可能是**随仓库发布的快照**（作者机器上的 56 个目录），而本机 `out/`
+  // 是空的。这时如实回答 0 —— `census` 问的是「我的语料怎么样」，
+  // 不是「作者当年测到多少」。把快照的数字留在 `snapshotDirs` 里，别混进
+  // `dirs`：`dirs: 56` 在一个空克隆里会被读成「你有 56 个目录」。
+  const localDirs = countRunDirs(root)
+  const reportDirs = j.all.n || 0
+  const usingSnapshot = !refreshed && reportDirs > 0 && localDirs === 0
+  if (usingSnapshot) {
+    return {
+      ok: true,
+      exitCode: 0,
+      at: now(),
+      source: 'snapshot',
+      sourceNote: '量具没有写出新报告，这份数据来自已有的 out/_probe/fab-census.json（可能是随仓库发布的快照）。要一次真实测量，请在有产物目录的仓库里跑。',
+      corpusNote: `你的克隆里 out/ 没有产物目录，所以这次没有可测的样本。`
+        + `报告里那份快照（${reportDirs} 个目录，测于 ${j.measured_at || '未知时刻'}）`
+        + '描述的是作者机器，不是你的 —— 先跑出产物再来。',
+      emptyNote: '没有可测量的产物目录（out/ 下没有带 _run.json 的目录）。这不是「全部可下单」，是没有样本。',
+      localDirs: 0,
+      snapshotDirs: reportDirs,
+      snapshotAt: j.measured_at || null,
+      dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
+      selfOkTrue: 0, selfOkTrueOk: 0,
+      blockerIds: '', blockerMap: {},
+      reportPath,
+    }
+  }
+
   return {
     ok: true,
     exitCode: 0,
@@ -378,6 +431,8 @@ export async function census(args = {}, opt = {}) {
       emptyNote: '没有可测量的产物目录（out/ 下没有带 _run.json 的目录）。这不是「全部可下单」，是没有样本。',
     } : {}),
     dirs: j.all.n || 0,
+    // 本机语料有多大。通常和 dirs 相等；不相等就说明报告是别的机器上的快照。
+    localDirs,
     fabOk: j.all.fab_ok || 0,
     blocked: j.all.fab_blocked || 0,
     parseErrors: j.all.fab_error || 0,
