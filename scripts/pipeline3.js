@@ -1327,6 +1327,51 @@ await sleep(800);
 // 只有覆铜在 rebuildAllCopperRegions() 后会真正生成铜皮并连接同网焊盘。
 await cam('pcb');   // 铺铜前全板视图
 phase('copperPour');
+// 【DRC 违规的归属与读数：全文件唯一一份实现】
+// IPCB_ViolationBase 给了权威归属（api-types.d.ts:8342/8346 `obj1: string` / `obj2?: string`），
+// 但两种形状都要认：explanation.errData 里是裸 id，顶层是 {typeName, suffix} 包装。
+// 读一侧的网络/类型必须用 DRC 自己声明的 obj1Type/obj2Type 选类，不靠 get() 猜
+// （get(id) 不校验归属，`got:true` 不是类型证据），取到后再核 getState_PrimitiveType。
+// 这三个原本写在最终诊断块里（局部 const），而 stitchGaps 的异网短路复检也要用同一套 ——
+// 两边各写一份必然漂移，所以提到顶层。
+function objIdOf(x) {
+  if (x === null || x === undefined) return null;
+  if (typeof x === 'string') return x || null;
+  if (typeof x === 'object') return x.id || x.suffix || x.objId || x.primitiveId || null;
+  return null;
+}
+function pickApi(ty) {
+  const s = String(ty || '').toLowerCase();
+  if (/track|line/.test(s)) return ['line', eda.pcb_PrimitiveLine];
+  if (/via/.test(s)) return ['via', eda.pcb_PrimitiveVia];
+  if (/pad|terminal/.test(s)) return ['pad', eda.pcb_PrimitivePad];
+  return null;
+}
+async function readSide(ty, id) {
+  const pk = pickApi(ty);
+  if (!pk || !id || !pk[1] || typeof pk[1].get !== 'function') return null;
+  const [kind, api] = pk;
+  try {
+    const prim = await api.get(id);
+    if (!prim) return null;
+    const gotType = String(prim.getState_PrimitiveType?.() || '').toUpperCase();
+    const wantOk = kind === 'line' ? /LINE|TRACK/.test(gotType)
+      : kind === 'via' ? /VIA/.test(gotType) : /PAD/.test(gotType);
+    const net = prim.getState_Net?.();
+    const d = { kind, gotType: gotType || null, typeOk: wantOk,
+      net: (net === undefined || net === null || net === '') ? null : String(net).toUpperCase() };
+    if (kind === 'pad') {
+      d.padNum = prim.getState_PadNumber?.() ?? null;
+      const h = prim.getState_Hole?.();
+      d.hole = Array.isArray(h) ? String(h[0]) : null;
+      d.holeD = Array.isArray(h) ? h[1] : null;
+    } else if (kind === 'line') {
+      d.layer = prim.getState_Layer?.() ?? null;
+      d.w = prim.getState_LineWidth?.() ?? null;
+    }
+    return d;
+  } catch (e) { return { kind, err: String(e && e.message).slice(0, 60) }; }
+}
 // 【为什么包成函数】下面的相位原来在 autoRouting **之前**就把两层铜铺满，
 // 布线器随后带着 keep:true 进场，只能在 8mil 缝里挤 —— 实测 26 器件/111 连接的
 // 板上，这个顺序让布线器永远差 12~14 根线布不通，并留下
@@ -2057,6 +2102,16 @@ if (REC) {
 }
 phase('stitchGaps');
 let stitchCount = 0;
+// 【缝合线要能被自己造出来的异网短路反查到】stitchedIds / stitchNetById 记本阶段建过的
+// 每一条线。依据（out\ESP32S3_Wireless_Mic_V5-20261126-201359 实测）：第 0 轮建的 2 条
+// 缝合线里，3V3 那条 id=7ecb8a6ae1ff0b40 一条就占了 26 个 DRC leaf 里 8 条已诊断 clearDiag
+// 中的 6 条，clearNet 判定它把 3V3 接到 IMU_REGOUT（cur=0）和 GND 过孔（cur=0），全是异网。
+// 本函数在此之前没有任何间距检查：只看断点 12mil 内有没有锚点、对面孤岛在不在 MAX_GAP
+// 内，然后直接 create。这里补上「事后按权威归属反查，异网就撤」。
+let stitchRevertCount = 0;
+let stitchKeptCount = 0;
+const stitchedIds = new Set();
+const stitchNetById = new Map();
 const MERGE = 2;        // 同层 ≤2mil 视为已连通
 const MAX_GAP = 150;    // 跨岛补线上限；更远属布局级问题，硬补会横穿板子
 const STITCH_W = 12;
@@ -2153,6 +2208,66 @@ try {
       if (n.list) walk(n.list);
     };
     walk(details);
+    // 【用本轮「本来就要跑」的这次 DRC 反查上一轮缝合线造出来的异网短路】
+    // 依据见 stitchCount 处。位置必须在这里（`!broken.length` 的 break 之前），
+    // 否则最后一轮造的线永远得不到检查。
+    if (stitchedIds.size) {
+      const clearNow = [];
+      const walkClear = (n) => {
+        if (!n) return;
+        if (Array.isArray(n)) { n.forEach(walkClear); return; }
+        if (n.errorType === 'Clearance Error') clearNow.push(n);
+        if (n.list) walkClear(n.list);
+      };
+      walkClear(details);
+      // 只统计「我自己画的线」参与的违规，并逐条判定对方是同网还是异网。
+      const hit = new Map();   // 缝合线 id -> { n, crossNet, unknown, nets:Set }
+      for (const v of clearNow) {
+        const ed = v.explanation?.errData || {};
+        const sides = [
+          { ty: ed.obj1Type, id: objIdOf(ed.obj1) || objIdOf(v.obj1) },
+          { ty: ed.obj2Type, id: objIdOf(ed.obj2) || objIdOf(v.obj2) },
+        ];
+        for (let i = 0; i < 2; i++) {
+          const mine = sides[i], other = sides[1 - i];
+          if (!mine.id || !stitchedIds.has(mine.id)) continue;
+          const rec = hit.get(mine.id) || { n: 0, crossNet: false, unknown: 0, nets: new Set() };
+          rec.n++;
+          const myNet = stitchNetById.get(mine.id) || null;
+          const o = await readSide(other.ty, other.id);
+          const otherNet = o && o.net ? o.net : null;
+          // 只有两侧都读到网络才敢判异网；读不到就记 unknown，不当成异网。
+          if (otherNet && myNet) {
+            rec.nets.add(otherNet);
+            if (otherNet !== myNet) rec.crossNet = true;
+          } else rec.unknown++;
+          hit.set(mine.id, rec);
+        }
+      }
+      for (const [sid, rec] of hit) {
+        // 【同网不删】这块板的 DRC 确实会报同网自间距（语料里 Track↔SMD Pad cur=0 出现 49 次），
+        // 而缝合线的本职就是贴着同网铜把两个孤岛连起来 —— 同网接触不是缺陷，删了就是白断。
+        // 两侧网络读不到时（unknown>0 且未确认异网）也保留：不知道 ≠ 不同网，
+        // 而误删不可逆（drawn 已占位，本轮不会再画同一条）。
+        if (!rec.crossNet) {
+          stitchKeptCount++;
+          log('stitchKept', { id: String(sid), violations: rec.n, nets: [...rec.nets],
+            unknown: rec.unknown,
+            why: '违规对方是同网（或网络不可读）⇒ 这是缝合线本职的贴合，不删' });
+          continue;
+        }
+        let delOk = false;
+        try { delOk = (await eda.pcb_PrimitiveLine.delete(sid)) === true; }
+        catch (e) { log('stitchRevertErr', { id: String(sid), err: String(e && e.message).slice(0, 120) }); }
+        if (delOk) { stitchedIds.delete(sid); stitchCount--; stitchRevertCount++; }
+        log('stitchReverted', {
+          id: String(sid), violations: rec.n, crossNets: [...rec.nets], deleted: delOk,
+          // delete 失败是 resolve(false)，不抛 —— 必须判 === true，否则「没删掉」会被记成
+          // 「删掉了」，而那条线还在板上继续短路。
+          why: '这条缝合线把两个不同网络接到一起（cur 可能为 0 = 铜直接相接）。删掉它，代价是该网重新断开 —— 断路可修，短路会烧板',
+        });
+      }
+    }
     if (!broken.length) { log('stitchDone', { round, remaining: 0 }); break; }
 
     let fixed = 0;
@@ -2214,6 +2329,10 @@ try {
             continue;
           }
           stitchCount++; fixed++;
+          // 供下一轮按权威归属反查异网短路（见 stitchCount 处）。必须在这里记：
+          // 拿到 mId 之后、任何 continue/break 之前。
+          stitchedIds.add(String(mId));
+          stitchNetById.set(String(mId), String(net || '').toUpperCase());
           log('stitch', { net, layer, gap: Math.round(otherD), islands: islands.length,
             // ★ 补线的 primitive id。没有它，事后拿到一条 `SMD Pad to Track` 违规时，
             //   无法判断那条 Track 是布线器画的还是本函数补的 —— 于是
@@ -2230,7 +2349,13 @@ try {
     try { await eda.pcb_PrimitivePour.rebuildAllCopperRegions(); } catch (e) { }
     await sleep(700);
   }
+  // 【stitchedTotal 的语义】原含义是「建了几条」，现在是「**还在板上**几条」——
+  // 被异网复检删掉的不计入（它们既没连上也没留下铜）。scripts/inspect-run.js 读这个数，
+  // 所以形状保持数字不变，只把含义收窄，并配一份分解账，让「建了几条 / 撤了几条 /
+  // 判为同网保留几条 / 还剩几条」四件事同时可读，不再互相顶替。
   log('stitchedTotal', stitchCount);
+  log('stitchRevertTotal', { created: stitchCount + stitchRevertCount, reverted: stitchRevertCount,
+    kept: stitchKeptCount, onBoard: stitchCount });
 } catch (e) { errors.push('stitchGaps: ' + (e && e.message)); }
 await sleep(1000);
 try { if (pourCount > 0) await eda.pcb_PrimitivePour.rebuildAllCopperRegions(); } catch (e) { }
@@ -4849,12 +4974,7 @@ try {
       // 这是精度幻觉。IPCB_ViolationBase 其实给了权威归属（api-types.d.ts:8342/8346
       // `obj1: string` / `obj2?: string`），只是以前没落进日志。
       // 两种形状都要认：顶层是 {typeName, suffix} 包装，explanation.errData 里是裸 id。
-      const objIdOf = (x) => {
-        if (x === null || x === undefined) return null;
-        if (typeof x === 'string') return x || null;
-        if (typeof x === 'object') return x.id || x.suffix || x.objId || x.primitiveId || null;
-        return null;
-      };
+      // objIdOf 已提到顶层（见 doCopperPours 之前），与缝合阶段的复检共用一份实现。
       const clearsD = flatD.filter((v) => v.errorType === 'Clearance Error');
       for (const v of clearsD.slice(0, 8)) {
         const ed = v.explanation?.errData || {};
@@ -4880,38 +5000,7 @@ try {
         // 读取器用 **DRC 自己声明的 obj1Type/obj2Type** 选类，不靠 get() 猜
         // （get(id) 不校验归属，`got:true` 不是类型证据），取到后再核 getState_PrimitiveType。
         try {
-          const pickApi = (ty) => {
-            const s = String(ty || '').toLowerCase();
-            if (/track|line/.test(s)) return ['line', eda.pcb_PrimitiveLine];
-            if (/via/.test(s)) return ['via', eda.pcb_PrimitiveVia];
-            if (/pad|terminal/.test(s)) return ['pad', eda.pcb_PrimitivePad];
-            return null;
-          };
-          const readSide = async (ty, id) => {
-            const pk = pickApi(ty);
-            if (!pk || !id || !pk[1] || typeof pk[1].get !== 'function') return null;
-            const [kind, api] = pk;
-            try {
-              const prim = await api.get(id);
-              if (!prim) return null;
-              const gotType = String(prim.getState_PrimitiveType?.() || '').toUpperCase();
-              const wantOk = kind === 'line' ? /LINE|TRACK/.test(gotType)
-                : kind === 'via' ? /VIA/.test(gotType) : /PAD/.test(gotType);
-              const net = prim.getState_Net?.();
-              const d = { kind, gotType: gotType || null, typeOk: wantOk,
-                net: (net === undefined || net === null || net === '') ? null : String(net).toUpperCase() };
-              if (kind === 'pad') {
-                d.padNum = prim.getState_PadNumber?.() ?? null;
-                const h = prim.getState_Hole?.();
-                d.hole = Array.isArray(h) ? String(h[0]) : null;
-                d.holeD = Array.isArray(h) ? h[1] : null;
-              } else if (kind === 'line') {
-                d.layer = prim.getState_Layer?.() ?? null;
-                d.w = prim.getState_LineWidth?.() ?? null;
-              }
-              return d;
-            } catch (e) { return { kind, err: String(e && e.message).slice(0, 60) }; }
-          };
+          // pickApi / readSide 已提到顶层（见 doCopperPours 之前）：读一侧的网络只有一份实现。
           const idA = objIdOf(ed.obj1) || objIdOf(v.obj1);
           const idB = objIdOf(ed.obj2) || objIdOf(v.obj2);
           const A = await readSide(ed.obj1Type, idA);

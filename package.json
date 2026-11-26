@@ -46,11 +46,13 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "test": "node test/syntax-gate.mjs && node test/dev-path-scan.mjs && node test/doc-refs.mjs && node test/doc-anchors.mjs && node test/placement-rules.mjs && node test/capability-gate.mjs && node test/fabcheck-selftest.mjs && node test/via-restore-accounting.mjs && node test/smoke.mjs && node test/plugin-harness.mjs && node test/mutants.mjs",
+    "test": "node test/syntax-gate.mjs && node test/dev-path-scan.mjs && node test/doc-refs.mjs && node test/doc-anchors.mjs && node test/placement-rules.mjs && node test/capability-gate.mjs && node test/fabcheck-selftest.mjs && node test/via-restore-accounting.mjs && node test/stitch-crossnet-accounting.mjs && node test/runall-fabcheck-on-fail.mjs && node test/smoke.mjs && node test/plugin-harness.mjs && node test/mutants.mjs",
     "mutants": "node test/mutants.mjs",
     "doc-anchors": "node test/doc-anchors.mjs",
     "fabcheck-selftest": "node test/fabcheck-selftest.mjs",
     "via-restore": "node test/via-restore-accounting.mjs",
+    "stitch-crossnet": "node test/stitch-crossnet-accounting.mjs",
+    "runall-fabcheck": "node test/runall-fabcheck-on-fail.mjs",
     "pcb": "node cli/pcb.mjs",
     "mcp": "node mcp/server.mjs",
     "install-clients": "node install/install.mjs",

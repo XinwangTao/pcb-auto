@@ -746,6 +746,19 @@ $bestDrcReOk = $null; $bestFabReOk = $null; $bestFmtBad = $null
 
 $raw = $null; $res = $null; $v = $null; $usedPlan = $null
 $lastGoodRaw = $null
+# 【同一生效尺寸只跑一次】实测依据（out\ESP32S3_Wireless_Mic_V3-20261126-175901，2026-11-26）：
+#   第 2/3/4 次尝试的计划名是 expand-1.25x / -retry / -retry2，但三次板尺寸**都是 1625x3700**，
+#   gates 的 25 个键里 24 个逐字节相同（唯一差异是 clearanceRevertDangling 里一个新图元的
+#   随机 uuid，与测量结果无关）。耗时 661+597+574=1832s，其中两次重跑 1171s 占整次运行
+#   2628s 的 44.6%，新信息 0。
+#   本流水线没有随机源（不走随机布线种子、不走随机初值），输出是 (设计 JSON, 板尺寸)
+#   的纯函数 —— 同一个板尺寸重跑只能是同一输入的重跑。
+# 所以这里记下**已经试过的生效尺寸**，循环里用尺寸（不是 tag）判重。
+# $triedConfigs 的键是 "W x H"（生效尺寸），值是 { tag; idx }，便于把"与第几档重复"说清楚。
+# 注意：失败结果同样记入 —— 这正是要拦的那种重跑（失败后换个名字再来一次）。
+$skippedPlans = 0
+$triedConfigs = @{}
+$healPlanSkipped = @()
 $verifyFails = @()
 $nodeVerify = $NodeExe
 if (-not (Test-Path $nodeVerify)) { $nodeVerify = 'node' }
@@ -762,6 +775,57 @@ foreach ($plan in $healPlans) {
   # 没有尝试序号），两次尝试会互相覆盖，留存等于白留。实测 2026-11-25 22:56 的 d12 就是这样。
   # 录制帧目录仍然只在 $Record 时建（每帧渲染太慢），但"第几次尝试"这个事实是循环本身的属性。
   $planIdx = [array]::IndexOf($healPlans, $plan) + 1
+  # 【判重判在"生效尺寸"上，不判在 tag 上】tag 是人写的（'expand-1.25x-retry' 与
+  # 'expand-1.25x' 的生效尺寸完全一样），尺寸是机器算出来的 —— 所以比较的是即将真的送进
+  # 流水线的那两个数 [int]$plan.w / [int]$plan.h，而不是计划名。
+  # 位置：扩板分支（上面算出 $expandW/$expandH）之后、payload 与 Invoke-PipelineRaw 之前，
+  # 且**在改动 $designObj 之前** —— 跳过时连 $designObj 都不该被碰。
+  # 第一个计划永远不跳：$triedConfigs 为空时 ContainsKey 为 $false，所以不存在
+  # "一个尺寸都没试就全跳过"的空转。失败结果同样已记入，那正是要拦的重跑。
+  #
+  # ⚠ 必须知道的反面证据（本文件 L707-716 自己写着，别当成已解决）：
+  #   那两段注释记录过"同一尺寸重跑救回来"的实例 ——
+  #     d12：第 1 轮 smart-fit 失败、第 2 轮同尺寸 152.3s 通过；
+  #     AI_RP2040 2250x1625：第 2 步 4 处违规、第 3 步同尺寸重跑归零。
+  #   也就是说"同输入同输出"至少**不是对所有设计都成立**（自动布局类可能带非确定性）。
+  #   本次加守卫的依据只来自一个设计（ESP32S3_Wireless_Mic_V3，explicit placement，
+  #   三次 gates 24/25 逐字节相同）。两件事都记着，才不会被下一次 d12 打脸。
+  #   若某天发现"本该重试却被跳过"，恢复旧行为的**最小改动**是在需要重试的那一档之前
+  #   加一行 `$triedConfigs = @{}`（清空已试集合），而不是删掉守卫。
+  # 【前提：只有"显式摆放"的设计才允许跳过】这是本守卫成立的条件，不是修饰。
+  # 上面那段反面证据（d12 同尺寸重跑通过、AI_RP2040 2250x1625 同尺寸归零）里的
+  # 两个设计都**不是**显式摆放 —— 它们走 autoLayout 黑盒，可能带非确定性。
+  # 而本守卫的依据只有一个显式摆放的设计（ESP32S3_Wireless_Mic_V3，三次 gates 24/25 逐字节相同）。
+  # 把前提写进条件里，这两件事就不冲突了：显式摆放 ⇒ 输入完全确定 ⇒ 同尺寸重跑必然同输出；
+  # 非显式摆放 ⇒ 不跳，保留旧行为，d12 那类设计不受影响。
+  # 判据取 $designObj._placement（字典，非 list）。空字典与缺失都算"非显式"。
+  $hasExplicitPlacement = $false
+  if ($null -ne $designObj -and $null -ne $designObj._placement) {
+    $pm = $designObj._placement
+    if ($pm -is [System.Collections.IDictionary]) {
+      $hasExplicitPlacement = ($pm.Count -gt 0)
+    } else {
+      # 非字典形状（例如旧设计写成数组）：数不出键就按"非显式"处理，宁可少跳
+      $hasExplicitPlacement = (@($pm).Count -gt 0)
+    }
+  }
+  $effW = [int]$plan.w
+  $effH = [int]$plan.h
+  $effKey = ("{0} x {1}" -f $effW, $effH)
+  if ($hasExplicitPlacement -and $triedConfigs.ContainsKey($effKey)) {
+    $dupeOf = $triedConfigs[$effKey]
+    $skippedPlans++
+    $healPlanSkipped += [pscustomobject]@{
+      plan = [string]$plan.tag; baseW = $effW; baseH = $effH
+      sameAs = [string]$dupeOf.tag
+      why = 'same-effective-board-size：同输入同输出，重跑不产生新信息'
+    }
+    # 不许静默：跳过必须能在日志里数与对账，否则"少跑了几档"和"跑了几档"看起来一样。
+    Log ("  跳过 [{0}]：生效尺寸 {1} 与第 {2} 档 [{3}] 相同，且 _placement 已钉死 {4} 个器件 —— 同一输入，重跑不产生新信息" -f $plan.tag, $effKey, $dupeOf.idx, $dupeOf.tag, $designObj._placement.Count) 'DarkGray'
+    continue
+  }
+  # 记入"已试"再继续：本计划是真的要跑（invoke 之前记入，之后失败的也算试过）
+  $triedConfigs[$effKey] = [pscustomobject]@{ tag = [string]$plan.tag; idx = $planIdx }
   $designObj.boardWidthMil = [int]$plan.w
   $designObj.boardHeightMil = [int]$plan.h
   $payload = @{ design = $designObj; outDir = $OutDir; budgetMs = $PipelineBudgetMs } | ConvertTo-Json -Depth 20 -Compress
@@ -877,6 +941,58 @@ foreach ($plan in $healPlans) {
         }
       } catch { Log ("    读 _log.json 失败：" + $_.Exception.Message) 'DarkYellow' }
     } else { Log "    无 _log.json，无法给出违规类型" 'DarkYellow' }
+    # 【失败尝试也要问一次「能不能下单」】上面报的是 DRC 类型，那是**原因**；
+    #   它不回答「这块板现在拿去下单会怎样」。原来这里直接 continue，
+    #   而 fabcheck 的调用点在下面几百行之后（成功分支里）—— 于是 ok=false 的尝试
+    #   从头到尾没有被打样资格检查过一次。麦克风板至今每次尝试都是 ok=false，
+    #   也就是说它的下单资格一次都没被问过，fabcheck 里那些只在产物上才看得出的
+    #   判据（例如 antenna.keepout.copper：在最终铜层上实测天线净空带）也一次都没跑过。
+    # ★ 这段只**记录**，不参与 `$finalOk`：本尝试已经判失败，多一个读数不改结论。
+    #   把诊断读数接进判定，就是「一个字段承载两种含义」的老坑。
+    # ★ 三种结果分字段记：拿到 JSON / 输出不是 JSON / 调用异常。不许把后两种
+    #   当作「没有阻断」—— 那会让「量不出」变成「合格」。
+    $fabcheckAudit = $null
+    try {
+      $fabAuditRaw = (& $nodeVerify (Join-Path $Root 'scripts\fabcheck.js') $OutDir 2>&1 | Out-String)
+      $fabAuditCode = $LASTEXITCODE
+      $fabAuditJson = $null
+      try { $fabAuditJson = $fabAuditRaw | ConvertFrom-Json } catch { }
+      if ($null -ne $fabAuditJson) {
+        # 【数阻断不许用 @($x).Count】fabcheck 的顶层 blockers 是**数组**，
+        #   而空数组经过 ConvertFrom-Json 会变成 $null，此时 @($null).Count == 1
+        #   —— 一块 0 阻断的好板会被读成「1 项阻断」。所以取它自己算好的 summary 计数
+        #   （scripts/fabcheck.js:949-952 的 blockers/warnings/notes/passes 就是数字）。
+        #   顶层数组只用来取 id 列表，而且逐个过滤 null。
+        $fabBlk = -1
+        $fabWarn = -1
+        if ($null -ne $fabAuditJson.summary) {
+          $fabBlk = [int]$fabAuditJson.summary.blockers
+          $fabWarn = [int]$fabAuditJson.summary.warnings
+        }
+        $fabBlkIds = @($fabAuditJson.blockers | Where-Object { $null -ne $_ -and $null -ne $_.id } | ForEach-Object { [string]$_.id })
+        $fabcheckAudit = [pscustomobject]@{
+          exitCode   = $fabAuditCode
+          verdict    = [string]$fabAuditJson.verdict
+          blockers   = $fabBlk
+          warnings   = $fabWarn
+          blockerIds = $fabBlkIds
+          scope      = 'diagnostic-only：不参与本轮通过与否'
+        }
+        $blkText = if ($fabBlk -ge 0) { [string]$fabBlk } else { '未提供 summary' }
+        Log ("    下单资格（诊断用）exit={0} verdict={1} 阻断 {2} / 警告 {3}" -f $fabAuditCode, $fabcheckAudit.verdict, $blkText, $fabWarn) 'DarkYellow'
+        if ($fabBlk -gt 0) {
+          $fabBlkIds | Select-Object -First 6 | ForEach-Object { Log ("      阻断 id: " + $_) 'DarkYellow' }
+        }
+      } else {
+        $fabcheckAudit = [pscustomobject]@{ exitCode = $fabAuditCode; verdict = $null;
+          scope = 'diagnostic-only：fabcheck 输出不是 JSON，未取得判定' }
+        Log ("    下单资格（诊断用）未取得：fabcheck exit={0}，输出不是 JSON" -f $fabAuditCode) 'DarkYellow'
+      }
+    } catch {
+      $fabcheckAudit = [pscustomobject]@{ exitCode = $null; verdict = $null;
+        scope = 'diagnostic-only：调用异常' }
+      Log ("    下单资格（诊断用）调用异常：" + $_.Exception.Message) 'DarkYellow'
+    }
     continue
   }
 
@@ -1179,6 +1295,24 @@ foreach ($plan in $healPlans) {
   $v = $null   # 置空，迫使循环继续
 }
 $sw.Stop()
+# 【探索汇总：分母必须写出来】"跳过几档"单独看没有意义，要和"一共几档 / 实际跑了几个尺寸"一起读。
+# triedCount = 真正开始跑过的不同生效尺寸数（在 invoke 之前记入，含之后失败的），
+# 不是 $healPlans.Count —— 后者是"计划了几档"，不是"探索了几个配置"。
+$healPlanSkipReport = [pscustomobject]@{
+  skipped       = $skippedPlans
+  plannedCount  = $healPlans.Count
+  triedCount    = $triedConfigs.Count
+  tried         = @($triedConfigs.Keys | Sort-Object)
+  healPlanSkipped = @($healPlanSkipped)
+  note          = 'skipped = 同一生效尺寸的重复档位（仅 _placement 钉死时生效）；triedCount = 真正开始跑过的不同板尺寸数'
+  guardApplies  = 'only-when-_placement-pinned'   # 非显式摆放的设计不跳，保留旧行为
+}
+Log ("自愈探索汇总：计划 {0} 档，实际跑过的不同板尺寸 {1} 个，按尺寸重复跳过 {2} 档" -f $healPlans.Count, $triedConfigs.Count, $skippedPlans) 'DarkYellow'
+if ($skippedPlans -gt 0) {
+  foreach ($d in $healPlanSkipped) {
+    Log ("  跳过明细：[{0}] {1}x{2} 与 [{3}] 同尺寸" -f $d.plan, $d.baseW, $d.baseH, $d.sameAs) 'DarkGray'
+  }
+}
 
 $logDir = Join-Path $Root 'logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
@@ -1382,6 +1516,10 @@ finally {
         # 得到 PASS 0 / FAIL 0）。$usedPlan 为 $null 时写 null 而不是空串：
         # 空串在读的人眼里与"策略叫空名字"无法区分。
         strategy      = $(if ($null -ne $usedPlan -and "$usedPlan") { "$usedPlan" } else { $null })
+        # 【实际只探索了几个配置，要机器可读】没有这组字段，就得靠人读日志数"跳过"，
+        # 而 skip 数与"计划了几档"混在一起时无法回答"这条流水线到底试了几个不同输入"。
+        # 与 finalOk 无关：这里只记事实，不参与任何判定。
+        healPlans     = $healPlanSkipReport
         gates         = [ordered]@{
           pipelineSelfOk  = $evSelfOk
           verifyArtifacts = $evVerify
