@@ -1,6 +1,6 @@
 # pcb-auto
 
-**Chinese** | [English](README.en.md)
+[中文](README.md) | **English** | [Demo video (31.6s)](https://github.com/XinwangTao/pcb-auto/releases/download/v1.0.0/ai-pcb-v9.mp4)
 
 > Compile a single Chinese natural-language board idea into fabrication-ready PCB artifacts —
 > Gerber, Excellon drill, BOM, pick-and-place — with **zero human intervention**.
@@ -12,6 +12,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-blueviolet.svg)](mcp/server.mjs)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#honest-limitations)
+
+> **Every frame of the demo is a screen recording of an AI actually driving LCEDA Pro** —
+> schematic wiring → PCB import → auto-layout → copper pour → auto-routing → final.
+> Not an animation mock-up. Source clips live in
+> [`video/public/real/`](video/public/real/) (6 clips, 3.9 MB) and can be re-rendered.
 
 ---
 

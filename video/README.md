@@ -1,14 +1,39 @@
 # pcb-auto 演示视频（Remotion）
 
-用 Remotion 生成的竖屏短视频（1080×1920 / 60fps / 58s），主题「AI 全自动接管 PCB 设计」。
-视频里所有数字都从 `pcb-auto` 的真实产物读取，不存在编造数据。
+竖屏短视频，主题「AI 全自动接管 PCB 设计」。视频里所有数字都从 `pcb-auto` 的真实产物读取。
+
+## 这里有两套合成，别搞混
+
+| 合成 | 素材 | 规格 | 用途 |
+| --- | --- | --- | --- |
+| `PcbRealV7` | **真实录屏** `public/real/*.mp4`（6 段 EDA 操作） | 31s / 30fps | 正片。见 [V7-SPEC.md](V7-SPEC.md) |
+| `PcbAuto` | 静态数据卡 | 58s / 60fps | 早期版本，已被上面那套取代 |
+
+**正片是 `out/v9-074907.mp4`**（1080×1920 / 30fps / 31.6s / H.264 + AAC）。
+「AI 真的一步步画图布线」这个卖点只有 `PcbRealV7` 那套成立 —— 它的每一帧都来自下面这 6 段录屏：
+
+```
+public/real/01_sch.mp4      原理图连线
+public/real/02_pcbimp.mp4   导入 PCB
+public/real/03_layout.mp4   自动布局
+public/real/04_pour.mp4     覆铜
+public/real/05_route.mp4    自动布线
+public/real/06_final.mp4    收尾
+```
+
+下面 §真实数据来源 / §中文字体 / §转场 记的是 `PcbAuto` 那一套的踩坑，
+对 `PcbRealV7` 同样适用（同一套字体内联、同一套硬切）。
 
 ## 产物
 
 | 文件 | 说明 |
 | --- | --- |
-| `out/ai-pcb-demo.mp4` | 正片，H.264，1080×1920，58s |
+| `out/v9-074907.mp4` | **正片**（真实录屏合成），H.264，1080×1920，31.6s |
+| `out/ai-pcb-demo.mp4` | 早期 58s 版（`PcbAuto` 合成），保留对比用 |
 | `out/cover.png` | 封面图（从正片抽帧） |
+
+`out/` 整个目录是 gitignore 的 —— 成片走 [Releases](https://github.com/XinwangTao/pcb-auto/releases) 下载，
+仓库里只放可重新渲染的素材（`public/real/*.mp4` 共 3.9 MB）。
 
 ## 真实数据来源
 

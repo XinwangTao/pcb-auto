@@ -11,7 +11,11 @@
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-blueviolet.svg)](mcp/server.mjs)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#已知限制)
 
-**中文** | [English](README.en.md)
+**中文** | [English](README.en.md) | [演示片（31.6s）](https://github.com/XinwangTao/pcb-auto/releases/download/v1.0.0/ai-pcb-v9.mp4)
+
+> **演示片里每一帧都是 AI 真实操作嘉立创 EDA 的录屏** —— 原理图连线 → 导入 PCB →
+> 自动布局 → 覆铜 → 自动布线 → 收尾，不是动画示意。素材在
+> [`video/public/real/`](video/public/real/)（6 段，3.9 MB），可自行重新渲染。
 
 ---
 
