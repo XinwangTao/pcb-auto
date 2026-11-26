@@ -10,7 +10,7 @@
 
 | 编号 | 结论 | 一句话 | 位置 |
 |---|---|---|---|
-| 1 | 部分真 | `skippedNoAnchor` 字段真实存在且语料全 0，但其中一条自增分支静态不可达 | `scripts/pipeline3.js:1651,1686,1697,1731` |
+| 1 | 部分真 | `skippedNoAnchor` 字段真实存在且语料全 0，但其中一条自增分支静态不可达 | `scripts/pipeline3.js:2148,2183,2194,2228` |
 | 2 | 真 | 补线阶段 5 处丢弃点，只有一处连日志都没有；真正大量丢的是 80mil 上限那条 | `scripts/pipeline3.js:3724-3726,3764,3840` |
 | 3 | 真 | 缝合失败只记一句异常字符串，37 次全是同一句，不带网/坐标/id | `scripts/pipeline3.js:1702-1727` |
 | 4 | 真 | `fixed` 数的是「变更 API 接受了」，不是「违规真的减少了」 | `scripts/pipeline3.js:3434,3445-3456` |
@@ -596,15 +596,18 @@ routeIter {iter:3, stillUnconnected: 27, tracksAdded:155}   ← COMPLETION 保�
 
 ### 1. `skippedNoAnchor` 全为 0：字段是真的，「健康」是半结构性的
 
-**成立的那一半。** 字段真实存在并被写进日志：`scripts/pipeline3.js:1651` 声明 `let skipNoAnchor = 0, skipTooFar = 0`，L1686 在「断点离同层锚点超过 12mil」时自增，L1731 随 `stitchRound` 一起落盘。审计表里 **66 轮** `stitchRound` 的 `skippedNoAnchor` 全为 0。按同一判据在 2026-11-26 11:1x 对当前 56 个含 `_run.json` 的目录重跑一次（`--settle 180` 无关，这里是读盘统计），是 **78 轮、非零 0 次**——轮数变是因为语料被滚动过，结论同一个：一次都没触发过。
+**成立的那一半。** 字段真实存在并被写进日志：`scripts/pipeline3.js:2148` 声明 `let skipNoAnchor = 0, skipTooFar = 0`，L2183 在「断点离同层锚点超过 12mil」时自增，L2228 随 `stitchRound` 一起落盘。审计表里 **66 轮** `stitchRound` 的 `skippedNoAnchor` 全为 0。按同一判据在 2026-11-26 11:1x 对当前 56 个含 `_run.json` 的目录重跑一次（`--settle 180` 无关，这里是读盘统计），是 **78 轮、非零 0 次**——轮数变是因为语料被滚动过，结论同一个：一次都没触发过。
 
-**不成立的那一半。** 把这个 0 读成「找不到锚点这条路径被健康覆盖」不成立。L1697 的 `else skipNoAnchor++` 分支**在静态上恒不可达**：
+> **行号于 2026-11-26T19:48 重锚过（+497）。** 本节原先写的是 `1651,1686,1697,1731`，`patchE`/`patchF` 往 `pipeline3.js` 里插了 497 行之后全部失效。重锚不是加个常数就完事：六个锚点逐个按**内容**核对过 —— `2148` 确是 `let skipNoAnchor = 0, skipTooFar = 0`、`2183` 确是 `myD > 12` 自增、`2194` 确是 `!other` 分支、`2228` 确是 `stitchRound` 落盘、`2171`/`2173` 确是 `pool.length < 2`/`islands.length < 2`。
+> **教训：** `test/doc-refs.mjs` 当时对本文其余十几处同样失效的引用**全部亮绿灯**，因为它只检查「被指到的那一行不是空的」。行号漂移后指向的往往是别人的代码，非空、合法、但完全无关。所以「引用能解析」不等于「引用指对了」—— 这条闸门的能力边界必须写明，不能拿它当引用正确性的证据。
+
+**不成立的那一半。** 把这个 0 读成「找不到锚点这条路径被健康覆盖」不成立。L2194 的 `else skipNoAnchor++` 分支**在静态上恒不可达**：
 
 ```js
 if (!other || otherD > MAX_GAP) { if (other) skipTooFar++; else skipNoAnchor++; continue; }
 ```
 
-`other` 来自非空 `islands`；而 L1674 `if (pool.length < 2) continue`、L1676 `if (islands.length < 2) continue` 已经保证 `islands` 至少 2 个岛。遍历除 `myIsland` 以外的岛时，`other` 必然被赋值，所以 `!other` 永远为假，`else` 永远走不到。能自增 `skipNoAnchor` 的只剩 L1686。
+`other` 来自非空 `islands`；而 L2171 `if (pool.length < 2) continue`、L2173 `if (islands.length < 2) continue` 已经保证 `islands` 至少 2 个岛。遍历除 `myIsland` 以外的岛时，`other` 必然被赋值，所以 `!other` 永远为假，`else` 永远走不到。能自增 `skipNoAnchor` 的只剩 L2183。
 
 所以「为 0」有一半是结构性的：它只说明「断点从没落在离最近锚点 12mil 之外」，并不说明「这条路径被走过并正常归零」。
 

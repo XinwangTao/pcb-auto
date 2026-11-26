@@ -287,8 +287,12 @@ function parseDrill(text) {
   const dec = fm ? +fm[2] : null;
   const inch = /^INCH/m.test(text) || /,INCH/.test(text);
   const scale = inch ? 25.4 : 1;
+  // Excellon 坐标换算：带小数点的直接 parseFloat，不带小数点的按 LZ 的 dec 位小数处理。
+  // 提到循环外只定义一次：槽（G85）与圆孔走同一条换算，两份实现必然漂移。
+  const conv = (s) => (s.includes('.') ? parseFloat(s) : (dec !== null ? parseInt(s, 10) / 10 ** dec : parseFloat(s))) * scale;
   const tools = new Map();
   const marks = [];
+  const slots = [];
   let cur = null;
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
@@ -296,13 +300,33 @@ function parseDrill(text) {
     if (m) { tools.set(+m[1], parseFloat(m[2]) * scale); continue; }
     m = /^T0*(\d+)$/.exec(line);
     if (m) { cur = +m[1]; continue; }
+    // G85 槽：`XaYbG85XcYd` 是一条从 (a,b) 到 (c,d) 的胶囊槽，直径由当前刀具给。
+    // 必须排在圆孔正则**之前**，否则 `^X..Y..` 会把槽的起点吞成「一个圆孔」，终点蒸发。
+    //
+    // 这里有一条**假设**，写出来是因为它是假设而不是事实：
+    //   一条槽 = 一个电镀孔 = 一次钻孔指令 = 一个阻焊开窗。
+    // 实测敏感度（2026-11-26T19:41，out/ESP32S3_Wireless_Mic_V4-20261126-185013）：
+    //   tht 在「槽算 1 孔」下是 6、「剔掉槽」下是 2、「展开成两端」下是 10。
+    //   6 与物理一致：2 个 H1 喇叭插件孔 + 4 条 Type-C 壳体槽 = 6 个电镀开口。
+    //   所以不能为了「更精确的形状」去动这个计数口径 —— 那会把 6 变成 2，
+    //   凭空造出一个 `drill.tht.mismatch` 假缺陷。
+    m = /^X(-?[\d.]+)Y(-?[\d.]+)G85X(-?[\d.]+)Y(-?[\d.]+)/.exec(line);
+    if (m) {
+      const a = { x: conv(m[1]), y: conv(m[2]) };
+      const b = { x: conv(m[3]), y: conv(m[4]) };
+      const tool = cur !== null && tools.has(cur) ? tools.get(cur) : null;
+      slots.push({ x: a.x, y: a.y, x2: b.x, y2: b.y, len: Math.hypot(b.x - a.x, b.y - a.y), tool: cur, dia: tool });
+      // 孔位仍记在起点，且打上 slot/x2/y2 标记：这样 drill.outside 能查远端，
+      // 而 drill.duplicate / drill.tht 的读数与改动前逐位相同。
+      marks.push({ x: a.x, y: a.y, tool: cur, dia: tool, slot: true, x2: b.x, y2: b.y });
+      continue;
+    }
     m = /^X(-?[\d.]+)Y(-?[\d.]+)/.exec(line);
     if (m) {
-      const conv = (s) => (s.includes('.') ? parseFloat(s) : (dec !== null ? parseInt(s, 10) / 10 ** dec : parseFloat(s))) * scale;
       marks.push({ x: conv(m[1]), y: conv(m[2]), tool: cur, dia: cur !== null && tools.has(cur) ? tools.get(cur) : null });
     }
   }
-  return { tools, marks, dec, inch };
+  return { tools, marks, slots, dec, inch };
 }
 
 // 线段 ab 是否触及轴对齐矩形 [x0,x1]×[y0,y1]（含端点在内、含擦边）。
@@ -644,7 +668,7 @@ function check(dir, opts) {
         for (const n of drillFiles) {
           const d = parseDrill(z.get(n).toString('utf8'));
           const kind = /NPTH/i.test(n) ? 'NPTH' : /Via/i.test(n) ? 'VIA' : /PTH/i.test(n) ? 'PTH' : 'UNKNOWN';
-          files.push({ name: n, kind, tools: [...d.tools.entries()], marks: d.marks });
+          files.push({ name: n, kind, tools: [...d.tools.entries()], marks: d.marks, slots: d.slots || [] });
           for (const m of d.marks) all.push({ ...m, file: n, kind });
         }
         const byDia = new Map();
@@ -666,19 +690,31 @@ function check(dir, opts) {
           unique: uniq.size,
           byDia: [...byDia.entries()].sort((a, b) => +a[0] - +b[0]).map(([dia, n]) => ({ dia: dia === 'null' ? null : +dia, holes: n })),
           duplicateHoles: dups.length,
+          // 槽单独记账：以前这些信息在 parse 阶段就被吞掉了，输出里完全看不出来
+          slots: files.flatMap((f) => (f.slots || []).map((s) => ({ ...s, file: f.name }))),
+          slotCount: files.reduce((a, f) => a + (f.slots || []).length, 0),
         };
         facts.drill = drillInfo;
         if (!all.length) B('drill.empty', `有 ${drillFiles.length} 个钻孔文件但里面一个孔都没有`);
         if (noTool.length) B('drill.tool.missing', `${noTool.length} 个孔坐标没有有效刀具（T 定义缺失/未选择刀具），孔会打不出来`, { example: noTool.slice(0, 3).map((m) => [r3(m.x), r3(m.y)]) });
         if (board) {
-          const out = all.filter((m) => m.x < board.minX - EPS_MM || m.x > board.maxX + EPS_MM || m.y < board.minY - EPS_MM || m.y > board.maxY + EPS_MM);
-          if (out.length) B('drill.outside', `${out.length} 个孔落在板框外`, { example: out.slice(0, 3).map((m) => [r3(m.x), r3(m.y)]) });
+          // 槽有两个端点：以前只看起点，一条远端伸出板外的槽会被判成「在板内」。
+          const off = (m) => m.x < board.minX - EPS_MM || m.x > board.maxX + EPS_MM || m.y < board.minY - EPS_MM || m.y > board.maxY + EPS_MM;
+          const out = all.filter((m) => off(m) || (m.slot && off({ x: m.x2, y: m.y2 })));
+          if (out.length) B('drill.outside', `${out.length} 个孔落在板框外（槽按两个端点判）`, { example: out.slice(0, 3).map((m) => (m.slot ? [[r3(m.x), r3(m.y)], [r3(m.x2), r3(m.y2)]] : [r3(m.x), r3(m.y)])) });
         }
         if (dups.length) {
           W('drill.duplicate', `同一孔位被登记了 ${dups.length} 次（声明 ${all.length} 孔 / 唯一 ${uniq.size} 孔）：嘉立创 CAM 通常自动去重，但孔数计费翻倍，且不去重的厂会二次钻孔`,
             { pairs: dups.slice(0, 5).map((d) => ({ at: d.at, dia: d.dia, files: [d.firstFile, d.dupFile] })) });
         } else {
           P('drill.unique', `钻孔无重复：${uniq.size} 孔 / ${byDia.size} 种孔径`);
+        }
+        // 「一条槽 = 一个电镀孔」是**假设**，不是事实。它是隐形的，就会有人
+        // 为了「形状更准」把它改成 2 或 10 —— 实测那样做会让 tht 从 6 变 2，
+        // 凭空造出假缺陷。所以每次跑到这里都要把它和槽长一起打出来。
+        if (drillInfo.slotCount) {
+          const lens = drillInfo.slots.map((s) => s.len.toFixed(2) + 'mm').join(',');
+          N('drill.slots', `${drillInfo.slotCount} 条 G85 胶囊槽按 1 个电镀孔计（口径见 parseDrill 注释）；槽长 ${lens}`);
         }
         // 插件孔数（PTH 去 Via）应等于 GBS 底层开窗闪数
         const gbs = layers.get('GBS');
@@ -1004,8 +1040,15 @@ function selftest(goodDir) {
     for (const [name, data] of z) {
       let d = data;
       if (/\.GTS$/i.test(name)) {
-        d = Buffer.from(data.toString('utf8').replace(/^.*D0?3\*.*$/gm, ''), 'utf8');
-        log.push({ ok: true, msg: `${name} 抽空全部 D03 → 阻焊 0 图元` });
+        // 只抽掉 D03 闪光**不够**。本 EDA 的顶层阻焊大量用 D01 画开窗
+        // （实测 Gerber_TopSolderMaskLayer.GTS：153 条 D03 + 606 条 D01 + 6 个 G36 区域），
+        // 剥掉 153 条 D03 之后 layerCount 仍是 606+0+6=612，而 `gerber.mask.top.empty`
+        // 判的是「0 图元」，于是照旧沉默 —— 自检必然红，而且红的原因跟被测对象无关。
+        // 这条判据要的故障是「整个图元集空了」，所以把 D01/D02/D03/G36/G37 全抽掉。
+        const before = data.toString('utf8');
+        const after = before.replace(/^.*(?:D0?[123]|G3[67])\*.*$/gm, '');
+        d = Buffer.from(after, 'utf8');
+        log.push({ ok: true, msg: `${name} 抽空全部图元（D01/D02/D03/G36/G37）→ 阻焊 0 图元（${before.length}→${after.length} B）` });
       } else if (/\.GTL$/i.test(name)) {
         d = Buffer.from(data.toString('utf8').replace('M02*', 'G01X9990000Y-9990000D01*\nM02*'), 'utf8');
         log.push({ ok: true, msg: `${name} 插入 999mm 超框图元` });
@@ -1018,6 +1061,27 @@ function selftest(goodDir) {
       out.push({ name, data: d });
     }
     fs.writeFileSync(zp, writeZipStored(out));
+
+    // 注入必须**真的**把图元集抽空。否则后面那条「坏样本命中 gerber.mask.top.empty」
+    // 会红在一个跟被测对象无关的地方（曾经就这样红了很久没人管）。
+    // 而且这条断言不依赖样本长什么样：不管阻焊是纯 D03 闪光还是用 D01 画开窗，
+    // 「注入后图元数必须为 0」都成立 —— 只有「真的注入了」才成立。
+    {
+      const zg = readZip(fs.readFileSync(zp));
+      let checked = 0, left = 0;
+      for (const [name, data] of zg) {
+        if (!/\.GTS$/i.test(name)) continue;
+        checked++;
+        const g = parseGerber(data.toString('utf8'));
+        left = g ? (g.d01 || 0) + (g.d03 || 0) + (g.regions || 0) : 0;
+      }
+      ok(checked === 1, `坏样本里正好 1 个 GTS（实际 ${checked} 个）`);
+      // 用与 layerCount 完全相同的公式（d01 + d03 + regions）——
+      // 判据用的是这把尺子，自检就必须用同一把，否则会出现「自检说没抽空、
+      // 判据说空」或者相反的两把尺子问题。d02 是移动指令，不产生图元，不计。
+      ok(left === 0, `注入后 GTS 仍有 ${left} 个图元（d01+d03+regions）—— 故障没有被注入（只剥 D03 不够：本 EDA 的阻焊开窗大量用 D01 画，实测 GTS=153 D03 + 606 D01 + 6 区域）`);
+      log.push({ ok: true, msg: `注入自洽：GTS 图元数已归零（checked=${checked}）` });
+    }
   }
 
   // 真跑一遍（子进程，验证真实 exit code）

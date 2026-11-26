@@ -46,8 +46,9 @@
     "node": ">=18.17"
   },
   "scripts": {
-    "test": "node test/syntax-gate.mjs && node test/dev-path-scan.mjs && node test/doc-refs.mjs && node test/placement-rules.mjs && node test/capability-gate.mjs && node test/smoke.mjs && node test/plugin-harness.mjs && node test/mutants.mjs",
+    "test": "node test/syntax-gate.mjs && node test/dev-path-scan.mjs && node test/doc-refs.mjs && node test/placement-rules.mjs && node test/capability-gate.mjs && node test/fabcheck-selftest.mjs && node test/smoke.mjs && node test/plugin-harness.mjs && node test/mutants.mjs",
     "mutants": "node test/mutants.mjs",
+    "fabcheck-selftest": "node test/fabcheck-selftest.mjs",
     "pcb": "node cli/pcb.mjs",
     "mcp": "node mcp/server.mjs",
     "install-clients": "node install/install.mjs",
