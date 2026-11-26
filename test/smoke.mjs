@@ -5,7 +5,12 @@
  * 只测「契约」，不测「业务」。业务由 verify-delivery.ps1 和 fabcheck 自己测。
  * 这里要证明的是：**三层外壳都能真的把参数送到同一个实现上，并且退出码语义一致。**
  *
- * 全程零依赖、零网络、不写盘、不碰 EDA 进程。可以在 CI 上跑。
+ * 全程零依赖、零网络、不碰 EDA 进程。可以在 CI 上跑。
+ *
+ * 会写盘的只有一处：第 8 组要验 `census` 真的能扫一遍，而它会重写
+ * `out/_probe/fab-census.json`（那份文件是随仓库发布的证据）。测试会在跑前把它
+ * 原样存下来、跑后原样写回，所以对外**净变化为零**。不这么做的话，
+ * 每跑一次测试就把发布出去的测量结果覆盖掉 —— 而测完没人会注意到。
  *
  *   node test/smoke.mjs
  *
@@ -402,11 +407,32 @@ for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'arti
   })
 }
 
+/**
+ * 在本仓库上真跑一次 census，**跑完把报告文件原样写回**。
+ *
+ * 为什么要还原：`out/_probe/fab-census.json` 是随仓库发布的一份度量证据。
+ * 在一个没有产物目录的克隆里跑一次 census，它会被改写成「0 个目录」——
+ * 一份测试不该顺带销毁它要检验的对象。而且这种事没人会注意到。
+ */
+const censusOnThisRepo = () => {
+  const report = join(PROBE, 'fab-census.json')
+  const before = existsSync(report) ? readFileSync(report) : null
+  try {
+    const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'census'], { timeout: 300_000 })
+    if (!r.stdout.trim()) throw new Error(`没有输出；stderr=${r.stderr.slice(0, 300)}`)
+    let j
+    try { j = JSON.parse(r.stdout.trim()) } catch { throw new Error(`不是 JSON：${r.stdout.slice(0, 200)}`) }
+    return { j, code: r.code }
+  } finally {
+    try {
+      if (before !== null) writeFileSync(report, before)
+      else if (existsSync(report)) rmSync(report, { force: true })
+    } catch { /* 还原失败不该掩盖真正的断言结果 */ }
+  }
+}
+
 check('census 输出带 source 字段，能分辨 live / snapshot', () => {
-  const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'census'], { timeout: 300_000 })
-  assert(r.stdout.trim(), `没有输出；stderr=${r.stderr.slice(0, 300)}`)
-  let j
-  try { j = JSON.parse(r.stdout.trim()) } catch { throw new Error(`不是 JSON：${r.stdout.slice(0, 200)}`) }
+  const { j } = censusOnThisRepo()
 
   assert(j.source === 'live' || j.source === 'snapshot', `source 取值非法：${j.source}`)
   // 这是核心：如果它没真扫一遍，就不能把时间戳写成「刚刚」。
@@ -426,10 +452,20 @@ check('census 输出带 source 字段，能分辨 live / snapshot', () => {
 })
 
 check('census 退出码与 ok 一致（ok=true ⇔ exitCode=0）', () => {
-  const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'census'], { timeout: 300_000 })
-  const j = JSON.parse(r.stdout.trim())
+  const { j, code } = censusOnThisRepo()
   assert((j.ok === true) === (j.exitCode === 0), `ok=${j.ok} 但 exitCode=${j.exitCode}`)
-  assert(r.code === (j.ok ? 0 : j.exitCode), `进程退出码 ${r.code} 与输出里的 ${j.exitCode} 不一致`)
+  assert(code === (j.ok ? 0 : j.exitCode), `进程退出码 ${code} 与输出里的 ${j.exitCode} 不一致`)
+})
+
+check('census 跑完之后报告文件原样还原（测试不销毁证据）', () => {
+  // 上两条已经会写盘又还原。这里再独立确认一次净变化为零。
+  const report = join(PROBE, 'fab-census.json')
+  if (!existsSync(report)) return '本仓库没有该文件（新克隆里已被 gitignore 之外的路径保护，跳过）'
+  const before = readFileSync(report)
+  censusOnThisRepo()
+  const after = readFileSync(report)
+  assert(before.equals(after), '报告文件被测试改动了 —— 发布出去的度量证据被覆盖')
+  return `${after.length} B 未变`
 })
 
 /** 造一个最小仓库结构：只有 out/_probe/，可以把任意量具脚本塞进去。 */
