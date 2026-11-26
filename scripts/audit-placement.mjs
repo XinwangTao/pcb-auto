@@ -247,13 +247,33 @@ const RULES = [
     fn: (d, g) => {
       const b = g.comps.find((c) => c.des === 'USB1');
       if (!b) return { why: 'USB1 不在设计里' };
+      // 【分母】「在端部」的分母必须是**可用**长度，不是整板长度。
+      // 板底那一段是天线净空（Espressif 要求天线区无铜无器件），器件本来就不许进去，
+      // 它不是"离端部太远的中间段"，它是**根本不存在的端点**。
+      // 第一版拿整板 H 当分母，于是 USB1 在 -2900 被判「74% 处、中段」——
+      // 而那是可用跨度 3690 的 98.5% 处，实际已经贴到能贴的最下端了。
+      // 分母错了会给出一个看起来很专业、实际相反的判定（同 drcLeafCount vs
+      // drcTotalCount 混用是一类错误）。
       const H = d.boardHeightMil;
-      const frac = -b.y / H;               // 0=顶端 1=底端
+      const k = d._antennaKeepout;
+      let usableBottom = -H;
+      let denomNote = `整板 ${H} mil`;
+      if (k && Number.isFinite(k.y1) && k.y0 <= -H + 1) {
+        // 净空带压住板底 ⇒ 可用下界抬到带子上沿
+        usableBottom = k.y1;
+        denomNote = `可用跨度 ${Math.round(-usableBottom)} mil（整板 ${H} 减去天线净空带顶部 ${Math.round(k.y1)}）`;
+      }
+      const span = -usableBottom;
+      if (!(span > 0)) return { why: `可用跨度是 ${span}，无法判定` };
+      const distTop = Math.abs(b.y - 0);
+      const distBot = Math.abs(b.y - usableBottom);
+      const dist = Math.min(distTop, distBot);
       const END = 0.25;
-      const atEnd = frac <= END || frac >= 1 - END;
+      const frac = dist / span;            // 0=贴端部
+      const atEnd = frac <= END;
       return atEnd
-        ? { ok: true, value: `USB1 在 ${(frac * 100).toFixed(0)}%（端部 ${END * 100}% 内）` }
-        : { ok: false, why: `USB1 位于长度 ${(frac * 100).toFixed(0)}% 处，在长边中段（端部判定线 ${END * 100}%）` };
+        ? { ok: true, value: `USB1 离最近的可用端部 ${Math.round(dist)} mil = 可用跨度 ${Math.round(span)} 的 ${(frac * 100).toFixed(1)}%（阈值 ${END * 100}%）；分母 = ${denomNote}` }
+        : { ok: false, why: `USB1 离最近的可用端部 ${Math.round(dist)} mil = 可用跨度 ${Math.round(span)} 的 ${(frac * 100).toFixed(1)}% > 阈值 ${END * 100}% —— 在长边中段；分母 = ${denomNote}` };
     },
   },
   {
