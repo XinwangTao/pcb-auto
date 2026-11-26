@@ -1,13 +1,13 @@
 # 独立复核：无人值守流水线「坏板判通过」风险
 
-基线（写入时刻实测）：`pipeline3.js` 2058 行 / sha256 `522BE2F3`；`run-all.ps1` 650 行 / `E3F1C314`；`audit-design.js` 321 行 / `D6D9D24D`；`verify-drc.js` 190 行 / `62466EBF`。**该目录正被另一进程持续改写**（本次审计期间 pipeline3.js 从 1945 → 2058 行），行号以本基线为准。
+基线（写入时刻实测）：`pipeline3.js` 2058 行 / sha256 `522BE2F3`；`run-all.ps1` 650 行 / `E3F1C314`；`audit-design.js` 321 行 / `D6D9D24D`；`verify-drc.js` 190 行 / `62466EBF`。**该目录正被另一进程持续改写**（本次审计期间 pipeline3.js 从 1945 → 2058 行），行号以本基线为准。（**run-all.ps1 的引用已于 2026-11-26T18:13 按当时 1424 行的版本重核，并挂内容锚点**）
 
 ## 按「能否让坏板通过」排序
 
-### 1. `run-all.ps1:472-480` — 独立 DRC 闸门遇到 exit 2 直接放行
+### 1. `run-all.ps1:924-931 "$drcReOk = $false"` — 独立 DRC 闸门遇到 exit 2 直接放行【已修：L924 起 fail-closed，exit 2 先重试一次，仍非 0 判本轮不过】
 `verify-drc.js:156-172` 对「CLI 无输出 / 输出无法解析 / `env.ok === false`」一律 `exit 2`，而被注释为「环境问题」。
 
-由此出错的方式：`--timeout` 超时、幽灵调用、session 死掉时 `env.ok` 为 false，闸门记一句「本闸门跳过」就 `continue`；而 `$finalOk = ($v -and $v.ok -and $verifyOk)`（`run-all.ps1:644`）**从不看 `$drcReOk`**，于是「独立 DRC 复核从未跑成」的板子照样 `exit 0`——而流水线自述的 `drcPassed` 恰是本文件 L436 自己认定双向不可信的量。
+由此出错的方式：`--timeout` 超时、幽灵调用、session 死掉时 `env.ok` 为 false，闸门记一句「本闸门跳过」就 `continue`；而 `$finalOk = ($vOkBool -and ($verifyOk -eq $true) -and ($bestDrcReOk -eq $true) ...)`（`run-all.ps1:1323 "$finalOk = ($vOkBool -and ($verifyOk -eq $true)"`）**现已纳入 `$bestDrcReOk`（已修：原式不看它）**，于是「独立 DRC 复核从未跑成」的板子照样 `exit 0`——而流水线自述的 `drcPassed` 恰是本文件 L436 自己认定双向不可信的量。
 
 应改成：加 `$drcReChecked` 标志并纳入 `$finalOk`；exit 2 先重试一次，仍为 2 则判「结论未定」而非放行。
 
@@ -60,7 +60,7 @@
 
 应改成：单位 token 走白名单且必须紧贴数字结尾，拒绝 `\dN\d{3,}` 型号形状，并补 nF↔uF 的千倍换算。
 
-### 9. `run-all.ps1:59-64` — 语法闸门静默换成旧版本，且不记录换了哪个
+### 9. `run-all.ps1:205-221 "pipeline3.js 语法不通（可能正在编辑）-> 改用上一次完好备份"` — 语法闸门静默换成旧版本，且不记录换了哪个【已修：回退时会算 sha/mtime 指纹、打印并落进产物目录】
 `Get-PipelineScript` 在现文件编译失败时回退到 `pipeline3.js.lastgood` 并继续跑。
 
 由此出错的方式：日志里没有任何「本次实际跑的是 lastgood」的字段，一次通过无法归属到具体 revision——被复核的那份代码可能根本没被执行过（本目录正在被并发改写，这条不是理论风险）。

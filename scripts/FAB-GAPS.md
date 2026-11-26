@@ -61,7 +61,7 @@ fabcheck 即按此判：`gerber.mask.bottom.empty` / `gerber.silk.bottom.empty` 
 
 ## 3 其余五条细节
 
-**① TestPoints**：verify-artifacts.js 完全不看该文件。`fix-artifacts.js:24-33` 只在 run-all 的"自述通过"分支被调用（`run-all.ps1:415`），而 `record-full.ps1:67`、`d7d8-run.ps1:72`、`record-real.ps1:75` 直接调 pipeline3 → 不经过 fix。实测并存两种状态：
+**① TestPoints**：verify-artifacts.js 完全不看该文件。`fix-artifacts.js:24-33` 只在 run-all 的"自述通过"分支被调用（`run-all.ps1:856-893 "if (-not $v.ok) {"`，实际调用 `fix-artifacts.js` 在 L893），而 `record-full.ps1:67`、`d7d8-run.ps1:72`、`record-real.ps1:75` 直接调 pipeline3 → 不经过 fix。实测并存两种状态：
 - `out\LED_RGB_Indicator-20261125-193838\TestPoints.xlsx` 8107B（已改名，正确；3 sheet，sharedStrings 含"测试点覆盖率"、"0%"）；
 - `out\RP2040_Minimal-20261125-194222\TestPoints.csv` 8306B，头 `50 4b 03 04 0a 00` = ZIP/xlsx（名字骗人，CSV 解析器必崩）。
 根因在导出侧：`pipeline3.js:1965` 把 `getTestPointFile()` 的返回值直接命名 `.csv`。
@@ -82,7 +82,7 @@ pipeline3.js（导出段 `grep -n "const EXPORT_PLAN"`，快照行号 1960-1976�
 1. **:1965** `['TestPoints.csv', …]` → `['TestPoints.xlsx', …]`。getter 返回的本来就是 xlsx 字节流，改名即治愈 ①（比在 run-all 里事后改更确定）。
 2. **:1968-1975 循环后、:1976 之前**加"导出后归一"三步（本进程内、不依赖 EDA）：a. PnP UTF-16→UTF-8、TAB→逗号、剥 `mm` 后缀；b. DRL 删掉 `*_Via.DRL` 中与 `PTH_Through.DRL` 重合的坐标（或整份丢弃，Through 已含 Via）；c. 写回同名文件。→ 治愈 ②⑦。
 3. **:1976 之后** spawn 一次 `node scripts\fabcheck.js <OUT>`，把 `blockers[].msg` 并入 `errors`（"产物不可打样"应进 `ok:false`，而不是只靠 run-all 事后判定）。
-4. 不建议改 `verify-artifacts.js` / `fix-artifacts.js`（另一循环在用）；新判据全落在 `fabcheck.js`。run-all.ps1:424 前加一行 fabcheck 即可白嫖（单目录实测 ~0.2s）。
+4. 不建议改 `verify-artifacts.js` / `fix-artifacts.js`（另一循环在用）；新判据全落在 `fabcheck.js`。run-all.ps1:984 "$fabRaw = (& $nodeVerify (Join-Path $Root 'scripts\fabcheck.js') $OutDir 2>&1" 已经这么做了（**该建议已落地**：exit 1 判不可打样、exit 2 判未判定，都不进 PASS；单目录实测 ~0.2s，紧凑板框另见 L1121）。
 
 ## 5 复现
 
