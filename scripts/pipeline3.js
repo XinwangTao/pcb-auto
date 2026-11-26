@@ -814,6 +814,30 @@ try {
     bbox: padN ? [xMin, yMin, xMax, yMax].map(v => Math.round(v)) : null,
     span: [Math.round(spanW), Math.round(spanH)],
     board: [bw0, bh0] });
+  // 【跨度合格 != 都落在板上】`fits` 比的是焊盘 bbox 的**尺寸**，不是位置。
+  // 实测 2026-11-26T15:44 的 V2：spanH=3708 只比 bh0-40=3660 大 48，于是报的是
+  // 「超 48 mil —— 只差一点」；而真实缺陷是焊盘最低点 -3827 对板边 -3700，
+  // **127 mil 的焊盘整排挂在板外**，布线器根本没有可连的端点。
+  // 尺寸略大和位置错位被混成一句话，且 48 这个数看起来无害。位置才是致命的那个。
+  // 容差取 50 mil：远大于板框线宽/取整带来的几个 mil，又远小于 127。
+  const PAD_OFFBOARD_TOL = 50;
+  const padOff = padN > 0 ? {
+    left: Math.max(0, -xMin), right: Math.max(0, xMax - bw0),
+    bottom: Math.max(0, -bh0 - yMin), top: Math.max(0, yMax),
+  } : null;
+  const padOffMax = padOff
+    ? Math.max(padOff.left, padOff.right, padOff.bottom, padOff.top) : 0;
+  log('padOffBoard', padOff ? {
+    left: Math.round(padOff.left), right: Math.round(padOff.right),
+    bottom: Math.round(padOff.bottom), top: Math.round(padOff.top),
+    maxMil: Math.round(padOffMax), board: [bw0, bh0], tol: PAD_OFFBOARD_TOL,
+  } : { measured: false, why: '没有读到焊盘' });
+  if (padN > 0 && padOffMax > PAD_OFFBOARD_TOL) {
+    errors.push('outlineFit: 焊盘有 ' + Math.round(padOffMax) + ' mil 落在板框 ' + bw0 + 'x' + bh0
+      + ' 之外（左 ' + Math.round(padOff.left) + ' / 右 ' + Math.round(padOff.right)
+      + ' / 下 ' + Math.round(padOff.bottom) + ' / 上 ' + Math.round(padOff.top)
+      + ' mil）—— 板外焊盘接不到线，布线器会一条都画不出来');
+  }
   // 【显式摆放时不许扩板框】实测 2026-11-26 15:36（ESP32S3_Wireless_Mic_V2）：
   // 布局表按 1000x3700 算好，U1 rot=180 让天线朝 -Y、焊盘边压在 y=-3700、
   // 天线整段落在板外 —— 这是 Espressif 指南「强烈推荐天线伸出板边」的落地。
@@ -961,9 +985,31 @@ try {
         } else intruders.push(des);
       }
     } catch (e) { log('antennaVerifyErr', String(e && e.message).slice(0, 120)); }
+    // 【禁布区里不许有焊盘】上面那圈只查了「**别的**器件有没有闯进来」，
+    // 没查这条带子有没有压住被豁免模组**自己的焊盘**。实测原来的带子是
+    // y0=-3700, y1=-3460（240 mil 高、横贯全板），而 U1 焊盘区在 -3835..-3087 ——
+    // 相当一批焊盘正落在带子里。带子的规则是 NO_WIRES(5)/NO_FILLS(6)/NO_POURS(7)，
+    // 于是这些焊盘的出线方向被整段封死。
+    // 同一轮 DRC 叶子正好对得上：Connection Error | SMD Pad 75、
+    // Prohibited Region to Track 5、Clearance Error | SMD Pad to Track 14。
+    // 只查了东侧没查西侧的判据，会给出 `intruders: []` 这种"看起来干净"的结果。
+    let padsInBox = 0;
+    const padsInBoxSample = [];
+    try {
+      for (const pid of (await eda.pcb_PrimitivePad.getAllPrimitiveId()) || []) {
+        const pp = await eda.pcb_PrimitivePad.get(pid);
+        const px = pp?.getState_X?.(), py = pp?.getState_Y?.();
+        if (typeof px !== 'number' || typeof py !== 'number') continue;
+        if (px > K.x0 && px < K.x1 && py > K.y0 && py < K.y1) {
+          padsInBox++;
+          if (padsInBoxSample.length < 5) padsInBoxSample.push([Math.round(px), Math.round(py)]);
+        }
+      }
+    } catch (e) { log('antennaPadScanErr', String(e && e.message).slice(0, 120)); }
     antennaKeepout = { built: !!reg, ruleType: [5, 6, 7], layer: 12,
       box: [K.x0, K.y0, K.x1, K.y1], intruders, overhangMil,
-      allowSeen, overhangDetail };
+      allowSeen, overhangDetail,
+      padsInBox, padsInBoxSample };
     log('antennaKeepout', antennaKeepout);
     // "region 建出来了"不等于"净空有效"。器件侵入与天线未悬出都要让整轮失败，
     // 否则这块板会带着用户明确点出来的那个缺陷交付，而 _run.json 还写着 ok。
@@ -979,6 +1025,14 @@ try {
     if (allowList.length > 0 && allowSeen.length === 0) {
       errors.push('antennaKeepout: 净空区内没找到应在此处的器件 '
         + allowList.join(',') + ' —— 悬出量无从测量，不能当作合格');
+    }
+    // 只在点了 allowDesignators 时才判（那就是天线净空带，模组本来就在这儿）——
+    // 窄范围，不对别的设计类型下结论。
+    if (allowList.length > 0 && padsInBox > 0) {
+      errors.push('antennaKeepout: 净空带里有 ' + padsInBox + ' 个焊盘'
+        + (padsInBoxSample.length ? '（如 ' + padsInBoxSample.map(s => s.join(',')).join(' / ') + '）' : '')
+        + ' —— NO_WIRES 会把它们的出线全部拒掉，带子高度 ' + Math.round(K.y1 - K.y0)
+        + ' mil 对板框 ' + bh0 + ' mil，请把带子收到焊盘外侧');
     }
     if (overhangMil != null && overhangMil <= 0) {
       errors.push('antennaKeepout: 天线未悬出板边 overhang=' + overhangMil + 'mil'
@@ -4854,7 +4908,14 @@ try {
     // 漂移就只能发生在"某个字段缺失"，而缺失是可检测的。
     // 消费方（accept.ps1）据此可以独立核对 DRC，不必相信 ok。
     gates: {
-      errors: errors.length, mismatches: mismatches.length,
+      // 【必须带原文，不能只带个数】实测 2026-11-26T15:44 那一轮：gates.errors=2，
+      // 而这两条错误的文本在磁盘上任何一处都不存在 —— `errors.push` 全文件 30 处
+      // 没有一处 `log()`，`gates` 只存了 `.length`，run-all.ps1 把文本打到控制台就结束。
+      // 于是"这次为什么没通过"只能靠重跑一次来回答（28 分钟，且未必复现）。
+      // 个数进了结论、原因没进证据 —— 这跟"读不到输入却保持沉默"是同一类错。
+      errors: errors.length, errorList: errors.slice(0, 40),
+      warns: warns.length, warnList: warns.slice(0, 40),
+      mismatches: mismatches.length,
       outlineOk: !!outlineOk,
       routeState, routeRecovered, layoutState, imported,
       // 摆放证据：显式模式下 layoutState 恒为 null，只看它会把摆好的板判成没布局。
@@ -4877,6 +4938,11 @@ try {
       clearanceRevertDangling: [...danglingLines],
     },
   }, null, 1);
+  // 同一份内容再进 _log.json（那是独立复核最常读的入口）。
+  // 注意：_run.json/_log.json **自身写失败**产生的 errors 是在这之后才 push 的，
+  // 不会出现在这两个字段里 —— 它们分别有 runMetaFail / runLogFail 兜底。
+  log('runErrors', { n: errors.length, list: errors.slice(0, 40),
+    warns: warns.length, warnList: warns.slice(0, 40) });
   await fs.saveFileToFileSystem(OUT + '\\_run.json', toBlob(meta), '_run.json');
 } catch (e) {
   // 不能吞：_run.json 是独立校验器唯一可信的板框来源。写失败后校验器会退回
