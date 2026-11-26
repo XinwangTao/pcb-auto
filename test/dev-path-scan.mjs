@@ -147,9 +147,21 @@ const SELF_REFERENTIAL = new Set([
   'test/dev-path-scan.mjs',
 ])
 
-/** 被跟踪的文本文件清单。 */
+/** 被跟踪的文本文件清单。
+ *
+ * 已跟踪 ∪ 未跟踪（`--exclude-standard` 仍尊重 `.gitignore`）。
+ *
+ * 为什么必须含未跟踪：这条闸门第一次上线时只看已跟踪文件，于是在
+ * `scripts/tool-paths.ps1` 还**未提交**的时候对它报 PASS ——
+ * 而那个文件的注释里正好写着两条作者机器路径。也就是说：
+ * **闸门对它本该检查的那个文件一直亮绿灯，只因为那个文件还没 commit。**
+ * 新写的文件恰恰是最可能引入本机路径的一批，所以这条必须和
+ * `syntax-gate` / `doc-refs` 一样把未跟踪算进来。
+ */
 export function trackedFiles(root = ROOT) {
-  return gitLines(['ls-files', '-z'], { root, nul: true }).filter((f) => TEXT_EXT.test(f))
+  const tracked = gitLines(['ls-files', '-z'], { root, nul: true })
+  const untracked = gitLines(['ls-files', '-o', '--exclude-standard', '-z'], { root, nul: true })
+  return [...new Set([...tracked, ...untracked])].filter((f) => TEXT_EXT.test(f))
 }
 
 /** 相对路径 → 豁免条目（没有就返回 null） */
