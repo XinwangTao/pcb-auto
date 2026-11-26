@@ -107,9 +107,15 @@ function human(opName, r) {
 
 const opName = argv.find((a) => !a.startsWith('-'))
 
-if (!opName || opName === 'help' || argv.includes('--help') || argv.includes('-h')) {
+// 「看帮助」和「调用错误」是两件事。
+// 以前 `pcb --help` 退出 2 —— 理由是「没给操作名」。但在脚本和 CI 里
+// `pcb --help || exit 1`、`pcb --help >/dev/null || fail` 都把它当成坏掉了，
+// 而它其实完全成功了。所以：要帮助 = 成功；什么都不给 = 调用错误。
+const wantsHelp = argv.includes('--help') || argv.includes('-h') || opName === 'help'
+
+if (wantsHelp || !opName) {
   console.log(usage())
-  process.exit(opName ? 0 : 2)
+  process.exit(wantsHelp ? 0 : 2)
 }
 
 if (opName === 'list') {
