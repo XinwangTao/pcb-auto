@@ -126,6 +126,10 @@ node scripts/gen-font-css.mjs
 $env:Path = "C:\Program Files\nodejs;" + $env:Path
 
 # 1) 重新抽取真实数据 -> src/data.json
+#    PINNED_RUN 钉住的那次 run 很可能已经被 cleanup.ps1 清理掉了
+#    （out/ 只保留最新 40 个 + 每个设计名最新 1 个）。这时脚本**退 2**并列出还能用的 run，
+#    不会静默换成「最新」—— 换了 run，视频里每个数字就不再对得上注释里钉的那一次。
+#    自己指定一次：VIDEO_RUN=<run 目录名> node scripts/collect-data.mjs
 node scripts/collect-data.mjs
 
 # 2) 渲染（必须显式给 entry point；用系统 Chrome，比 Remotion 自带的 headless-shell 下载快很多）

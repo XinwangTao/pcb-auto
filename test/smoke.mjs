@@ -848,6 +848,35 @@ for (const [op, envVar, bin] of [
   })
 }
 
+console.log('\n\x1b[1m11 · 量具找不到它的输入时，要说人话而不是抛栈\x1b[0m')
+
+// video/scripts/collect-data.mjs 原来有两个缺陷，都值得钉住：
+//
+//   1. PINNED_RUN 钉的那次 run 被 cleanup.ps1 清理掉之后，它会**静默**换成「最新」那次。
+//      输出看起来完全正常，但视频里每个数字都不再是注释里钉定的那一次。
+//      —— 同一个病：量具读不到输入时不许沉默。
+//   2. 产物清单把 TestPoints.csv 写死，而流水线后来导出的是 TestPoints.xlsx
+//      （out/ 语料实测 .xlsx 47 个、.csv 14 个），于是直接抛一个 ENOENT 栈。
+//
+// 这里只钉「点名的 run 不存在」这一条分支：它必须退 2，并且消息里要有可照做的下一步。
+// 用 19700101 这个名字，保证在任何人机器上、在空的 CI 克隆里都确定不存在。
+check('collect-data 指定的 run 不存在时退 2 且给出下一步，不抛栈', () => {
+  const r = run([join(ROOT, 'video', 'scripts', 'collect-data.mjs')], {
+    env: { VIDEO_RUN: 'SHT30_LDO_Module-19700101-000000' },
+  })
+  const both = `${r.stdout}\n${r.stderr}`
+  assert(r.code === 2, `退出码 ${r.code}，期望 2（输入不对、没能测量）`)
+  assert(both.includes('没能开始'),
+    `消息里没有「没能开始」—— 读者分不清「我的东西坏了」和「这个 run 不在了」：${both.slice(0, 200)}`)
+  assert(both.includes('VIDEO_RUN'),
+    `没给可照做的下一步（应当提 VIDEO_RUN=<名字>）：${both.slice(0, 200)}`)
+  // 反过来钉死：不许退化成原始栈。这条能抓到的正是我修之前的形态。
+  assert(!/\bat (?:Object\.)?(?:statSync|readdirSync)\b/.test(both),
+    `消息里有 Node 调用栈，读者读不出该做什么：${both.slice(0, 200)}`)
+  assert(!/ENOENT/.test(both), `消息里是裸 ENOENT：${both.slice(0, 200)}`)
+  return both.split('\n').find((l) => l.includes('没能开始'))?.trim().slice(0, 56) ?? ''
+})
+
 console.log('\n────────────────────────────────────────────────────────────')
 if (failures.length === 0) {
   console.log(`  \x1b[32mSMOKE=PASS\x1b[0m   ${pass} 项全过`)
