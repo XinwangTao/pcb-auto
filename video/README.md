@@ -2,15 +2,40 @@
 
 竖屏短视频，主题「AI 全自动接管 PCB 设计」。视频里所有数字都从 `pcb-auto` 的真实产物读取。
 
-## 这里有两套合成，别搞混
+## 四套合成，素材来源各不相同 —— 别搞混
 
-| 合成 | 素材 | 规格 | 用途 |
+| 合成 | 素材 | 规格 | 是不是「录屏」 |
 | --- | --- | --- | --- |
-| `PcbRealV7` | **真实录屏** `public/real/*.mp4`（6 段 EDA 操作） | 31s / 30fps | 正片。见 [V7-SPEC.md](V7-SPEC.md) |
-| `PcbAuto` | 静态数据卡 | 58s / 60fps | 早期版本，已被上面那套取代 |
+| `PcbRealV9` | `public/v7/real/v7r-*.png`（11 张，EDA 自渲染画布帧） | 31.6s / 30fps | **不是** |
+| `PcbRealV7` | 同上（与 V9 共用同一个 `public/v7/manifest.json`） | 31s / 30fps | **不是** |
+| `PcbRealV6` | `public/real/*.mp4`（6 段 gdigrab 桌面录像） | 88s / 30fps | **是** |
+| `PcbAuto` | 静态数据卡（`src/data.json`） | 58s / 60fps | 不适用，纯图表 |
 
-**正片是 `out/v9-074907.mp4`**（1080×1920 / 30fps / 31.6s / H.264 + AAC）。
-「AI 真的一步步画图布线」这个卖点只有 `PcbRealV7` 那套成立 —— 它的每一帧都来自下面这 6 段录屏：
+**正片是 `out/v9-074907.mp4`**（1080×1920 / 30fps / 31.6s / H.264 + AAC），由 `PcbRealV9` 渲染。
+
+### 正片的素材到底是什么（这一点我错过一次，所以写细）
+
+正片**不是录屏**。它的 11 段来自：
+
+```
+out/frames/<批次>/<尝试>/<序号>-<tag>.png   ← 流水线在里程碑调
+                                            eda.dmt_EditorControl.getCurrentRenderedAreaImage()
+                                            让 EDA 自己渲染画布并落盘 PNG
+        ↓ curate-v9.mjs 挑帧 + 写 manifest
+video/public/v7/real/v7r-01.png … v7r-11.png  ← 受跟踪，clone 下来就有
+```
+
+**好处是可回溯**：`public/v7/manifest.json` 里每段都记着 `src`（批次/尝试/帧文件名），
+例如 `055041/1-smart-fit/0000-sch-wired.png`，能一路对回 `out/frames/` 里那张原图。
+11 段跨 3 块板（`055041` ×9、`053328` ×1、`045629` ×1），台词逐句由该批 `_run.json` 背书。
+
+**代价是它只记里程碑，不记操作过程** —— 所以它撑不起「录屏」这个词。这是改口的真实原因，
+不是措辞微调。
+
+### 真·录屏素材在另一处
+
+`public/real/` 那 6 段是 gdigrab 录的**真实桌面**，屏幕上是嘉立创 EDA 完整窗口
+（图层面板、底部状态栏、mil 标尺都能看到），画面角标就写着 `REC 真实录屏`。供 `PcbRealV6` 用：
 
 ```
 public/real/01_sch.mp4      原理图连线
@@ -21,19 +46,30 @@ public/real/05_route.mp4    自动布线
 public/real/06_final.mp4    收尾
 ```
 
+**一句话分清**：V6 = 录屏（88s，早期版本）；V7/V9 = 画布帧（31s，当前正片）。
+
 下面 §真实数据来源 / §中文字体 / §转场 记的是 `PcbAuto` 那一套的踩坑，
-对 `PcbRealV7` 同样适用（同一套字体内联、同一套硬切）。
+对 `PcbRealV6` / `V7` / `V9` 同样适用（同一套字体内联、同一套硬切）。
 
 ## 产物
 
 | 文件 | 说明 |
 | --- | --- |
-| `out/v9-074907.mp4` | **正片**（真实录屏合成），H.264，1080×1920，31.6s |
-| `out/ai-pcb-demo.mp4` | 早期 58s 版（`PcbAuto` 合成），保留对比用 |
+| `out/v9-074907.mp4` | **正片**（`PcbRealV9`，EDA 自渲染画布帧），H.264，1080×1920，31.6s |
+| `out/ai-pcb-v6-share.mp4` | 早期真·录屏版（`PcbRealV6`），1080×1920，88s —— 「录屏」只对它成立 |
+| `out/ai-pcb-demo.mp4` | 更早的 58s 版（`PcbAuto` 静态数据卡），保留对比用 |
 | `out/cover.png` | 封面图（从正片抽帧） |
 
-`out/` 整个目录是 gitignore 的 —— 成片走 [Releases](https://github.com/XinwangTao/pcb-auto/releases) 下载，
-仓库里只放可重新渲染的素材（`public/real/*.mp4` 共 3.9 MB）。
+`out/` 整个目录是 gitignore 的 —— 成片走 [Releases](https://github.com/XinwangTao/pcb-auto/releases) 下载。
+
+### 关于「clone 下来自己重渲」
+
+图像素材都受跟踪（`public/v7/real/*.png` 11 张 + `public/real/*.mp4` 6 段共 3.9 MB），
+但**配音不在库里**：`voice_v9.wav`、`voice_pcb.wav`、`bgm_pcb_v6.wav` 都没入库。
+所以直接 `render` 会因为找不到 `staticFile('voice_v9.wav')` 失败。
+
+要重渲得二选一：自备配音轨，或者把对应 `<Audio>` 那行注释掉。
+本文件以前写的是「仓库里只放可重新渲染的素材」—— 那句话是没验就写的，改成现在这样。
 
 ## 真实数据来源
 

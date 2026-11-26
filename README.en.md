@@ -13,10 +13,18 @@
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-blueviolet.svg)](mcp/server.mjs)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#honest-limitations)
 
-> **Every frame of the demo is a screen recording of an AI actually driving LCEDA Pro** —
-> schematic wiring → PCB import → auto-layout → copper pour → auto-routing → final.
-> Not an animation mock-up. Source clips live in
-> [`video/public/real/`](video/public/real/) (6 clips, 3.9 MB) and can be re-rendered.
+> **Nothing in the demo is an animation mock-up** — every frame shows real geometry on a
+> real LCEDA Pro canvas: the pipeline calls EDA's own `getCurrentRenderedAreaImage()` at
+> 9 milestones — schematic wiring → PCB import → auto-layout → copper pour → auto-routing → final.
+>
+> And to be precise about what it is **not**: this is **not a screen recording**. It is 11
+> canvas frames rendered by EDA itself, tracked in
+> [`video/public/v7/real/`](video/public/v7/real/), where `manifest.json` records the
+> batch/attempt/frame each segment came from — so every frame traces back to an exact run.
+> The repo also carries 6 genuine gdigrab desktop recordings in
+> [`video/public/real/`](video/public/real/) (used by the older V6 cut; the word
+> "recording" only applies to those). I conflated the two once —
+> [`video/README.md`](video/README.md) has the itemised comparison.
 
 ---
 

@@ -13,9 +13,16 @@
 
 **中文** | [English](README.en.md) | [演示片（31.6s）](https://github.com/XinwangTao/pcb-auto/releases/download/v1.0.0/ai-pcb-v9.mp4)
 
-> **演示片里每一帧都是 AI 真实操作嘉立创 EDA 的录屏** —— 原理图连线 → 导入 PCB →
-> 自动布局 → 覆铜 → 自动布线 → 收尾，不是动画示意。素材在
-> [`video/public/real/`](video/public/real/)（6 段，3.9 MB），可自行重新渲染。
+> **演示片里的画面不是动画示意** —— 每一帧都是嘉立创 EDA 画布上**真实生成的几何**：
+> 流水线在 9 个里程碑调用 EDA 自己的 `getCurrentRenderedAreaImage()` 取回画布图像，
+> 依次是 原理图连线 → 导入 PCB → 自动布局 → 覆铜 → 自动布线 → 收尾。
+>
+> 也说清它**不是**什么：**这不是桌面录屏**，是 EDA 自己渲染的画布帧。11 段全部落在
+> [`video/public/v7/real/`](video/public/v7/real/)（受跟踪），`manifest.json` 里每段都记着
+> 来源的批次/尝试/帧文件名，可逐段回溯到 `out/frames/` 的原图。
+> 想看真正的桌面录屏，仓库里另有 6 段 gdigrab 录像在
+> [`video/public/real/`](video/public/real/)（V6 那版用的；「录屏」这个词只对那 6 段成立）。
+> 这两者我先前混说过一次，[`video/README.md`](video/README.md) 里有逐条对照。
 
 ---
 
