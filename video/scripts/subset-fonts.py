@@ -25,8 +25,18 @@ PUNCT = "，。、；：？！“”‘’（）【】《》—…·→×／％�
 def collect_chars() -> str:
     chars = set(chr(c) for c in range(0x20, 0x7F))
     chars |= set(PUNCT)
-    for pattern in ("src/*.jsx", "src/*.js", "src/data.json"):
-        for path in glob.glob(os.path.join(BASE, pattern)):
+    # **递归**扫 src（V10 把文案放在 public/v10/manifest.json 里，由 build-v10.mjs 生成，
+    # 所以也要一起扫 —— 否则新加的汉字会变成方框，而且渲染不会报错）。
+    patterns = (
+        "src/*.jsx",
+        "src/*.js",
+        "src/**/*.jsx",
+        "src/**/*.js",
+        "src/data.json",
+        "public/v10/manifest.json",
+    )
+    for pattern in patterns:
+        for path in glob.glob(os.path.join(BASE, pattern), recursive=True):
             with open(path, encoding="utf-8") as fh:
                 chars |= set(fh.read())
     return "".join(sorted(c for c in chars if c.strip() or c == " "))

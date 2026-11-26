@@ -5,6 +5,7 @@ import { PcbReal, REAL_TOTAL_FRAMES } from './RealRoot.jsx';
 import { PcbRealV6, PCB_V6_TOTAL_FRAMES } from './PcbRealV6.jsx';
 import { PcbRealV7, PCB_V7_TOTAL_FRAMES } from './PcbRealV7.jsx';
 import { PcbRealV9, PCB_V9_TOTAL_FRAMES } from './PcbRealV9.jsx';
+import { PcbRealV10, PCB_V10_TOTAL_FRAMES, PCB_V10_LAYOUT } from './PcbRealV10.jsx';
 import { VIDEO } from './theme.js';
 
 export const RemotionRoot = () => (
@@ -54,6 +55,20 @@ export const RemotionRoot = () => (
       id="PcbRealV9"
       component={PcbRealV9}
       durationInFrames={PCB_V9_TOTAL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultCodec="h264"
+      defaultPixelFormat="yuv420p"
+    />
+    {/* V10：16 段跨 5 个批次，**每一次尝试单独成段**，段内按拍摄序号连播真实画布帧。
+        素材全部来自 out/frames/<批次>/<尝试>/*.png（EDA 自己渲染的画布），
+        由 video/scripts/build-v10.mjs 挑帧 + 去重 + 断言后写 public/v10/manifest.json。
+        段数/总帧数由 manifest 推导（16 段 → 1082 帧 = 36.07s）。 */}
+    <Composition
+      id="PcbRealV10"
+      component={PcbRealV10}
+      durationInFrames={PCB_V10_TOTAL_FRAMES}
       fps={30}
       width={1080}
       height={1920}

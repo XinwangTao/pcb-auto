@@ -20,6 +20,15 @@
 /video/public/**/*.wav
 /video/public/v7/img/*.png
 /video/public/*/img/*.png
+# 完整字体是 subset-fonts.py 的**输入**（从本机 Windows 取），不是渲染产物：
+#   msyh-regular.ttf 19.6MB / msyh-bold.ttf 16.8MB / consola.ttf 453KB / consolab.ttf 392KB
+# 合计 37MB，且是微软授权字体，不进仓库。渲染用的是裁过的 sub-*.ttf（已跟踪）。
+# 重建：把上面 4 个文件从 C:\Windows\Fonts 复制到 video/public/fonts/，再跑
+#   python video/scripts/subset-fonts.py
+/video/public/fonts/msyh-regular.ttf
+/video/public/fonts/msyh-bold.ttf
+/video/public/fonts/consola.ttf
+/video/public/fonts/consolab.ttf
 /video/*.mp4
 /video/node_modules/
 

@@ -1,0 +1,1051 @@
+{
+ "generatedAt": "2026-11-26T11:52:48.800Z",
+ "generator": "video/scripts/build-v10.mjs",
+ "source": {
+  "framesRoot": "out/frames",
+  "statsFile": "video/data/frames-stats.json",
+  "statsTool": "video/scripts/frames-stats.py（彩色像素 bbox + 亮度；只读 out/frames）",
+  "scannedPng": 1342,
+  "distinctImages": 189,
+  "byAttempt": {
+   "140310/1-smart-fit": {
+    "files": 140,
+    "distinct": 38
+   },
+   "171654/1-smart-fit": {
+    "files": 15,
+    "distinct": 12
+   },
+   "171654/4-expand-1.25x-retry2": {
+    "files": 28,
+    "distinct": 17
+   },
+   "175901/1-smart-fit": {
+    "files": 66,
+    "distinct": 18
+   },
+   "175901/2-expand-1.25x": {
+    "files": 49,
+    "distinct": 16
+   },
+   "185013/1-smart-fit": {
+    "files": 34,
+    "distinct": 12
+   },
+   "185013/2-expand-1.25x": {
+    "files": 36,
+    "distinct": 14
+   },
+   "185013/3-expand-1.25x-retry": {
+    "files": 27,
+    "distinct": 14
+   },
+   "185013/4-expand-1.25x-retry2": {
+    "files": 32,
+    "distinct": 16
+   }
+  },
+  "inflight": [
+   {
+    "batch": "192608",
+    "attempt": "1-smart-fit",
+    "attemptCounts": [
+     "1-smart-fit:32",
+     "2-expand-1.25x:17"
+    ],
+    "filesOnDisk": 32,
+    "usable": 32,
+    "distinct": 13,
+    "snapshotAt": "2026-11-26T11:52:48.678Z"
+   },
+   {
+    "batch": "193938",
+    "attempt": "1-smart-fit",
+    "attemptCounts": [
+     "1-smart-fit:43",
+     "2-expand-1.25x:7"
+    ],
+    "filesOnDisk": 43,
+    "usable": 42,
+    "distinct": 19,
+    "snapshotAt": "2026-11-26T11:52:48.706Z"
+   }
+  ],
+  "note": "帧全部来自流水线在里程碑调 EDA getCurrentRenderedAreaImage() 落的真实画布 PNG；没有任何合成/示意图。"
+ },
+ "beats": [
+  {
+   "id": "a1",
+   "batch": "140310",
+   "attempt": "1-smart-fit",
+   "title": "网表进 PCB",
+   "sub": "一导入全是飞线，一条还没走",
+   "why": "pcb-imported 帧：器件已落板框，蓝色飞线全部未布",
+   "pickNote": "",
+   "crop": {
+    "x": 65,
+    "y": 24,
+    "w": 576,
+    "h": 410
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic-20261126-140310/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic",
+    "board": "2600×1900",
+    "drcPassed": false,
+    "drcLeaf": 47,
+    "drcTotal": 94,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 1360
+   },
+   "frames": [
+    {
+     "file": "v10/img/a1-01.png",
+     "src": "140310/1-smart-fit/0001-pcb-imported.png",
+     "tag": "pcb-imported",
+     "idx": 1,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "a2",
+   "batch": "140310",
+   "attempt": "1-smart-fit",
+   "title": "自动布局",
+   "sub": "器件自己挪开，板框定下来",
+   "why": "layout-t6s / t14s / t23s → pcb-layout：布局阶段的 4 个真实时刻",
+   "pickNote": "",
+   "crop": {
+    "x": 29,
+    "y": 0,
+    "w": 699,
+    "h": 419
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic-20261126-140310/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic",
+    "board": "2600×1900",
+    "drcPassed": false,
+    "drcLeaf": 47,
+    "drcTotal": 94,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 1360
+   },
+   "frames": [
+    {
+     "file": "v10/img/a2-01.png",
+     "src": "140310/1-smart-fit/0002-layout-t6s.png",
+     "tag": "layout-t6s",
+     "idx": 2,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a2-02.png",
+     "src": "140310/1-smart-fit/0003-layout-t14s.png",
+     "tag": "layout-t14s",
+     "idx": 3,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a2-03.png",
+     "src": "140310/1-smart-fit/0004-layout-t23s.png",
+     "tag": "layout-t23s",
+     "idx": 4,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a2-04.png",
+     "src": "140310/1-smart-fit/0005-pcb-layout.png",
+     "tag": "pcb-layout",
+     "idx": 5,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "a3",
+   "batch": "140310",
+   "attempt": "1-smart-fit",
+   "title": "覆铜",
+   "sub": "铜面整片铺上，GND 连成一片",
+   "why": "pcb-pour 帧：整板红色铜面",
+   "pickNote": "",
+   "crop": {
+    "x": 29,
+    "y": 0,
+    "w": 699,
+    "h": 416
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic-20261126-140310/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic",
+    "board": "2600×1900",
+    "drcPassed": false,
+    "drcLeaf": 47,
+    "drcTotal": 94,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 1360
+   },
+   "frames": [
+    {
+     "file": "v10/img/a3-01.png",
+     "src": "140310/1-smart-fit/0006-pcb-pour.png",
+     "tag": "pcb-pour",
+     "idx": 6,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "a4",
+   "batch": "140310",
+   "attempt": "1-smart-fit",
+   "title": "布线器在走线",
+   "sub": "同一段布线，画布真的在变",
+   "why": "布线阶段的画面（按 sha256 去重后等间隔取 5 张，秒数戳跨 t6s → t7xx）",
+   "pickNote": "自动挑帧：^route- 命中 124 张，去重后等间隔取 5 张；段内丢掉 101 张与之前画面字节相同的重复帧",
+   "crop": {
+    "x": 29,
+    "y": 0,
+    "w": 699,
+    "h": 416
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic-20261126-140310/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic",
+    "board": "2600×1900",
+    "drcPassed": false,
+    "drcLeaf": 47,
+    "drcTotal": 94,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 1360
+   },
+   "frames": [
+    {
+     "file": "v10/img/a4-01.png",
+     "src": "140310/1-smart-fit/0010-route-t6s.png",
+     "tag": "route-t6s",
+     "idx": 10,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a4-02.png",
+     "src": "140310/1-smart-fit/0026-route-t136s.png",
+     "tag": "route-t136s",
+     "idx": 26,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a4-03.png",
+     "src": "140310/1-smart-fit/0052-route-t348s.png",
+     "tag": "route-t348s",
+     "idx": 52,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a4-04.png",
+     "src": "140310/1-smart-fit/0105-route-t14s.png",
+     "tag": "route-t14s",
+     "idx": 105,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a4-05.png",
+     "src": "140310/1-smart-fit/0133-route-t247s.png",
+     "tag": "route-t247s",
+     "idx": 133,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "a5",
+   "batch": "140310",
+   "attempt": "1-smart-fit",
+   "title": "布通",
+   "sub": "飞线走完，只剩收尾",
+   "why": "pcb-routed 帧：布通瞬间的画布",
+   "pickNote": "",
+   "crop": {
+    "x": 29,
+    "y": 0,
+    "w": 699,
+    "h": 416
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic-20261126-140310/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic",
+    "board": "2600×1900",
+    "drcPassed": false,
+    "drcLeaf": 47,
+    "drcTotal": 94,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 1360
+   },
+   "frames": [
+    {
+     "file": "v10/img/a5-01.png",
+     "src": "140310/1-smart-fit/0134-pcb-routed.png",
+     "tag": "pcb-routed",
+     "idx": 134,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "a6",
+   "batch": "140310",
+   "attempt": "1-smart-fit",
+   "title": "翻到底层",
+   "sub": "换个层看，走线压在铜面上",
+   "why": "pcb-bottom 帧：EDA 自己切的底层视图",
+   "pickNote": "",
+   "crop": {
+    "x": 29,
+    "y": 0,
+    "w": 699,
+    "h": 416
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic-20261126-140310/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic",
+    "board": "2600×1900",
+    "drcPassed": false,
+    "drcLeaf": 47,
+    "drcTotal": 94,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 1360
+   },
+   "frames": [
+    {
+     "file": "v10/img/a6-01.png",
+     "src": "140310/1-smart-fit/0135-pcb-bottom.png",
+     "tag": "pcb-bottom",
+     "idx": 135,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "a7",
+   "batch": "140310",
+   "attempt": "1-smart-fit",
+   "title": "补线 → 间距 → 兜底 → DRC",
+   "sub": "最后几屏全是修，不是画",
+   "why": "pcb-stitched / clearance / patched / drc：收尾 4 个里程碑帧",
+   "pickNote": "",
+   "crop": {
+    "x": 29,
+    "y": 0,
+    "w": 699,
+    "h": 416
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic-20261126-140310/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic",
+    "board": "2600×1900",
+    "drcPassed": false,
+    "drcLeaf": 47,
+    "drcTotal": 94,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 1360
+   },
+   "frames": [
+    {
+     "file": "v10/img/a7-01.png",
+     "src": "140310/1-smart-fit/0136-pcb-stitched.png",
+     "tag": "pcb-stitched",
+     "idx": 136,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a7-02.png",
+     "src": "140310/1-smart-fit/0137-pcb-clearance.png",
+     "tag": "pcb-clearance",
+     "idx": 137,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a7-03.png",
+     "src": "140310/1-smart-fit/0138-pcb-patched.png",
+     "tag": "pcb-patched",
+     "idx": 138,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/a7-04.png",
+     "src": "140310/1-smart-fit/0139-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 139,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "b1",
+   "batch": "171654",
+   "attempt": "1-smart-fit",
+   "title": "换一块板：第 1 次",
+   "sub": "竖长板框，密度高一截",
+   "why": "171654 第 1 次尝试：route2 → 布通 → DRC",
+   "pickNote": "",
+   "crop": {
+    "x": 287,
+    "y": 0,
+    "w": 183,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V3-20261126-171654/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic_V3",
+    "board": "1300×3700",
+    "drcPassed": false,
+    "drcLeaf": 32,
+    "drcTotal": 64,
+    "errors": 1,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 383
+   },
+   "frames": [
+    {
+     "file": "v10/img/b1-01.png",
+     "src": "171654/1-smart-fit/0004-route2-t6s.png",
+     "tag": "route2-t6s",
+     "idx": 4,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/b1-02.png",
+     "src": "171654/1-smart-fit/0008-route2-t38s.png",
+     "tag": "route2-t38s",
+     "idx": 8,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/b1-03.png",
+     "src": "171654/1-smart-fit/0009-pcb-routed.png",
+     "tag": "pcb-routed",
+     "idx": 9,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/b1-04.png",
+     "src": "171654/1-smart-fit/0014-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 14,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "b2",
+   "batch": "171654",
+   "attempt": "4-expand-1.25x-retry2",
+   "title": "同板第 4 次：板框放大 1.25 倍",
+   "sub": "重试不是重画，是改板框再走",
+   "why": "171654 第 4 次尝试：板框扩到 1625×4625mil 之后的布线到 DRC",
+   "pickNote": "",
+   "crop": {
+    "x": 287,
+    "y": 0,
+    "w": 183,
+    "h": 417
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V3-20261126-171654/_run-4-expand-1.25x-retry2.json",
+    "design": "ESP32S3_Wireless_Mic_V3",
+    "board": "1625×4625",
+    "drcPassed": false,
+    "drcLeaf": 33,
+    "drcTotal": 66,
+    "errors": 2,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 470
+   },
+   "frames": [
+    {
+     "file": "v10/img/b2-01.png",
+     "src": "171654/4-expand-1.25x-retry2/0008-route-t6s.png",
+     "tag": "route-t6s",
+     "idx": 8,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/b2-02.png",
+     "src": "171654/4-expand-1.25x-retry2/0019-route-t96s.png",
+     "tag": "route-t96s",
+     "idx": 19,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/b2-03.png",
+     "src": "171654/4-expand-1.25x-retry2/0022-pcb-routed.png",
+     "tag": "pcb-routed",
+     "idx": 22,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/b2-04.png",
+     "src": "171654/4-expand-1.25x-retry2/0027-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 27,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "c1",
+   "batch": "175901",
+   "attempt": "1-smart-fit",
+   "title": "同一次布线，403 秒",
+   "sub": "只留下画面真的变了的几帧",
+   "why": "175901 第 1 次尝试的布线阶段（route 帧按 sha256 去重，很多秒数戳的图其实一模一样）",
+   "pickNote": "自动挑帧：^route- 命中 49 张，去重后等间隔取 5 张；段内丢掉 44 张与之前画面字节相同的重复帧",
+   "crop": {
+    "x": 287,
+    "y": 0,
+    "w": 183,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V3-20261126-175901/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic_V3",
+    "board": "1300×3700",
+    "drcPassed": false,
+    "drcLeaf": 33,
+    "drcTotal": 66,
+    "errors": 0,
+    "mismatches": 0,
+    "exportsOk": 1,
+    "elapsedS": 796
+   },
+   "frames": [
+    {
+     "file": "v10/img/c1-01.png",
+     "src": "175901/1-smart-fit/0011-route-t6s.png",
+     "tag": "route-t6s",
+     "idx": 11,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/c1-02.png",
+     "src": "175901/1-smart-fit/0012-route-t14s.png",
+     "tag": "route-t14s",
+     "idx": 12,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/c1-03.png",
+     "src": "175901/1-smart-fit/0014-route-t30s.png",
+     "tag": "route-t30s",
+     "idx": 14,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/c1-04.png",
+     "src": "175901/1-smart-fit/0017-route-t55s.png",
+     "tag": "route-t55s",
+     "idx": 17,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/c1-05.png",
+     "src": "175901/1-smart-fit/0020-route-t80s.png",
+     "tag": "route-t80s",
+     "idx": 20,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "c2",
+   "batch": "175901",
+   "attempt": "2-expand-1.25x",
+   "title": "放到 1.25 倍再走一遍",
+   "sub": "布局没变，板框宽了 325mil",
+   "why": "175901 第 2 次尝试：expanded 板框后的布线中段 → 布通",
+   "pickNote": "",
+   "crop": {
+    "x": 265,
+    "y": 0,
+    "w": 227,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V3-20261126-175901/_run-2-expand-1.25x.json",
+    "design": "ESP32S3_Wireless_Mic_V3",
+    "board": "1625×3700",
+    "drcPassed": false,
+    "drcLeaf": 33,
+    "drcTotal": 66,
+    "errors": 0,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 661
+   },
+   "frames": [
+    {
+     "file": "v10/img/c2-01.png",
+     "src": "175901/2-expand-1.25x/0008-route-t6s.png",
+     "tag": "route-t6s",
+     "idx": 8,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/c2-02.png",
+     "src": "175901/2-expand-1.25x/0014-route-t57s.png",
+     "tag": "route-t57s",
+     "idx": 14,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/c2-03.png",
+     "src": "175901/2-expand-1.25x/0018-route-t89s.png",
+     "tag": "route-t89s",
+     "idx": 18,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/c2-04.png",
+     "src": "175901/2-expand-1.25x/0043-pcb-routed.png",
+     "tag": "pcb-routed",
+     "idx": 43,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "d1",
+   "batch": "185013",
+   "attempt": "1-smart-fit",
+   "title": "V4 第 1 次",
+   "sub": "覆铜之后走线，违规只剩 5 组",
+   "why": "185013 第 1 次尝试：覆铜 / 布线中段 / DRC 画布",
+   "pickNote": "",
+   "crop": {
+    "x": 287,
+    "y": 0,
+    "w": 183,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V4-20261126-185013/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic_V4",
+    "board": "1300×3700",
+    "drcPassed": false,
+    "drcLeaf": 5,
+    "drcTotal": 10,
+    "errors": 0,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 472
+   },
+   "frames": [
+    {
+     "file": "v10/img/d1-01.png",
+     "src": "185013/1-smart-fit/0003-pcb-pour.png",
+     "tag": "pcb-pour",
+     "idx": 3,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d1-02.png",
+     "src": "185013/1-smart-fit/0008-route-t6s.png",
+     "tag": "route-t6s",
+     "idx": 8,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d1-03.png",
+     "src": "185013/1-smart-fit/0015-route-t62s.png",
+     "tag": "route-t62s",
+     "idx": 15,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d1-04.png",
+     "src": "185013/1-smart-fit/0033-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 33,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "d2",
+   "batch": "185013",
+   "attempt": "2-expand-1.25x",
+   "title": "V4 第 2 次：扩板框",
+   "sub": "违规组数没变，板框大了 25%",
+   "why": "185013 第 2 次尝试：布线 / 布通 / DRC",
+   "pickNote": "",
+   "crop": {
+    "x": 265,
+    "y": 0,
+    "w": 227,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V4-20261126-185013/_run-2-expand-1.25x.json",
+    "design": "ESP32S3_Wireless_Mic_V4",
+    "board": "1625×3700",
+    "drcPassed": false,
+    "drcLeaf": 5,
+    "drcTotal": 10,
+    "errors": 0,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 502
+   },
+   "frames": [
+    {
+     "file": "v10/img/d2-01.png",
+     "src": "185013/2-expand-1.25x/0015-route-t56s.png",
+     "tag": "route-t56s",
+     "idx": 15,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d2-02.png",
+     "src": "185013/2-expand-1.25x/0030-pcb-routed.png",
+     "tag": "pcb-routed",
+     "idx": 30,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d2-03.png",
+     "src": "185013/2-expand-1.25x/0035-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 35,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "d3",
+   "batch": "185013",
+   "attempt": "3-expand-1.25x-retry",
+   "title": "V4 第 3 次：更差了",
+   "sub": "违规 5 → 8 组，还多出 14 条错",
+   "why": "185013 第 3 次尝试：_run 里 errors 14 / mismatches 12，是 4 次里最差的一次",
+   "pickNote": "",
+   "crop": {
+    "x": 265,
+    "y": 0,
+    "w": 227,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V4-20261126-185013/_run-3-expand-1.25x-retry.json",
+    "design": "ESP32S3_Wireless_Mic_V4",
+    "board": "1625×3700",
+    "drcPassed": false,
+    "drcLeaf": 8,
+    "drcTotal": 16,
+    "errors": 14,
+    "mismatches": 12,
+    "exportsOk": 6,
+    "elapsedS": 431
+   },
+   "frames": [
+    {
+     "file": "v10/img/d3-01.png",
+     "src": "185013/3-expand-1.25x-retry/0001-pcb-imported.png",
+     "tag": "pcb-imported",
+     "idx": 1,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d3-02.png",
+     "src": "185013/3-expand-1.25x-retry/0014-route-t46s.png",
+     "tag": "route-t46s",
+     "idx": 14,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d3-03.png",
+     "src": "185013/3-expand-1.25x-retry/0021-pcb-routed.png",
+     "tag": "pcb-routed",
+     "idx": 21,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d3-04.png",
+     "src": "185013/3-expand-1.25x-retry/0026-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 26,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "d4",
+   "batch": "185013",
+   "attempt": "4-expand-1.25x-retry2",
+   "title": "V4 第 4 次：回到 5 组",
+   "sub": "重试阶梯走完，还是没过",
+   "why": "185013 第 4 次尝试：回到 5 组违规，DRC 仍未通过",
+   "pickNote": "",
+   "crop": {
+    "x": 265,
+    "y": 0,
+    "w": 227,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V4-20261126-185013/_run-4-expand-1.25x-retry2.json",
+    "design": "ESP32S3_Wireless_Mic_V4",
+    "board": "1625×3700",
+    "drcPassed": false,
+    "drcLeaf": 5,
+    "drcTotal": 10,
+    "errors": 0,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 469
+   },
+   "frames": [
+    {
+     "file": "v10/img/d4-01.png",
+     "src": "185013/4-expand-1.25x-retry2/0015-route-t54s.png",
+     "tag": "route-t54s",
+     "idx": 15,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d4-02.png",
+     "src": "185013/4-expand-1.25x-retry2/0026-pcb-routed.png",
+     "tag": "pcb-routed",
+     "idx": 26,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/d4-03.png",
+     "src": "185013/4-expand-1.25x-retry2/0031-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 31,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "e1",
+   "batch": "192608",
+   "attempt": "1-smart-fit",
+   "title": "V4 的另一轮，此刻还在跑",
+   "pickNote": "在建批次快照：1-smart-fit 磁盘上 32 张（各尝试 1-smart-fit=32 / 2-expand-1.25x=17），可用 32 张，不同画面 13 张，取最后 3 张",
+   "crop": {
+    "x": 287,
+    "y": 0,
+    "w": 183,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V4-20261126-192608/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic_V4",
+    "board": "1300×3700",
+    "drcPassed": false,
+    "drcLeaf": 7,
+    "drcTotal": 14,
+    "errors": 0,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 467
+   },
+   "frames": [
+    {
+     "file": "v10/img/e1-01.png",
+     "src": "192608/1-smart-fit/0027-pcb-bottom.png",
+     "tag": "pcb-bottom",
+     "idx": 27,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/e1-02.png",
+     "src": "192608/1-smart-fit/0029-pcb-clearance.png",
+     "tag": "pcb-clearance",
+     "idx": 29,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/e1-03.png",
+     "src": "192608/1-smart-fit/0030-pcb-patched.png",
+     "tag": "pcb-patched",
+     "idx": 30,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "batch": "193938",
+   "attempt": "1-smart-fit",
+   "title": "刚起跑的 V5",
+   "sub": "多两颗去耦、C5 挪到 U3 旁边",
+   "pickNote": "在建批次快照：1-smart-fit 磁盘上 43 张（各尝试 1-smart-fit=43 / 2-expand-1.25x=7），可用 42 张，不同画面 19 张，取最后 3 张",
+   "crop": {
+    "x": 287,
+    "y": 0,
+    "w": 183,
+    "h": 434
+   },
+   "srcW": 737,
+   "srcH": 434,
+   "run": {
+    "available": true,
+    "runFile": "out/ESP32S3_Wireless_Mic_V5-20261126-193938/_run-1-smart-fit.json",
+    "design": "ESP32S3_Wireless_Mic_V5",
+    "board": "1300×3700",
+    "drcPassed": false,
+    "drcLeaf": 20,
+    "drcTotal": 40,
+    "errors": 0,
+    "mismatches": 0,
+    "exportsOk": 6,
+    "elapsedS": 558
+   },
+   "frames": [
+    {
+     "file": "v10/img/e2-01.png",
+     "src": "193938/1-smart-fit/0040-pcb-clearance.png",
+     "tag": "pcb-clearance",
+     "idx": 40,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/e2-02.png",
+     "src": "193938/1-smart-fit/0041-pcb-patched.png",
+     "tag": "pcb-patched",
+     "idx": 41,
+     "w": 737,
+     "h": 434
+    },
+    {
+     "file": "v10/img/e2-03.png",
+     "src": "193938/1-smart-fit/0042-pcb-drc.png",
+     "tag": "pcb-drc",
+     "idx": 42,
+     "w": 737,
+     "h": 434
+    }
+   ]
+  }
+ ]
+}
