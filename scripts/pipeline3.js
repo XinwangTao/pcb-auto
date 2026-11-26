@@ -1480,18 +1480,23 @@ const countTracks = async () => {
     return Array.isArray(ids) ? ids.length : -1;
   } catch (e) { return -1; }
 };
-// 【上限从 4 提到 6：原来的 4 会在最有效的那一轮之后立刻收手】
-// 实测 2026-11-26T16:20（out/ESP32S3_Wireless_Mic_V3-20261126-162010，1300x3700）：
-//   iter0 FAST  122 ->  81  tracksAdded 431    29.0s
-//   iter1 FAST   81 ->  81  tracksAdded  12     3.6s
-//   iter2 FAST   81 ->  81  tracksAdded   4     3.9s
-//   iter3 强轮   81 ->  27  tracksAdded 155   318.8s
-// 单轮降幅最大的是强轮（-54），而 `iter < 4` + `isStrong = (iter === 3)`
-// 意味着**整轮运行只允许一次强轮**，跑完剩 27 个断连就被上限截断。
-// 下方 L1521 的旧注释自己就写着"每一次成功都是 iter 3 把 stillUnconnected 打到 0"——
-// 既然成功的唯一路径是强轮，只给它一次机会没有依据。
-// 预算方向不放松：LEFT 闸 / capRaw 闸 / 零新增闸 / 清零闸四道都还在（见下方）。
-const MAX_ROUTE_ITERS = 6;
+// 【上限：回到 4 = 只给一次强轮】
+// 曾经写到 6，理由是"4 会在最有效的那一轮之后立刻收手"。2026-11-26T17:09 的实测
+// 把这个理由推翻了。同设计、同板（1300x3700）、同一份脚本，前四轮逐字节一致，
+// 之后每次强轮一好一坏地跳：
+//   iter0 FAST  122 -> 72   tracksAdded 537
+//   iter1 FAST   72 -> 72   tracksAdded  17
+//   iter2 FAST   72 -> 72   tracksAdded   4
+//   iter3 强轮   72 ->  6   tracksAdded 186   delta -66   ← 史上最好
+//   iter4 强轮    6 -> 105  tracksAdded  12   delta +99   ← 15 倍恶化
+//   iter5 强轮  105 -> 20   tracksAdded   1   delta -85
+// 而 4 轮（iter<4）与 6 轮跑出来的 DRC **完全一样**：33/66，byType 逐项相同
+// （Slot Region to Track 10 / SMD Pad to Track 7 / Connection Error SMD Pad 6 /
+//   Track to Track 4 / Hole to Hole 3 / Connection Error Track 2 / SMD Pad to Via 1）。
+// 多出来的两轮强轮花掉约 280s，换到的 DRC 收益是 0，还有一次把断连从 6 推到 105。
+// 既然收益为 0、方差为正，"多跑几轮"就不是一个特性。
+// 预算方向不放松：LEFT 闸 / capRaw 闸 / 零新增闸 / 清零闸四道全部保留（见下方）。
+const MAX_ROUTE_ITERS = 4;
 let prevUnconnected = null;
 for (let iter = 0; iter < MAX_ROUTE_ITERS; iter++) {
   // iter 3 起都是 COMPLETION 强轮。多轮强轮各自仍受 capRaw 约束，
@@ -1688,6 +1693,13 @@ for (let iter = 0; iter < MAX_ROUTE_ITERS; iter++) {
   const delta = (prevUnconnected == null) ? null : (stillUnconnected - prevUnconnected);
   log('routeIter', { iter, stillUnconnected, tracksAdded: tracksAddedThisIter,
     prevUnconnected, delta, isStrong });
+  // 强轮不但没降幅、反而把断连推高 —— 实测过两次的形状（72->181、6->105）。
+  // 只记 routeIter 的话，趋势要人把若干条摆在一起心算；而"哪一轮是拐点"
+  // 恰恰是决定这个上限该写几的唯一依据。所以单列一条，并带上倍率。
+  if (isStrong && delta != null && delta > 0) {
+    log('routeRegressed', { iter, prevUnconnected, stillUnconnected, delta,
+      factor: prevUnconnected > 0 ? Math.round(stillUnconnected / prevUnconnected * 10) / 10 : null });
+  }
   prevUnconnected = stillUnconnected;
   // 一整轮 7 份引擎配置合计一条走线都没画出来 —— 再换轮次只会重复同一件事。
   // 不判这条的话，4 轮 x 7 变体 x ~8 秒 ≈ 224 秒纯空转，把收尾预算吃掉。
@@ -2760,8 +2772,22 @@ const slotPadGeometry = async () => {
           holeBox: o.s.holeBox.map(v => Math.round(v)),
           holeWH: [Math.round(o.s.holeBox[2] - o.s.holeBox[0]), Math.round(o.s.holeBox[3] - o.s.holeBox[1])],
           centerDist: Math.round(o.dd) }));
+      // 【父图元解析】19/20 位 id 是「父图元 id(16) + 子元素序号」，只有前 16 位
+      // 会出现在 getAllPrimitiveId 索引里。实测 v3 那 10 条 Slot Region 违规全在
+      // e9965320fba7ed20e37 上，而它至今是个无名对象 —— ensureGeoIdx() 早就建好了
+      // id→类索引，问一句就知道是哪一类。索引本身也可能全是空集（那才是真问题），
+      // 所以把每类的大小一起打出来，免得"查不到这个 id"和"索引根本没建成"混成一条。
+      let parentId = null, parentOwners = [], idxSizes = null;
+      try {
+        parentId = String(id).slice(0, 16);
+        const gi = await ensureGeoIdx();
+        parentOwners = Object.keys(gi).filter(k => gi[k].has(parentId));
+        idxSizes = {};
+        for (const k of Object.keys(gi)) idxSizes[k] = gi[k].size;
+      } catch (_) { }
       log('slotGeoCmp', {
         objId: String(id),
+        parentId, parentOwners, idxSizes,
         obBBox: [Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1)],
         obWH: [Math.round(x1 - x0), Math.round(y1 - y0)],
         obCenter: [Math.round(bx), Math.round(by)],

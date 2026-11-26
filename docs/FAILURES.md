@@ -18,7 +18,7 @@
 | 6 | 假 | 负 Y / 某个负坐标不是坐标系符号错；那条坐标是测试夹具字面 | `scripts/pipeline3.js:729-733` |
 | 7 | 真 | `coverage` 算完只进日志，此后无人读取，「过孔盘覆盖不足」假设没接过任何动作 | `scripts/pipeline3.js:3823-3838` |
 | 8 | 真 | `rulesApplied` 只有一处赋值、不进 `_run.json`、不参与判定；136 次里 30 次为 false | `scripts/pipeline3.js:1339,1344` |
-| 9 | 假 | Slot Region 有处理分支（4 处）；没有认领者的是另外两类违规 | `scripts/pipeline3.js:797-966,2139-2156,2456,3097-3100` |
+| 9 | 假 | Slot Region 有 5 条独立处理路径；没有认领者的是另外两类违规 | `scripts/pipeline3.js` 的 `slotKeepout` / `slotPadGeometry` / `ensureGeoIdx` / `slotHoleUsed` / `noSideIsViaOrTrack` |
 | 10 | 真 | `_run.json` 写的是布局前的声明板框，扩板后从不回写 | `scripts/pipeline3.js:663,716-795,4468,4524`；`scripts/fabcheck.js:444-448` |
 | 11 | 部分真 | 重试阶梯里确实有预缩机制；但语料里 0 次收缩转移，收缩只发生在第一轮之前 | `run-all.ps1:508-518,536,554,561,569` |
 | 12 | 真 | 流水线不查图元绝对坐标出框，真正的判定在离线校验器里 | `scripts/pipeline3.js:808-816`；`scripts/fabcheck.js:415,463-468` |
@@ -684,16 +684,24 @@ sed -n '409,419p' scripts/fabcheck.js
 
 **当初为什么会这么以为。** DRC 反复报 `Slot Region to Track`，而 fixClearance 挪不动它，于是推断「流水线根本不认识槽」。
 
-**实际是什么。** 至少有四条独立路径在处理 Slot Region：
+**实际是什么。** 至少有五条独立路径在处理 Slot Region（下面按**事件名/函数名**定位，不再按行号 —— 行号会在任何一次插入后指错地方）：
 
-- `scripts/pipeline3.js:797-966`：把 MULTI(12) 的填充罩成禁布区——L833 `eda.pcb_PrimitiveRegion.create(12, spoly, [5, 7], ...)`，并在 L810 `found/created/failed/skippedBig/areas` 上做普查；L875 的 `if (slotKeepout.found === 0)` 专门区分「板上真没有槽」与「查错了层/类型」；
-- L2112-2117 按 owner 选类（`region` / `polyline` / `fill` / `pour`）再 `get(id)`，L2139-2156 按类试 `getState_ComplexPolygon` / `getState_Polygon` 访问器、`getSource()` 兜底，轮廓用 `discretize()`（L1998-2001）取点；
-- L2456：`log('slotHoleUsed')`——用真槽孔几何（`getState_Hole()` 的 SLOT）替代与槽孔无关的外接盒；
-- L3097-3100：把障碍物外侧当绕行走廊的必要条件；L3105-3108 的注释写明「Via/Hole 扣半径；Slot Region/Pad 按轮廓算」；而把障碍类型落盘的是 L3400-3410 的 `log('trackRerouted', {... obstacleType, objId, obsSrc ...})`。
+- **`slotKeepout`（L1049-1114）**：把 MULTI(12) 的填充罩成禁布区。L1085 是 `eda.pcb_PrimitiveRegion.create(12, spoly, [5, 7], 'noWire-' + …)`；`let slotKeepout` 在 L1062，`log('slotKeepout', slotKeepout)` 在 L1114；
+- **`slotKeepout.found === 0` 的分支（L1099 / L1127）**：专门区分「板上真没有槽」与「按 Fill 查错了层/类型」——不再猜，改成去普查 `pcb_PrimitivePad` 的孔型，把 `holeTypes`（实测本板 `{ROUND: 8, SLOT: 4}`）与 `npth*` 一起落盘；
+- **`ensureGeoIdx()`（L2468）+ 按类试访问器（L2560-2644）**：先把 6 个类的 `getAllPrimitiveId()` 建成 id→类索引，再按 owner 试 `getState_ComplexPolygon` / `getState_Polygon`、用 `getSource()` 兜底，轮廓用 `discretize({ step: 5 })`（L2441）取点；
+- **`slotPadGeometry()`（L2676）+ `slotHoleUsed`（L2897）**：DRC 报的 'Slot Region' 不属于任何已索引类时，用**真槽孔几何**（`getState_Hole()` 的 SLOT）替代与它无关的外接盒；配套的诊断是 `slotGeoCmp`（L2748 / L2763），它把 `violInFabricatedBox` / `violInRealHole` / `violInRealHoleOf` 三个判据分别落盘；
+- **`noSideIsViaOrTrack()`（L3074）**：两侧都不是 Via/Track 时两个修复环都不认领，按 `uncovered` / `covered` 分桶（L3103，L3117 复用同一判据，避免判据写两遍）；把障碍类型落盘的则是 `log('trackRerouted', …)`（L3841）与 `log('clearanceNoHandler', …)`（L3861）。
 
 语料 `trackRerouted` 里 `obstacleType:"Slot Region"` 出现 **22 次**——它确实作为障碍物被处理过。
 
 **准确的表述。** Slot Region **作为障碍物已处理**。**作为被违规对象时**，有一角确实没有认领者：`clearanceNoHandler.uncovered` 里出现过 `SMD Pad×Slot Region` 与 `Hole×Slot Region`（当前语料里各见到 `n=1` 的一轮），两侧都不是 Via/Track——L2674-2677 的 `noSideIsViaOrTrack` 正是判据，所以两个修复环都不认领。而 `Slot Region to Track` 是 **covered** 的：`drcLeaves.byType` 的键写作 `Clearance Error | Slot Region to Track`，当前语料共 **25** 条；它有一侧是 Track，Track 环会认领。
+
+**本次实测的一条新事实（会改变对这条的理解）。** 2026-11-26 的 v3 两次运行里，`Slot Region to Track` 的 10 条违规**全部落在同一个** 19 位 id `e9965320fba7ed20e37`（父图元 `e9965320fba7ed20`，`obWH [17,17]`、中心 `(650,-231)` ＝ 板宽正中、靠近板子上沿），而同一轮的 `slotKeepout` 普查是 `{found:0, created:0, holeTypes:{ROUND:8, SLOT:4}, censusEmpty:true}`：
+
+- 板上有 **4 个真槽孔**（USB-C 屏蔽焊接槽，25×25 mil，位于 `(187,-2674)` 附近，网络 GND）—— 按 Fill 找槽那条路**一个都没找到**（`found:0`）；
+- DRC 报的那个 "Slot Region" **不是**这 4 个槽孔中的任何一个：`violInRealHole:false`、`violInRealHoleOf:[]`，离最近的槽孔 2000+ mil。
+
+所以「Slot Region」在这个 EDA 的 DRC 词汇里指的是**任何被当成槽/区的不规则图元**，不只是钻孔槽。把「查到 4 个 SLOT 孔」当成「已覆盖全部 Slot Region 违规」是错的。用 `ensureGeoIdx()` 把父图元 `e9965320fba7ed20` 解析成具体类别，是下一步要落盘的诊断。
 
 **影响。** 「没有处理分支」和「有一类违规没人认领」是两件事，当初混成了一件。前者错，后者对。
 
