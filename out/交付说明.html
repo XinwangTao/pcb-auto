@@ -75,7 +75,7 @@
     <td><code>out/_probe/artifact-consistency.py</code></td></tr>
 </table>
 <h3>第④层当前结论</h3>
-<pre># 核查器 sha256_12=A259A53CD74F  13837 B  目标 34 个目录
+<pre># 核查器 sha256_12=308049CC122B  14399 B  目标 34 个目录
 共 34 个目录，全判据通过 34 个</pre>
 <h2>一句话想法 &#8594; 一块能下单的板</h2>
 <p class="sub">分母是<b>去重后的中文想法</b>，取「设计文件里的」并上「产物目录里的」两处，否则还没轮到跑的想法会被漏掉。一个想法只要有一个产物目录的离线 DFM 退出码为 0 就算做成。<b>不要用 <code>(designName, idea)</code> 这种复合键去重</b>——同一个想法换个设计名会被算成两条，实测会把 30 条虚增成 34 条。</p>
@@ -226,5 +226,5 @@ pwsh -File accept.ps1 -Design designs\x.json -VerifyOnly
 <li><b>历史设计不一定能复现。</b>想法编译器 <code>idea2design.js</code> 当晚被改过多次；<code>designs/gen-led.json</code> 里有 6 个器件，而当前版本的编译器对同一句话只产出 3 个。<b>产出它的那个编译器版本已经不在了</b>，所以这块板的设计文件不能再生成一次。</li>
 <li><b>「零人工」只覆盖「跑板的时候」，不覆盖「代码变没变」。</b>跑板全程没有 <code>Read-Host</code> / <code>pause</code> / stdin 交互，这一条可查；但流水线与设计文件当晚被改过多次并立即生效（<code>pipeline3.js</code> 每次尝试都重读）。<b>零人工 ≠ 系统一成不变。</b></li>
 </ol>
-<p class="sub" style="margin-top:40px">生成于 2026-11-26 10:10。台账：<code>out/_build-ledger.md</code>。想法源码：<code>out/_probe/idea-sources.json</code>。</p>
+<p class="sub" style="margin-top:40px">生成于 2026-11-26 10:40。台账：<code>out/_build-ledger.md</code>。想法源码：<code>out/_probe/idea-sources.json</code>。</p>
 </main></body></html>

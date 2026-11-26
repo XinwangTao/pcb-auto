@@ -407,6 +407,56 @@ for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'arti
   })
 }
 
+/*
+ * 这一条来自一次真实的 CI 失败，值得单独钉住：
+ *
+ *     UnicodeEncodeError: 'charmap' codec can't encode characters in position 11-13
+ *
+ * GitHub 的 windows-latest 是 cp1252。量具里 `print("  fabcheck 普查：…")`
+ * 这一行直接抛异常，脚本返回非 0 —— 于是整个 census 在 CI 上永远失败。
+ * 本机是中文 Windows（cp936，能编码中文），所以本地永远绿。
+ *
+ * 结论：**一行中文摘要能让整个量具在别人的机器上不可用。**
+ */
+for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'artifact-consistency.py']) {
+  check(`量具 ${rel} 不依赖控制台代码页`, () => {
+    const p = join(PROBE, rel)
+    if (!existsSync(p)) return '不存在（跳过）'
+    const src = read(p)
+    assert(/reconfigure\(\s*encoding\s*=\s*["']utf-8["']/.test(src),
+      '没有把 stdout/stderr 强制成 UTF-8 —— 在 cp1252 或任何非中文代码页上会 UnicodeEncodeError')
+    // 不能写死成 `import sys`：这几个脚本用的是合并写法 `import io, os, ..., sys`。
+    assert(/import[^\n]*\bsys\b|^import sys$/m.test(src), '没有导入 sys，无法 reconfigure')
+  })
+}
+
+check('量具报告是原子写（崩溃不留半截 JSON）', () => {
+  const src = read(join(PROBE, 'fab-census.py'))
+  assert(/os\.replace\(_tmp, OUT\)|os\.rename\(_tmp/.test(src),
+    '直接覆盖写：中途崩溃会留下半截 JSON，而下游会把残缺当完整')
+})
+
+/*
+ * `py_compile` 只查语法。NameError 要到运行时才炸，而它在 CI 上的表现是
+ * 「量具返回非 0」—— 真正的原因埋在 stderr 里，很容易被当成环境问题糊过去。
+ * 今晚两次 `shutil` 未导入都是这么来的，所以加一道静态闸门。
+ */
+check('量具没有「模块级用了却从未导入」的名字', () => {
+  const script = join(PROBE, 'undefined-names.py')
+  if (!existsSync(script)) return '缺 undefined-names.py（跳过）'
+  const targets = readdirSync(PROBE).filter((f) => f.endsWith('.py')).map((f) => join(PROBE, f))
+  // ubuntu 上通常只有 python3；Windows 上通常只有 python。两个都试。
+  const candidates = [process.env.PCB_AUTO_PYTHON, 'python', 'python3'].filter(Boolean)
+  let tried = null
+  for (const py of candidates) {
+    const r = spawnSync(py, [script, ...targets], { encoding: 'utf8', windowsHide: true, timeout: 120_000 })
+    if (r.error) { tried = `${py}: ${r.error.code}`; continue }
+    assert(r.status === 0, `${r.stdout || ''}${r.stderr || ''}`.trim().slice(0, 800))
+    return `${targets.length} 个脚本（${py}）`
+  }
+  return `跳过：没有可用的 Python（${tried}）`
+})
+
 /**
  * 在本仓库上真跑一次 census，**跑完把报告文件原样写回**。
  *
@@ -434,7 +484,18 @@ const censusOnThisRepo = () => {
 check('census 输出带 source 字段，能分辨 live / snapshot', () => {
   const { j } = censusOnThisRepo()
 
-  assert(j.source === 'live' || j.source === 'snapshot', `source 取值非法：${j.source}`)
+  // 失败时也要有明确的 source，不能让调用方去猜字段在不在。
+  const allowed = ['live', 'snapshot', 'none']
+  assert(allowed.includes(j.source),
+    `source=${j.source} 不在 ${allowed.join('/')} 里；原始输出：${JSON.stringify(j).slice(0, 400)}`)
+
+  // source=none 意味着量具根本没跑成。这必须带着原始错误信息报出来 ——
+  // 不然下一个人只能靠猜（这一条就是这么来的：CI 上只看到「source 取值非法」）。
+  if (j.source === 'none') {
+    assert(typeof j.reason === 'string' && j.reason, 'source=none 却没给 reason')
+    throw new Error(`量具没跑成：${j.reason}\n原始输出：${(j.raw || '（空）').slice(0, 600)}`)
+  }
+
   // 这是核心：如果它没真扫一遍，就不能把时间戳写成「刚刚」。
   if (j.source === 'snapshot') {
     assert(typeof j.sourceNote === 'string' && j.sourceNote.length > 10, 'snapshot 却没解释为什么')

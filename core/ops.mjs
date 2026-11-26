@@ -51,7 +51,16 @@ function run(cmd, args, opts = {}) {
       cwd: opts.cwd || ROOT,
       signal,
       windowsHide: true,
-      env: { ...process.env, NO_COLOR: '1' },
+      env: {
+        ...process.env,
+        NO_COLOR: '1',
+        // Windows 上 Python 打管道默认用本地代码页（英文系统 cp1252 / 中文 cp936）。
+        // cp1252 编码不了中文，脚本会抛 UnicodeEncodeError 崩在中途 ——
+        // 于是「一行中文摘要」这件事本身让整个量具返回非 0。
+        // 中文 Windows 上永远复现不了（cp936 能编码中文），只在别人的 CI 上炸。
+        PYTHONIOENCODING: 'utf-8',
+        PYTHONUTF8: '1',
+      },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
 
@@ -300,13 +309,17 @@ export async function census(args = {}, opt = {}) {
   const script = join(root, 'out', '_probe', 'fab-census.py')
   const reportPath = join(root, 'out', '_probe', 'fab-census.json')
 
+  // 失败也用同一个形状返回：`source: 'none'`。
+  // 不这么做的后果是调用方得先判断「这个对象里到底有没有 source 字段」才能分支，
+  // 而漏判就会把 undefined 当成一个正常取值（这个坑在 CI 上真踩到过）。
+  const fail = (reason, raw) => ({
+    ok: false, exitCode: 2, at: now(), source: 'none', reason,
+    dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
+    raw: raw ?? '', reportPath: '',
+  })
+
   if (!existsSync(script)) {
-    return {
-      ok: false, exitCode: 2, at: now(),
-      dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
-      raw: `找不到量具：${script}\n（out/_probe/ 是随仓库发布的，若缺失说明克隆不完整）`,
-      reportPath: '',
-    }
+    return fail('找不到量具', `找不到量具：${script}\n（out/_probe/ 是随仓库发布的，若缺失说明克隆不完整）`)
   }
 
   // 记下跑之前的 mtime。跑完如果它没变，说明脚本**没有写出新结果**，
@@ -316,14 +329,23 @@ export async function census(args = {}, opt = {}) {
 
   const argv = [script, '--quiet']
   if (args.settle) argv.push('--settle', String(args.settle))
-  const r = await run(pythonBin(), argv, { cwd: root, signal: opt.signal, timeoutMs: 15 * 60 * 1000 })
+  const py = pythonBin()
+  const r = await run(py, argv, { cwd: root, signal: opt.signal, timeoutMs: 15 * 60 * 1000 })
 
   const failed = {
     ok: false,
     exitCode: typeof r.code === 'number' && r.code !== 0 ? r.code : 2,
     at: now(),
+    source: 'none',
+    reason: r.code === null ? `量具没能启动（${py}）` : `量具退出码 ${r.code}`,
     dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
-    raw: tail((r.out + r.err).trim(), 1500),
+    raw: tail((r.out + r.err).trim(), 1500)
+      || (r.code === null
+        // spawn 失败时 stdout/stderr 都是空的。不补一句，用户看到的是一份「全部为 0
+        // 且没有任何解释」的结果 —— 那比报错更难查。
+        ? `无法执行 "${py}"。census 需要 Python 3。\n`
+          + `装一个，或用环境变量指定：PCB_AUTO_PYTHON=<python 可执行文件路径>`
+        : ''),
     reportPath: '',
   }
 

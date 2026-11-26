@@ -16,6 +16,18 @@ import os
 import re
 import json
 import subprocess
+import sys
+import shutil
+
+# Windows 上 Python 往管道写时默认用本地代码页（英文系统 cp1252 / 中文 cp936）。
+# cp1252 编码不了中文，本脚本一 print 就抛 UnicodeEncodeError 崩在中途，
+# 于是整个量具返回非 0 —— 而中文 Windows 上永远复现不了。
+# 入口处强制 UTF-8，让输出与代码页无关。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 # 仓库根：优先环境变量，否则从本文件位置推（out/_probe/<script>.py 的上两级）。
 # **不要写死绝对路径。** 写死会让这个量具在被别人克隆后去量另一个目录，

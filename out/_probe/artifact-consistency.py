@@ -12,6 +12,16 @@
 #   5. Gerber 必需层齐全（GTL/GBL/GTS/GBS/GTO/GKO）
 import json, io, os, sys, glob, zipfile, re, csv
 
+# Windows 上 Python 往管道写时默认用本地代码页（英文系统 cp1252 / 中文 cp936）。
+# cp1252 编码不了中文，本脚本一 print 就抛 UnicodeEncodeError 崩在中途，
+# 于是整个量具返回非 0 —— 而中文 Windows 上永远复现不了。
+# 入口处强制 UTF-8，让输出与代码页无关。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 NEED_LAYERS = [".GTL", ".GBL", ".GTS", ".GBS", ".GTO", ".GKO", ".DRL"]
 
 # 必须真跑过的判据。all() 对"没跑"无感（all([]) == True），
