@@ -430,6 +430,297 @@
         "2": "2"
       },
       "netHints": "1=电池正，2=电池负（GND）"
+    },
+    {
+      "lcsc": "C2913199",
+      "name": "ESP32-S3-WROOM-1-N16",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "U",
+      "role": "MCU 主控（Wi-Fi/BLE 模组，板载 PCB 天线）",
+      "package": "SMD,25.5x18mm",
+      "tags": [
+        "mcu",
+        "esp32",
+        "esp32s3",
+        "wifi",
+        "ble",
+        "主控",
+        "wireless"
+      ],
+      "pins": {
+        "GND": [
+          "1",
+          "40",
+          "41"
+        ],
+        "3V3": "2",
+        "EN": "3",
+        "IO0": "27",
+        "RXD0": "36",
+        "TXD0": "37",
+        "IO4": "4",
+        "IO5": "5",
+        "IO6": "6",
+        "IO7": "7",
+        "IO15": "8",
+        "IO16": "9",
+        "IO17": "10",
+        "IO18": "11",
+        "IO8": "12",
+        "IO19": "13",
+        "IO20": "14",
+        "IO3": "15",
+        "IO46": "16",
+        "IO9": "17",
+        "IO10": "18",
+        "IO11": "19",
+        "IO12": "20",
+        "IO13": "21",
+        "IO14": "22",
+        "IO21": "23",
+        "IO47": "24",
+        "IO48": "25",
+        "IO45": "26",
+        "IO35": "28",
+        "IO36": "29",
+        "IO37": "30",
+        "IO38": "31",
+        "IO39": "32",
+        "IO40": "33",
+        "IO41": "34",
+        "IO42": "35",
+        "IO2": "38",
+        "IO1": "39"
+      },
+      "netHints": "3V3 供 2 脚；EN 需 10k 上拉 + 100nF 到地；IO0 下拉进下载模式，留按键；1/40/41 为 GND"
+    },
+    {
+      "lcsc": "C910544",
+      "name": "MAX98357AETE+T",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "U",
+      "role": "I2S D 类音频功放（3.2W/4Ω）",
+      "package": "TQFN-16-EP(3x3)",
+      "tags": [
+        "audio",
+        "amp",
+        "i2s",
+        "功放",
+        "音频",
+        "speaker",
+        "max98357"
+      ],
+      "pins": {
+        "DIN": "1",
+        "GAIN_SLOT": "2",
+        "GND": [
+          "3",
+          "11",
+          "15"
+        ],
+        "SD_MODE#": "4",
+        "VDD": [
+          "7",
+          "8"
+        ],
+        "OUTP": "9",
+        "OUTN": "10",
+        "LRCLK": "14",
+        "BCLK": "16",
+        "EP": "17"
+      },
+      "netHints": "DIN=数据，BCLK/LRCLK=I2S 时钟，SD_MODE# 接地选左声道，GAIN_SLOT 经电阻定增益，OUTP/OUTN 直推 4Ω 喇叭"
+    },
+    {
+      "lcsc": "C2875567",
+      "name": "DMM-4026-B-I2S-R",
+      "class": "Extended Part",
+      "trusted": false,
+      "designator": "U",
+      "role": "I2S 数字 MEMS 麦克风",
+      "package": "SMD-7_3.0X4.0X0.65P",
+      "tags": [
+        "mic",
+        "microphone",
+        "i2s",
+        "麦克风",
+        "音频",
+        "mems"
+      ],
+      "pins": {
+        "LR": "1",
+        "CONFIG": "2",
+        "VDD": "3",
+        "GND": "4",
+        "WS": "5",
+        "SCK": "6",
+        "SD": "7"
+      },
+      "netHints": "SCK=位时钟，WS=帧时钟，SD=数据出；LR/CONFIG 接地选左声道与默认配置（无 datasheet 字段，投产前需按实物复核）"
+    },
+    {
+      "lcsc": "C2912107",
+      "name": "MPU6050-YJLTY",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "U",
+      "role": "六轴陀螺仪/加速度计（I2C）",
+      "package": "QFN-24-EP(4x4)",
+      "tags": [
+        "imu",
+        "gyro",
+        "accel",
+        "六轴",
+        "陀螺仪",
+        "加速度",
+        "mpu6050",
+        "motion"
+      ],
+      "pins": {
+        "CLKIN": "1",
+        "GND": "18",
+        "VLOGIC": "8",
+        "AD0": "9",
+        "REGOUT": "10",
+        "FSYNC": "11",
+        "INT": "12",
+        "VDD": "13",
+        "CPOUT": "20",
+        "SCL": "23",
+        "SDA": "24",
+        "EP": "25"
+      },
+      "netHints": "VDD 与 VLOGIC 都接 3V3；REGOUT 需 100nF 到地，CPOUT 需 2.2nF 到地；AD0 接地定 I2C 地址 0x68"
+    },
+    {
+      "lcsc": "C165948",
+      "name": "TYPE-C-31-M-12",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "USB",
+      "role": "Type-C 连接器（16P，5V 电源与 USB 数据入口）",
+      "package": "SMD",
+      "tags": [
+        "usb",
+        "typec",
+        "type-c",
+        "connector",
+        "连接器",
+        "power",
+        "电源入口"
+      ],
+      "pins": {
+        "VBUS": [
+          "A4B9",
+          "B4A9"
+        ],
+        "GND": [
+          "A1B12",
+          "B1A12"
+        ],
+        "EH": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "CC1": "A5",
+        "CC2": "B5",
+        "DP1": "A6",
+        "DN1": "A7",
+        "DP2": "B6",
+        "DN2": "B7",
+        "SBU1": "A8",
+        "SBU2": "B8"
+      },
+      "netHints": "VBUS=5V 入口；CC1/CC2 各经 5.1k 下拉表示 UFP 受电方；D+/D- 接 MCU 原生 USB 用于烧录"
+    },
+    {
+      "lcsc": "C2832146",
+      "name": "Switch3x4x2",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "SW",
+      "role": "轻触开关（3×4mm 贴片）",
+      "package": "SMD-2P",
+      "tags": [
+        "switch",
+        "button",
+        "tactile",
+        "按键",
+        "轻触",
+        "sw"
+      ],
+      "pins": {
+        "1": "1",
+        "2": "2"
+      },
+      "netHints": "两端并联跨接在信号与 GND 之间，信号侧需上拉（MCU 内部或外部 10k）"
+    },
+    {
+      "lcsc": "C25804",
+      "name": "0603WAF1002T5E",
+      "class": "Basic Part",
+      "trusted": true,
+      "designator": "R",
+      "role": "电阻 10k（0603）",
+      "package": "0603",
+      "tags": [
+        "resistor",
+        "10k",
+        "电阻",
+        "pullup",
+        "上拉"
+      ],
+      "pins": {
+        "1": "1",
+        "2": "2"
+      },
+      "netHints": "常用作 EN/BOOT 上拉与按键上拉"
+    },
+    {
+      "lcsc": "C1651",
+      "name": "0603CG2R2C500NT",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "C",
+      "role": "电容 2.2nF（0603）",
+      "package": "0603",
+      "tags": [
+        "capacitor",
+        "2.2nf",
+        "电容",
+        "cpout"
+      ],
+      "pins": {
+        "1": "1",
+        "2": "2"
+      },
+      "netHints": "MPU6050 的 CPOUT 电荷泵电容"
+    },
+    {
+      "lcsc": "C49023793",
+      "name": "2.54-2P ZZDK-R 2.54mm Connector",
+      "class": "Extended Part",
+      "trusted": true,
+      "designator": "H",
+      "role": "排针 2P 2.54mm（扬声器接口）",
+      "package": "插件,P=2.5mm",
+      "tags": [
+        "header",
+        "connector",
+        "排针",
+        "连接器",
+        "speaker",
+        "扬声器"
+      ],
+      "pins": {
+        "1": "1",
+        "2": "2"
+      },
+      "netHints": "1=功放 OUTP，2=功放 OUTN"
     }
   ]
 }

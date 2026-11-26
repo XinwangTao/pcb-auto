@@ -21,12 +21,14 @@
 | 9 | 假 | Slot Region 有处理分支（4 处）；没有认领者的是另外两类违规 | `scripts/pipeline3.js:797-966,2139-2156,2456,3097-3100` |
 | 10 | 真 | `_run.json` 写的是布局前的声明板框，扩板后从不回写 | `scripts/pipeline3.js:663,716-795,4468,4524`；`scripts/fabcheck.js:444-448` |
 | 11 | 部分真 | 重试阶梯里确实有预缩机制；但语料里 0 次收缩转移，收缩只发生在第一轮之前 | `run-all.ps1:508-518,536,554,561,569` |
-| 12 | 真 | 流水线不查图元绝对坐标出框，真正的判定在离线校验器里 | `scripts/pipeline3.js:713-737`；`scripts/fabcheck.js:415,463-468` |
+| 12 | 真 | 流水线不查图元绝对坐标出框，真正的判定在离线校验器里 | `scripts/pipeline3.js:808-816`；`scripts/fabcheck.js:415,463-468` |
 | 13 | 真 | README 生成脚本用动态值算目录数，却把「两目录」写死在散文里 | `out/_probe/sync-readme-numbers.py:153-156`；`交付-README.md:44-45` |
 | 14 | 真 | `fabcheck` 四类结果都以 `id` 为第一键同台输出，正则数 `"id"` 会把阻断数放大 | `scripts/fabcheck.js:312-319,764-771,781-784` |
 | 15 | 真 | `_run.json.ok` 与「可下单」不是同一批：48 相等是巧合，集合不同 | `out/_probe/fab-census.json`；`scripts/fabcheck.js:764-771` |
+| 16 | 真 | 布线变体 7 份配置里有 5 份从来没被执行过（129/143 个目录只出现 `variants[0]`） | `scripts/pipeline3.js:1500-1522` |
+| 17 | 真 | 布线阶梯按「作业自报 state」判去留，7 份各烧满 120s 换来零走线，导出 0/6 全部 `budget` | `scripts/pipeline3.js:1500-1545` |
 
-**统计口径。** 15 条：**10 真 / 3 部分真 / 2 假 / 0 未证实**。
+**统计口径。** 17 条：**12 真 / 3 部分真 / 2 假 / 0 未证实**。
 
 语料规模：`out\` 下 **56 个含 `_run.json` 的目录**，其中 **53 个可下单**、3 个有阻断、0 个解析失败。来源是快照 `out\_probe\fab-census.json`，**测于该文件的 `measured_at` 字段**（引用时直接读它，不要读 mtime —— 理由见下一段。这里故意不写「第 N 行」：那种引用会在任何一次插入后指错地方）。
 
@@ -199,7 +201,7 @@ node -e "const j=require('./out/AI_OLED_底板_5p5g6m-20261126-071309/_run.json'
 ### 12. 流水线自身不查图元绝对坐标是否出框
 
 **现象。** 器件被摆到板框外时，流水线不会发现。它只做两件事：比器件跨度、装不下就扩板。
-**代码位置。** `scripts/pipeline3.js:730-733`：注释明确「不用绝对坐标比较」，判据是 `spanW <= bw0-40 && spanH <= bh0-40`（器件跨度 vs 板框尺寸）。L742-795 只处理「装不下 → 删旧板框、等比扩板」。全文 grep `outside` 只命中 L3097-3100 一个语义无关的走廊变量名。
+**代码位置。** `scripts/pipeline3.js:808-809`：注释明确「不用绝对坐标比较」，判据是 `spanW <= bw0-40 && spanH <= bh0-40`（器件跨度 vs 板框尺寸，在 L812）。L817-880 只处理「装不下 → 删旧板框、等比扩板」（`outlineExpandPlan` 在 L867）。全文 grep `outside` 只命中语义无关的走廊变量名。
 
 **真正的出框判定在离线校验器里。** `scripts/fabcheck.js:463-468`：
 
@@ -313,6 +315,167 @@ node scripts/fabcheck.js out/d1 > /dev/null; echo $?                            
 
 固定目录当「通过样本」本身会过期（`out/d1` 现在就是 1），所以每次都从普查里挑。
 
+### 16. 布线变体阶梯：7 份引擎配置里有 5 份从来没被执行过
+
+**现象。** 代码里写了一串「退路」引擎配置（去掉铺铜、只留层、什么都不带），
+设计意图是「这份配置布不通就换下一份」。但它们几乎从来不会被执行 ——
+因为**决定是否继续的是作业自报的状态，不是板子通没通**。
+而起不到作用时作业自报的状态是 `completed`。
+
+**代码位置。** `scripts/pipeline3.js` 的 `variants` 数组（7 项）与
+`for (const v of variants)` 循环里的 `if (r.state === 'completed') break;`。
+同一文件里另一处注释已经把正确的判据写死了：
+
+> 布线器作业的 state 说的是「作业怎么结束的」，闸门问的是「板子通没通」。
+
+但那一行仍在用作业状态代替连通性。变体阶梯只在作业 **TIMEOUT / ERR** 时才能往下走 ——
+换句话说：**唯一能触发退路的路径，是布线器超时。**
+而「这份配置布不通」这件事，布线器恰恰报成「我跑完了」。
+
+**语料里观测到什么**（测于 2026-11-26T15:49+08:00，settle 0，扫 `out\` 全部含 `route` 事件的目录）：
+
+| 变体 | 真正执行过的目录数 |
+|---|---|
+| `margin+ground+pours+keep`（variants[0]） | **132 / 132** |
+| `margin+ground+keep`（variants[1]） | 3 / 132（同一个目录的 3 个 attempt 文件） |
+| `ground+pours+keep` 及其后 4 份 | **0 / 132** |
+
+即 7 份配置里有 **5 份在 132 个目录里一次都没执行过**。
+
+**一次完整的空转**（`out\ESP32S3_Wireless_Mic_V2-20261126-152721`，26 器件 / 111 连接 / 1000×3700 mil）：
+
+```
+route      {"iter":0,"variant":"margin+ground+pours+keep","state":"completed","ms":7270}
+routeIter  {"iter":0,"stillUnconnected":121}
+route      {"iter":1,...同上...}   routeIter {"iter":1,"stillUnconnected":121}
+route      {"iter":2,...同上...}   routeIter {"iter":2,"stillUnconnected":121}
+routeEscalate {"reason":"FAST 3 轮后仍有断连，升级 COMPLETION 兜底"}
+route      {"iter":3,"variant":"margin+ground+pours+keep","state":"completed","ms":8464}
+routeIter  {"iter":3,"stillUnconnected":121}
+```
+
+4 次全部 `completed`、6~9 秒、断连数**一动不动**。
+同一次运行的 `drcLeaves.byNet` 显示 28 个网络每个恰好 2 处断点 —— 每个网络的两端焊盘都没被碰过，
+即**一条走线都没画**。而 4 轮 × 7 变体 × 8 秒的预算就这样烧掉了。
+
+**影响。** 两个：
+
+1. 「配置太严导致布不通时还有退路」这个安全性论证**没有在语料里成立过一次**。
+   退路存在，但只有超时才走得到。
+2. 一条走线都没画时，`stillUnconnected` 在场次间完全不变，而外侧的 4 轮重试
+   只是把同一件事重复 4 次。重试阶梯「越重试越差」那条结论在这里表现为**空转**，
+   不是变差 —— 因为什么都没发生。
+
+**怎么自己核对。**
+
+```bash
+# 每个变体被多少目录真正执行过
+for v in margin+ground+pours+keep margin+ground+keep ground+pours+keep margin+keep-only keep-only ground+pours plain; do
+  printf '%-28s %s
+' "$v" "$(grep -l ""variant":"$v"" out/*/_log*.json 2>/dev/null | wc -l)"
+done
+# 单次空转的三个数：耗时 / 断连 / 走线增量
+node -e "const j=require('./out/ESP32S3_Wireless_Mic_V2-20261126-152721/_log.json');
+for(const e of j.entries) if(/^route|^routeIter|^routeEscalate/.test(e.s)) console.log(e.s,JSON.stringify(e.v))"
+```
+
+**已做的修法**（`pipeline3.js`，2026-11-26 15:44 落地）：判据换成
+「**本变体真实新增的走线数**」—— 新增 0 条就换下一份配置，新增 >0 条保持原有 break
+（无脑多轮会让间距违规翻 6 倍，那条结论没被推翻）；读不出来归 −1 走保守分支，
+绝不把「未知」当成「产出 0」。另加一条：一整轮 7 份配置合计 0 条走线就直接结束轮次循环。
+
+这一改动**在写下这段时还没有被任何一次运行验证过** —— 下一次跑通/跑不通的日志才算证据。
+
+**2026-11-26T15:44 的第一次验证：判据方向对，代价错。** 运行
+`out/ESP32S3_Wireless_Mic_V2-20261126-154422`（26 器件 / 111 连接 / 1000×3700 mil，
+预算 `totalMs=1740000`，settle 无，663 条事件），7 次 route 读数是：
+
+| # | 变体 | state | ms | linesAdded |
+|---|---|---|---|---|
+| 1 | margin+ground+pours+keep | TIMEOUT | 120681 | 0 |
+| 2 | margin+ground+keep | TIMEOUT | 120687 | 0 |
+| 3 | ground+pours+keep | TIMEOUT | 120828 | 0 |
+| 4 | margin+keep-only | TIMEOUT | 120799 | 0 |
+| 5 | keep-only | TIMEOUT | 120765 | 0 |
+| 6 | ground+pours | TIMEOUT | 120985 | 0 |
+| 7 | plain | TIMEOUT | 120946 | 0 |
+
+读数里有两件事：
+
+- **阶梯真的醒了。** 上一版 `if (r.state === 'completed') break;` 下，
+  全语料 143 个目录里 129 个只出现过 `variants[0]` 一个名字；这一轮 7 份全跑了。
+- **零产出。** 7 份全部 `linesAdded: 0`，`routeAllVariantsNoOp {iter:0, variants:7,
+  stillUnconnected:121}`。845 s 换来 0 条走线。
+- **极差 304 ms。** 七个耗时全在 120.7~121.0 s 之间，精确撞在同一个上限上。
+  同极差只有一个解释：限制因素是**时间**，不是引擎配置。换配置不会让它更快，
+  只会把同样的 120 s 再烧一遍。
+
+代价按下表分摊（phase 增量的分母是 1726.1 s）：
+
+| 阶段 | 增量 | 占比 |
+|---|---|---|
+| `autoRouting`（7 份阶梯） | 937.1 s | 54.3% |
+| `patchDrc` | 216.8 s | 12.6% |
+| `stitchGaps` | 204.4 s | 11.8% |
+| `drc` | 135.1 s | 7.8% |
+| `fixClearance` | 97.7 s | 5.7% |
+| `autoLayout` | 44.3 s | 2.6% |
+
+于是 `drc` 只剩 135 s、`connBeforePour {leftMs: 118829}`，
+**导出 0/6，六个文件的 `skipped` 全是 `budget`** —— 这一轮连一个可打样产物都没产出。
+
+**根因：两件不同的事被写进了同一个分支。** `state` 回答「作业怎么结束的」，
+`linesAdded` 回答「板子有没有多一条线」，而处置取决于**组合**：
+
+| state | linesAdded | 含义 | 处置 |
+|---|---|---|---|
+| `completed` | 0 | 这份配置在这块板上布不出来（算完了是空的） | 换下一份配置 |
+| `completed` | >0 | 有产出 | 保持 break，不加轮次 |
+| `TIMEOUT` | 0 | **没算完**，什么也没学到 | 换配置没用；要么给时间，要么收手 |
+
+**已做的修法（`pipeline3.js`，2026-11-26T16:20 落地，sha `DC96A26B5228` → `F75F8090C06D`）。**
+按「超时且零新增走线」计数，连续 2 次就 `break` 出阶梯并留证据：
+
+```js
+if (r.state === 'ERR' || (r.state === 'TIMEOUT' && linesAdded !== null && linesAdded === 0)) {
+  timeoutNoOpStreak++;
+} else { timeoutNoOpStreak = 0; }
+if (timeoutNoOpStreak >= 2) {
+  log('routeLadderAbort', { iter, after: routeAttempts.length, streak: timeoutNoOpStreak,
+    tried: routeAttempts.map((a) => a.variant), notTried,
+    why: '连续 2 次超时且零新增走线 —— 限制因素是时间不是配置，换配置不会更快',
+    savedMsApprox: Math.max(0, notTried) * 120000 });
+  break;
+}
+```
+
+阈值取 2 不取 1：一次超时可能是机器抖动；两次撞同一个上限、且一条线都画不出来，
+那是这块板的信息。日志写 `notTried` 而不是只写「试过了」——
+否则读日志的人会把「收手」误读成「7 份都试遍了」。
+
+**这条修法本身在写下这段时也还没有被运行验证过。** 记录在这里，
+等下一次运行的 `routeLadderAbort` 事件来判。
+
+**更上游的问题没有解决。** 上面的补丁只让**代价**变小，没有让板子通。
+7 份配置在 120 s 内一条走线都画不出来，这件事仍未解释：
+同一套网络在 v1（自动布局，2600×1900 mil = 69538 mil²/连接）上能到
+`stillUnconnected: 10`。所以「布不出来」不是这张网表的天性，
+而是本版板形/摆放的某个具体约束。
+
+### 8 的补记（2026-11-26T15:44 落地）
+
+上面第 8 条写的 `rulesApplied` 用**一个字段表达了两个意思**，已改成三态：
+
+- 它数的是全部过孔，而其中通常是 `ground.epVias` 打出来的 EP 地孔
+  （实测 `epViaAt` 的 `near` 值 19.4~25.6 —— EP 地孔尺寸由 `ground.epVias` 控制，
+  本来就不受 `rules.via` 约束）。
+- 所以 `false` 只证明「没有过孔符合 spec」，**不能**证明「rules 被引擎忽略了」。
+  尤其布线器一条走线都没画时，根本不存在信号过孔，此时对 `rules.via` 无从判断。
+
+现在输出 `verdict: applied | ignored | unmeasurable` 加一句 `why`，旧字段改名
+`specViasPresent`（只表示「有 spec 过孔」这一件事）。第 8 条正文里的 106/30 是一份
+**2026-11-26 早于本次改动**的测量，仍然成立，但它回答的是旧字段的问题。
+
 ## 二、部分成立（部分真）
 
 ### 1. `skippedNoAnchor` 全为 0：字段是真的，「健康」是半结构性的
@@ -388,7 +551,7 @@ node -e "const fs=require('fs');let seqs=0,shr=0;for(const d of fs.readdirSync('
 
 **当初为什么会这么以为。** 布局产物里出现负 Y（例如 -671…-229、-1018.9），第一反应是「坐标系取反了」；而 `(1226.7,-1018.9)` 这个坐标又反复出现在调试记录里，看起来像一个系统性偏移的证据。
 
-**实际是什么。** 负 Y 是布局产物的正常形态。`scripts/pipeline3.js:729-730` 的注释原文：
+**实际是什么。** 负 Y 是布局产物的正常形态。`scripts/pipeline3.js:808-809` 的注释原文：
 
 > 注意：布局产物常在负 Y（如 -671..-229），这**不是**问题 —— d1/d2/d3 都这样且全部通过。
 > 唯一要判的是"器件范围是否超出板框尺寸"，用尺寸比较，不用绝对坐标比较。
@@ -441,7 +604,7 @@ grep -o '{"s":"clearanceNoHandler".*' out/*/_log*.json | head
 
 `scripts/pipeline3.js` 不是独立模块，而是宿主 `invoke` 的**顶层 await 函数体**。在 CommonJS 里直接 `node --check`，第一个顶层 `await`（L205）就会报 `SyntaxError: await is only valid in async functions and the top level bodies of modules`。
 
-仓里真正的闸门有两处，都按「包装后的函数体」解析：`run-all.ps1:59-72`（`new (require('vm').Script)('(async function(){' + s + '\n})')`，不通过就回退上一次验证过的备份），以及全仓闸门 `test/syntax-gate.mjs`。后者在 `test/syntax-gate.mjs:10-12` 记了一张对照表：受跟踪 `.js` 186 个、`node --check` 失败 92 个（≥49%）、按真实形式解析失败 0 个。
+仓里真正的闸门有两处，都按「包装后的函数体」解析：`run-all.ps1:88-97`（`new (require('vm').Script)('(async function(){' + s + '\n})')`，不通过就回退上一次验证过的备份），以及全仓闸门 `test/syntax-gate.mjs`。后者在 `test/syntax-gate.mjs:10-12` 记了一张对照表：受跟踪 `.js` 186 个、`node --check` 失败 92 个（≥49%）、按真实形式解析失败 0 个。
 
 也就是接近一半的 `.js` 在 `node --check` 下必然假红（这张表也随文件数变，别单独引用其中的数字）。看到一个红就去「修」，会修一个不存在的问题；学会忽略它，真正的语法错误也会被一起忽略。要查语法，跑 `node test/syntax-gate.mjs`。
 

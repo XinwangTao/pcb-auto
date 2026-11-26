@@ -254,7 +254,22 @@ const tallyProblems = []
       tallyProblems.push(`${doc} 找不到统计口径那一行`)
     } else {
       const claimed = order.map((_, i) => Number(m[i + 1]))
-      const rows = text.split(/\r?\n/).filter((l) => /^\|\s*\d+\s*\|/.test(l))
+      // 【只对账「结论速览」那一张表】
+      // 原来的判据是全文 `^| 数字 |`，于是**任何**编号表格都会被当成速览表。
+      // 实测 2026-11-26T16:2x：往 FAILURES.md 里加一条 7 行的耗时表（列是
+      // 变体/state/ms/linesAdded，与分类无关），闸门立刻报 8 处红 ——
+      // 6 处「表格里状态「margin+ground+pours+keep」不在四类里」，
+      // 外加「口径四项相加=15，但表格有 22 行」。
+      // 那等于禁止这份文档再增加任何编号表格，哪怕它是本次测量最硬的证据。
+      // 收窄到小节内；小节内的判据一条不放宽。
+      const secStart = text.search(/^##\s*结论速览\s*$/m)
+      let secText = text
+      if (secStart >= 0) {
+        const after = text.slice(secStart + 1)
+        const secEnd = after.search(/^##\s/m)
+        secText = secEnd >= 0 ? after.slice(0, secEnd) : after
+      }
+      const rows = secText.split(/\r?\n/).filter((l) => /^\|\s*\d+\s*\|/.test(l))
       const seen = Object.fromEntries(order.map((k) => [k, 0]))
       for (const r of rows) {
         const cell = (r.match(/^\|\s*\d+\s*\|\s*([^|]+?)\s*\|/) || [])[1]

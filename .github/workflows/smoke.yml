@@ -68,6 +68,16 @@ jobs:
       - name: 文档引用闸门
         run: node test/doc-refs.mjs
 
+      # 能力分级闸门。「这条能力我们实测过没有」原来只写在三处散文里
+      # （REVERSE-NOTES / api 的 visibility / CANVAS-API-RCA 的待证清单），
+      # 没有一行代码读它们。已经出过一次代价：一条从未验证过的假设
+      # （「自动布线期间画布会实时更新」）被当成事实，23 张冻结的截图被拼进视频。
+      # 注意：level 回答的是「本仓库实测过没有」，与 api/ 里的 `visibility: beta`
+      # 是两套坐标 —— 拿 beta 当 not_verified 会让这道闸门一上线就红一片，
+      # 然后被人加个 `|| true`，闸门就废了。
+      - name: 能力分级闸门
+        run: node test/capability-gate.mjs
+
       - name: 契约测试
         run: node test/smoke.mjs
 
@@ -75,6 +85,18 @@ jobs:
       # 这套测试用加载器钩子替换那两个 import，被测的 plugin/index.js 一字不改。
       - name: DSH 插件契约
         run: node test/plugin-harness.mjs
+
+      # 突变测试。「fabcheck 报了 62 条判据」这件事，原来只被一个事实支撑：
+      # 那段代码里有 62 个注册点。有注册点 ≠ 会触发 —— `--selftest` 只证明
+      # 其中 6 条能真的响（9.7%）。这道闸门拿一块随仓库版本化的干净小板，
+      # 逐条注入缺陷，断言那条判据**真的出现在输出里**。
+      #
+      # 样板放在 test/mutants/base/ 而不是 out/ ：out/ 每 3 轮会被 cleanup.ps1
+      # 裁到最新 40 个目录，全新克隆里一个都没有 —— 那样的闸门在 CI 上
+      # 只会变成「跑不了」，而「跑不了」不该被读成「通过」。
+      # 覆盖率的分子分母都由 fabcheck.js 的注册点现算，不硬编码。
+      - name: 突变闸门
+        run: node test/mutants.mjs
 
       - name: 列出支持的平台
         run: node install/install.mjs --list

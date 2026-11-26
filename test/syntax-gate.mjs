@@ -57,11 +57,22 @@ import { spawnSync } from 'node:child_process'
 import { gitLines } from './_git.mjs'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, dirname, extname, join, resolve } from 'node:path'
+import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import vm from 'node:vm'
 
 const ROOT = resolve(join(dirname(fileURLToPath(import.meta.url)), '..'))
+
+/**
+ * 把清单里的文件名解析成真实路径。
+ *
+ * 默认清单来自 `git ls-files`，都是相对 ROOT 的。但 `NAMED`（命令行点名的文件）
+ * 可能给绝对路径 —— 那是合法用法，而以前一律 `join(ROOT, f)`，于是
+ * `F:/cache/temp/x.mjs` 被拼成 `D:\...\pcb-auto\F:\cache\temp\x.mjs`，
+ * 然后 `node --check` 当然找不到它，报出的却是「这个文件有语法错误」。
+ * 一个检查工具把自己的路径 bug 报成了对方的代码 bug。
+ */
+const absOf = (f) => (isAbsolute(f) ? resolve(f) : join(ROOT, f))
 
 const ARGS = process.argv.slice(2)
 const JSON_OUT = ARGS.includes('--json')
@@ -166,7 +177,7 @@ function referencedStems(files) {
   for (const f of files) {
     let src
     try {
-      src = readFileSync(join(ROOT, f), 'utf8')
+      src = readFileSync(absOf(f), 'utf8')
     } catch {
       continue
     }
@@ -342,10 +353,19 @@ function main() {
 
   const failures = []
   const warnings = []
+  // 「读不到这个文件」不是「这个文件有语法错误」。
+  // 两者共用 failures 时，一个打错的路径会显示成一条语法错误 —— 见 absOf 的注释。
+  const unmeasured = []
   const forms = { commonjs: 0, 'invoke-body': 0, esm: 0 }
 
   for (const f of js) {
-    const src = readFileSync(join(ROOT, f), 'utf8')
+    let src
+    try {
+      src = readFileSync(absOf(f), 'utf8')
+    } catch (e) {
+      unmeasured.push({ file: f, kind: 'js', message: `读不到这个文件：${e.message}` })
+      continue
+    }
     let form
     try {
       form = classifyJs(src)
@@ -399,7 +419,14 @@ function main() {
   }
 
   for (const f of esm) {
-    const r = spawnSync(process.execPath, ['--check', join(ROOT, f)], { encoding: 'utf8', windowsHide: true, timeout: 60_000 })
+    const abs = absOf(f)
+    if (!existsSync(abs)) {
+      // 不存在 ≠ 语法错。以前这里会把 node --check 的 "Cannot find module"
+      // 当成语法错误报出来，退出码 1（= 发现了失败），等于给了个结论。
+      unmeasured.push({ file: f, kind: 'mjs', message: `文件不存在：${abs}` })
+      continue
+    }
+    const r = spawnSync(process.execPath, ['--check', abs], { encoding: 'utf8', windowsHide: true, timeout: 60_000 })
     if (r.status !== 0) {
       failures.push({
         file: f,
@@ -409,7 +436,12 @@ function main() {
     }
   }
   for (const f of cjs) {
-    const r = spawnSync(process.execPath, ['--check', join(ROOT, f)], { encoding: 'utf8', windowsHide: true, timeout: 60_000 })
+    const abs = absOf(f)
+    if (!existsSync(abs)) {
+      unmeasured.push({ file: f, kind: 'cjs', message: `文件不存在：${abs}` })
+      continue
+    }
+    const r = spawnSync(process.execPath, ['--check', abs], { encoding: 'utf8', windowsHide: true, timeout: 60_000 })
     if (r.status !== 0) {
       failures.push({
         file: f,
@@ -457,6 +489,7 @@ function main() {
       forms,
       failures,
       warnings,
+      unmeasured,
     }, null, 2))
   } else {
     console.log(`  .js  ${js.length} 个（CommonJS ${forms.commonjs} / invoke 函数体 ${forms['invoke-body']} / ESM ${forms.esm}）`)
@@ -474,6 +507,13 @@ function main() {
       for (const f of failures) {
         console.log(`  \x1b[31mFAIL\x1b[0m  ${f.file}  (${f.kind})`)
         console.log(`        ${f.message.split('\n').join('\n        ')}`)
+      }
+    }
+    if (unmeasured.length) {
+      console.log('')
+      for (const u of unmeasured) {
+        console.log(`  \x1b[35mNOINPUT\x1b[0m  ${u.file}  (${u.kind})`)
+        console.log(`        ${u.message.split('\n').join('\n        ')}`)
       }
     }
     console.log('')
@@ -498,7 +538,18 @@ function main() {
     if (forms['invoke-body']) {
       console.log(`  注：${forms['invoke-body']} 个 .js 是 invoke 函数体，\`node --check\` 对它们必然假红 —— 这里按真实形式解析。`)
     }
+    if (unmeasured.length) {
+      // 有文件读不到时，「全部通过」和「发现了失败」两个结论都不该给：
+      // 分母不完整，任何一个结论都可能被这一个缺失的文件推翻。
+      // 2 = 没能测量（与「缺 git」「缺 python」同一含义），处置是去查那几条路径。
+      console.log(``
+        + `  \x1b[35mSYNTAX=INCOMPLETE\x1b[0m  ${unmeasured.length} 个文件读不到，本次结论不成立。`)
+      console.log('                这不是「这些文件有语法错误」，也不是环境缺依赖 ——')
+      console.log('                是清单里的路径指不到文件（点名的文件名打错、或工作树不完整）。')
+    }
   }
+  // 顺序很重要：读不到输入时先归 2（没能测量），再谈 1（发现了失败）。
+  if (unmeasured.length) return 2
   return failures.length ? 1 : 0
 }
 

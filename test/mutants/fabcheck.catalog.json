@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "base": "test/mutants/base",
+  "note": "基准样板已随仓库版本化：test/mutants/base（来自 2026-11-26 的一次干净运行 SHT30_I2C_TempHumidity-20261126-084306，3 个器件 / 25.4×19.05mm 板，6 个交付文件）。任何 base 指向 out 目录之下都会被运行器判为退 2：那个目录不是版本化的，会被 scripts/cleanup.ps1 裁掉。每条突变都在干净样板的副本上注入一个具体故障；expect.mustInclude 是这条突变想证明“会亮”的判据 id。突变尽量锚在“格式形状”上（层名、D01/D03、行/列位、M02 锚点），而不是锚在这块板的具体位号或坐标上，所以换一块同格式的样板仍然有效；真的锚不住的（BOM 单元格引用）也只用模板的固定列位。",
+  "mutants": [
+    {
+      "name": "gerber.outline.closed",
+      "base": "test/mutants/base",
+      "note": "把 GKO 里最后一条 D01 改成 D02（用 M02 做锚点定位末尾，不依赖具体坐标）：末段终点不再回到首段起点，板框断开。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "Gerber.zip",
+          "entry": "Gerber_BoardOutlineLayer.GKO",
+          "regex": true,
+          "find": "([\\s\\S]*)(X-?\\d+Y-?\\d+)D0?1\\*([\\s\\S]*M02\\*)",
+          "with": "$1$2D02*$3"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["gerber.outline.closed"] }
+    },
+    {
+      "name": "gerber.outline.d01",
+      "base": "test/mutants/base",
+      "note": "GKO 里所有 D01 画线退化成 D04（D01+D03 < 3）：板框根本没有成形。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "Gerber.zip",
+          "entry": "Gerber_BoardOutlineLayer.GKO",
+          "regex": true,
+          "all": true,
+          "find": "D0?1\\*",
+          "with": "D04*"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["gerber.outline.d01"] }
+    },
+    {
+      "name": "gerber.copper.empty",
+      "base": "test/mutants/base",
+      "note": "整层 GTL 换成只剩文件头的空铜层（0 个 D01/D03）。",
+      "mutate": [
+        {
+          "op": "setEntry",
+          "file": "Gerber.zip",
+          "entry": "Gerber_TopLayer.GTL",
+          "text": "G04 top copper layer emptied by mutant*\n%FSLAX45Y45*%\n%MOMM*%\nM02*\n"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["gerber.copper.empty"] }
+    },
+    {
+      "name": "gerber.traces.empty",
+      "base": "test/mutants/base",
+      "note": "GTL 丢掉所有含 D01 的行：焊盘闪还在、走线一条不剩（未布线）。",
+      "mutate": [
+        {
+          "op": "dropLines",
+          "file": "Gerber.zip",
+          "entry": "Gerber_TopLayer.GTL",
+          "match": "D01*"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["gerber.traces.empty"] }
+    },
+    {
+      "name": "bom.qty",
+      "base": "test/mutants/base",
+      "note": "删掉首行数据（模板里 B 列=Quantity，第 2 行=第一个器件）的数量单元格：Quantity 求和 < 位号个数，只发警告，不影响下单。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "BOM.xlsx",
+          "entry": "xl/worksheets/sheet1.xml",
+          "regex": true,
+          "find": "<c r=\"B2\"><v>\\d+</v></c>",
+          "with": ""
+        }
+      ],
+      "expect": { "exit": 0, "mustInclude": ["bom.qty"] }
+    },
+    {
+      "name": "bom.duplicate",
+      "base": "test/mutants/base",
+      "note": "把第 3 行位号单元格（D 列=Designator）指向第 2 行同一个共享字符串索引：两行变成同一个位号。索引从前一行动态捕获，不写死具体位号。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "BOM.xlsx",
+          "entry": "xl/worksheets/sheet1.xml",
+          "regex": true,
+          "find": "<c r=\"D2\" t=\"s\"><v>(\\d+)</v></c>([\\s\\S]*?)<c r=\"D3\" t=\"s\"><v>\\d+</v></c>",
+          "with": "<c r=\"D2\" t=\"s\"><v>$1</v></c>$2<c r=\"D3\" t=\"s\"><v>$1</v></c>"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["bom.duplicate"] }
+    },
+    {
+      "name": "pnp.nan",
+      "base": "test/mutants/base",
+      "note": "第一条数据行的 Mid X（第 4 列）写成 NaN：坐标不是数字，贴片机无法解析。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "PnP.csv",
+          "regex": true,
+          "flags": "m",
+          "find": "^([^,\\r\\n]+,[^,\\r\\n]*,[^,\\r\\n]*,)-?[\\d.]+",
+          "with": "$1NaN"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["pnp.nan"] }
+    },
+    {
+      "name": "pnp.overlap",
+      "base": "test/mutants/base",
+      "note": "把第二条数据行的 Mid X/Y 改成第一条数据行的值（从上一行捕获，不写死坐标）：两个位号坐标完全重合。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "PnP.csv",
+          "regex": true,
+          "flags": "m",
+          "find": "^([^,\\r\\n]+,[^,\\r\\n]*,[^,\\r\\n]*?,)(-?[\\d.]+),(-?[\\d.]+)([^\\r\\n]*\\r?\\n[^,\\r\\n]+,[^,\\r\\n]*,[^,\\r\\n]*?,)-?[\\d.]+,-?[\\d.]+",
+          "with": "$1$2,$3$4$2,$3"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["pnp.overlap"] }
+    },
+    {
+      "name": "drill.outside",
+      "base": "test/mutants/base",
+      "note": "把钻带（PTH）第一个孔位的 X 推到 999mm（只借 Y 值，不写死坐标）：孔落到板框外。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "Gerber.zip",
+          "entry": "Drill_PTH_Through.DRL",
+          "regex": true,
+          "flags": "m",
+          "find": "^X-?[\\d.]+Y(-?[\\d.]+)$",
+          "with": "X999Y$1"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["drill.outside"] }
+    },
+    {
+      "name": "drill.tht.mismatch",
+      "base": "test/mutants/base",
+      "note": "GBS 底层阻焊里复制最后一个 D03 开窗闪（同一位置）：开窗数 +1，与插件孔数不再相等。只发警告，仍是 exit 0。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "Gerber.zip",
+          "entry": "Gerber_BottomSolderMaskLayer.GBS",
+          "regex": true,
+          "find": "([\\s\\S]*)(X-?[\\d.]+Y-?[\\d.]+D0?3\\*)([\\s\\S]*M02\\*)",
+          "with": "$1$2\n$2$3"
+        }
+      ],
+      "expect": { "exit": 0, "mustInclude": ["drill.tht.mismatch"] }
+    },
+    {
+      "name": "pdf.pages",
+      "base": "test/mutants/base",
+      "note": "Board.pdf 截到 8 字节：一个 /Type /Page 都没有。",
+      "mutate": [
+        { "op": "truncate", "file": "Board.pdf", "bytes": 8 }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["pdf.pages"] }
+    },
+    {
+      "name": "netlist.parse",
+      "base": "test/mutants/base",
+      "note": "把 Netlist.json 顶层 version 的字符串值替换成裸标记 @@@：JSON 不再合法。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "Netlist.json",
+          "regex": true,
+          "find": "(\"version\"\\s*:\\s*)\"[^\"]*\"",
+          "with": "$1@@@"
+        }
+      ],
+      "expect": { "exit": 1, "mustInclude": ["netlist.parse"] }
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "_readme": "为什么是 JSON 不是 YAML：Node 没有内置 YAML 解析器，自己手写一个 YAML 子集解析器会变成新的 bug 来源，而这个机制的价值在**内容**（四级判定 + limitations + unattended 策略），不在文件后缀。YAML 能写的这部分 JSON 都能写；JSON 还自带 parse 失败时明确的错误位置。| level 只回答「我们在这个仓库里实测过没有」，**不回答**「这个 API 官方成熟度如何」。api/ 下 pcb_* 几乎全是 visibility:beta（108 个类里大部分如此），若把 beta 当 not_verified，闸门一上线就红一片，第二天就会有人加 `|| true`，闸门报废。所以 level 与 visibility 是两套坐标，不许互相折算。| verified 的判据是「本仓库有可复跑、且**支持这条能力成立**的观测」，不是「我看过文档/我推理过」。被实测**否证**的条目不是 verified —— 它落在 not_verified，否证的数字写进 limitations（例：canvas_frames_animate_during_routing 的 22 对差分 0 对超过 0.02）。把否证读成 verified，等于给一条假前提发无人值守通行证，那正是这套机制存在的理由。| unattended 只回答「pipeline3.js 或 run-all.ps1 在没人看着的时候会不会依赖这条能力」。依赖 = 有判决/产物正确性建立在它成立之上，不是「这条代码路径跑过它一次」。（跑过但它失败只会让那一轮失败，与依赖它成立是两件事。）| evidence 是仓库内相对路径，可带 #L<行号> 锚点（锚点只供人读，闸门只核对 # 前的文件存在）。call_sites 只写函数名或稳定子串，不写行号 —— 行号会腐烂。| 退出码契约与 test/ 下三个闸门一致：0 通过 / 1 发现了失败 / 2 没能测量（文件缺失、JSON 坏、表为空、未知 level、unattended 不是布尔）。",
+  "policy": {
+    "levels": {
+      "verified": "我们在这个仓库里实测过，有可复跑的几次观测",
+      "pilot": "试过一两次，能跑通但边界没摸清",
+      "not_verified": "看过文档/推理过，但从未在本仓库产生过一次观测",
+      "not_implemented": "想用但根本没接线"
+    },
+    "unattended_rule": "level 是 not_verified / not_implemented 的能力，不得出现在 unattended:true 的能力上"
+  },
+  "capabilities": [
+    {
+      "id": "canvas_frames_animate_during_routing",
+      "label": "画布在自动布线期间会实时更新",
+      "level": "not_verified",
+      "evidence": [
+        "scripts/desktop-diff.ps1",
+        "scripts/pipeline3.js#L175-L195",
+        "scripts/CANVAS-API-RCA.md#L26-L27"
+      ],
+      "limitations": [
+        "实测否证（2026-11-26T15:39:38+08:00，`scripts/desktop-diff.ps1 -FramesDir out/frames/REAL_143856 -Pattern *route*.png`）：23 帧 / 22 对，changed=0、changedRatio=0、单对阈值 0.02，最大单对 0.013667（0004-route2-t6s → 0005-route-t6s）。",
+        "根因是作业模型，不是帧率：`scripts/pipeline3.js:184-193` 只在 waitJob 轮询里每 ~7s 抓一帧，几何在 completed 时才一次性提交（`docs/REVERSE-NOTES.md:131`），所以画布在布线期间是冻结的。",
+        "`scripts/desktop-diff.ps1` 自带示例写的是 `-Pattern 'route-*.png'`，实测匹配 0 张 → 退出 2（文件名是 `0005-route-t6s.png`，前缀不是 route）；要 `*route*.png` 才拿到 23 帧。一个抄了就退 2 的示例本身也是坑。",
+        "unattended:false 的理由：无人值守路径没有任何判决读这些帧 —— `waitJob` 轮询作业状态、`run-all.ps1` 只在显式 `-Record`（或 `.record-on` 哨兵，当前 `Test-Path .record-on` = False）时建帧目录，帧只是视频层素材。视频把 route 帧当「布线过程」正是被否证的那条假设的消费方，不该给它发无人值守通行证。"
+      ],
+      "call_sites": [
+        "waitJob",
+        "shot",
+        "getCurrentRenderedAreaImage"
+      ],
+      "unattended": false
+    },
+    {
+      "id": "getCurrentRenderedAreaImage_headless",
+      "label": "headless session 下 getCurrentRenderedAreaImage() 能拿到有内容的图",
+      "level": "verified",
+      "evidence": [
+        "scripts/pipeline3.js#L113-L151",
+        "scripts/_test-sch-shot.js#L1-L12",
+        "scripts/CANVAS-API-RCA.md#L48-L51"
+      ],
+      "limitations": [
+        "实测（2026-11-26，扫 out/ 下 72 个目录、143 个 `_log*.json`）：12 个含 shot 事件的目录共 738 次 shot，ok=738、shotNone=0、shotErr=0、shotWriteFalse=0；img.size 最小 13109B、中位 106478B、最大 225881B。",
+        "其中 11 个目录（706 次）走的是 `run-all.ps1:423` 的 `open --headless true` 会话；`out/frames` 下 5 个 6 位数字目录（211335 / 213403 / 214200 / 215630 / 220801）共 63 张 PNG，单张 10336~122344B。GUI 会话录的 REAL_143856 单独算 32 张。",
+        "边界：doc 未就绪时第一拍返回空 —— 观测到原理图帧 `shotNone {tag:\"sch-wired\"}`（`scripts/_test-sch-shot.js:1-12`），所以 shot() 里有界重试 4 次 ×250ms（`scripts/pipeline3.js:127-130`）。「能拿到」不等于「任何时刻都能拿到」。",
+        "`scripts/CANVAS-API-RCA.md:10` 记录 headless 行为在 @beta 文档里未说明（全库 5 处 headless 注释无一涉及本方法），所以这条只覆盖本仓库 CLI session 的实测，不是对 headless 的一般保证。"
+      ],
+      "call_sites": [
+        "getCurrentRenderedAreaImage",
+        "shot"
+      ],
+      "unattended": true
+    },
+    {
+      "id": "startAutoRouting_job_model",
+      "label": "startAutoRouting 是异步作业模型，几何在轮询到 completed 时才提交",
+      "level": "verified",
+      "evidence": [
+        "scripts/pipeline3.js#L1393-L1447",
+        "scripts/pipeline3.js#L175-L195",
+        "docs/REVERSE-NOTES.md#L128-L133"
+      ],
+      "limitations": [
+        "实测（扫 72 个 out 目录 / 143 个 `_log*.json`，2026-11-26）：route 事件 521 条，state=completed 511、TIMEOUT 10。作业模型是真的，且绝大多数轮次等到了 completed。",
+        "轮询方法名是 `getAutoJobStatus`（`scripts/pipeline3.js:180`），不是 `getAutoJobState` —— 后者在整个仓库 0 命中（api/、scripts/、docs/ 都查过）。",
+        "TIMEOUT 不等于作业停了：必须 `cancelAutoJob`（`scripts/pipeline3.js:1452`），否则同板两个布线器同时写铜；取消 = 已算出的几何全丢（`docs/REVERSE-NOTES.md:133`）。",
+        "等待上限按量级分开：FAST 轮 120s、COMPLETION 保底轮 900s（`scripts/pipeline3.js:1442`），并由 `capRaw = left() - 180000` 兜住 invoke 超时。"
+      ],
+      "call_sites": [
+        "startAutoRouting",
+        "getAutoJobStatus",
+        "cancelAutoJob",
+        "waitJob"
+      ],
+      "unattended": true
+    },
+    {
+      "id": "saveFileToFileSystem_path_form",
+      "label": "sys_FileSystem.saveFileToFileSystem 要写全路径，且目标目录必须预先存在",
+      "level": "verified",
+      "evidence": [
+        "scripts/pipeline3.js#L134-L151",
+        "scripts/record-real.ps1#L80-L87",
+        "scripts/CANVAS-API-RCA.md#L14-L21"
+      ],
+      "limitations": [
+        "目录判定只看正斜杠：实现是 `!/\\/$/.test(uri)`；uri 以反斜杠结尾时 `r=true`，`fileName` 被整个丢弃，最终去写「<目录>\\」→ 返回 false 且不抛异常（`scripts/CANVAS-API-RCA.md:18-20`，`.js` 原文逐字骨架也抄在那里）。",
+        "目标目录不存在同样返回 false 且不报错 —— `scripts/record-real.ps1:85` 记录了这个失败，所以 framesDir 在 invoke 之前就 `New-Item` 建好（同文件 :86-87）。",
+        "改成「目录 + 反斜杠 + 文件名」的全路径写法后，实测 738 次 shot 全部 ok（分母见 getCurrentRenderedAreaImage_headless：738/738，shotWriteFalse=0）。",
+        "另一条独立的坑（别与上一条混）：`const fs = eda.sys_FileSystem` 在 shot() 的调用点之后才初始化 → TDZ，异常被 catch 吞成 shotErr，表现为「日志没有堆栈、一张图没有」（`scripts/pipeline3.js:104-107`）。"
+      ],
+      "call_sites": [
+        "saveFileToFileSystem",
+        "shot"
+      ],
+      "unattended": true
+    },
+    {
+      "id": "pcb_primitive_region_keepout",
+      "label": "pcb_PrimitiveRegion.create 能做出禁元件/禁布线/禁覆铜区",
+      "level": "pilot",
+      "evidence": [
+        "scripts/pipeline3.js#L876-L949",
+        "scripts/pipeline3.js#L951-L1000",
+        "scripts/_test-slot-keepout.js#L1-L12"
+      ],
+      "limitations": [
+        "唯一一次真实建区：`out/ESP32S3_Wireless_Mic_V2-20261126-152721/_log-1-smart-fit.json` 的 `antennaKeepout` = `{built:true, layer:12, ruleType:[5,6,7], box:[0,-3700,1000,-3460], intruders:[]}`；同一条记录 `overhangMil:-3603` 触发了 `errors`（天线未悬出板边），所以那一轮不是成功样本。",
+        "槽禁布区那条分支在现有语料里一次都没真正建过区：扫 72 个 out 目录 / 143 个 `_log*.json`，`slotKeepout` 出现 143 次，`found>0` 的 0 次（全部 found:0 created:0）。",
+        "没有一次「布出的线/覆铜绕开禁布区」的观测。布线引擎配置里没有 keepout 概念（`scripts/pipeline3.js:884-885` 已写明），禁布区是否被尊重只有跑出来才知道 —— 这是 pilot 而不是 verified 的原因。",
+        "坐标坑：`createPolygon` 的 R 模式 (x,y) 是矩形**顶边左角**，笛卡尔是 Y∈[y-h, y]；实测 `['R',1200,700,400,200]` → bbox X[1200,1600] Y[500,700]（`scripts/pipeline3.js:893-895`）。搞反了净空区落在板外且不报错。"
+      ],
+      "call_sites": [
+        "pcb_PrimitiveRegion.create",
+        "antennaKeepout",
+        "slotKeepout"
+      ],
+      "unattended": true
+    },
+    {
+      "id": "pcb_primitive_component_modify_abs",
+      "label": "pcb_PrimitiveComponent.modify(id,{x,y,rotation}) 是绝对坐标/mil/度，且必须重新 get 读回",
+      "level": "verified",
+      "evidence": [
+        "scripts/pipeline3.js#L691-L736",
+        "scripts/_probe-coord.js#L106-L122",
+        "scripts/pipeline3.js#L893-L895"
+      ],
+      "limitations": [
+        "实测：2 份 `explicitPlacement` 日志（同一设计 `out/ESP32S3_Wireless_Mic_V2-20261126-152721` 的 `_log-1-smart-fit.json` 与 `_log.json`），requested 26×2=52、moved 52、missed=[]、maxErrMil=0；判据是读回坐标与目标差 ≤1mil 才算 moved（`scripts/pipeline3.js:725`）。",
+        "modify 的返回值或缓存对象读不到新坐标，必须 `get` 一次再读 — `scripts/pipeline3.js:718-720` 的注释与代码都钉着这一点；不重读会让「已到位」永远为真。",
+        "单位是 mil、语义是绝对坐标：显式摆放表给的是板上绝对位置（例：`placePositions` DS1 x=145 y=155），不是增量；rotation 同样是绝对角度而不是相对旋转。",
+        "证据只来自一个设计（ESP32-S3 麦克风）的两份日志副本。分母小是事实：仓库里 `explicit` 模式只出现过这 1 次构建（`placementMode` 事件 2 条，同一次运行的两份日志）。"
+      ],
+      "call_sites": [
+        "pcb_PrimitiveComponent.modify",
+        "placeExplicitly"
+      ],
+      "unattended": true
+    },
+    {
+      "id": "pcb_manufacture_get_pdf",
+      "label": "制造数据里能导出 Board.pdf",
+      "level": "verified",
+      "evidence": [
+        "scripts/pipeline3.js#L4640",
+        "scripts/fabcheck.js#L30",
+        "scripts/verify-artifacts.js#L15"
+      ],
+      "limitations": [
+        "实测（2026-11-26 扫 out/ 72 个目录）：62 个目录有 `Board.pdf`，体积 277747~702641B，中位 405755B；10 个没有 —— 缺的正是失败/半途轮次。",
+        "`fabcheck` 把 Board.pdf 列为 5 个必需产物之一（`scripts/fabcheck.js:30` 的 REQUIRED），`verify-artifacts` 要求存在且非空（`scripts/verify-artifacts.js:15`）。",
+        "导出方式是 `eda.pcb_ManufactureData.getPdfFile('AI_Board')`（`scripts/pipeline3.js:4640`），由导出段统一落盘；它不是「直接写文件」，落盘仍走 saveFileToFileSystem 那条链。"
+      ],
+      "call_sites": [
+        "getPdfFile",
+        "Board.pdf"
+      ],
+      "unattended": true
+    },
+    {
+      "id": "checkDetailed_flattened_fields",
+      "label": "DRC 结果里 checkDetailed 的字段是扁平化命名",
+      "level": "not_verified",
+      "evidence": [
+        "docs/REVERSE-NOTES.md#L97-L107",
+        "scripts/README-drc.md#L207",
+        "api/classes/PCB_Drc.json"
+      ],
+      "limitations": [
+        "本仓库未找到任何观测记录：`grep checkDetailed` 在 `scripts/` 下 0 命中，`docs/REVERSE-NOTES.md:105` 自己写明「这个项目一次都没调用过它」。",
+        "`api/classes/PCB_Drc.json` 只有一句「执行 DRC 检查并返回展平明细」，没有字段清单；字段到底怎么命名没有任何实测，所以「扁平化命名」这句话目前只是对注释的转述。",
+        "现用 `check(true,false,true)` 返回分组树，靠 `walk()` 递归展平（`docs/REVERSE-NOTES.md:85-95`）；没有违规时返回空数组而不是 null。改用它要重验整条 DRC 判定链，所以一直没采纳。"
+      ],
+      "call_sites": [
+        "checkDetailed"
+      ],
+      "unattended": false
+    },
+    {
+      "id": "pcb_primitive_getPrimitiveBoardLine_promise",
+      "label": "getPrimitiveBoardLine 的 Promise 会不 settle",
+      "level": "not_verified",
+      "evidence": [
+        "api/classes/PCB_Primitive.json",
+        "api/methods.csv"
+      ],
+      "limitations": [
+        "本仓库未找到任何观测记录：`getPrimitiveBoardLine` 在 `scripts/`、`test/`、`docs/` 下 0 命中，只出现在 API 清单里（`api/classes/PCB_Primitive.json`，visibility=beta，注释仅「获取图元的边框线」）。",
+        "「Promise 不 settle」这条说法没有任何调用、超时计时或日志支撑 —— 没有一次 await 过它，自然也没有一次观测到不 settle。",
+        "如果要用它，必须像 getCurrentRenderedAreaImage 那样包一层有界超时（本仓库对不 settle 的做法见 `scripts/pipeline3.js:175-195` 的 waitJob：轮询 + 上限，而不是裸 await），并把超时计时落进日志。"
+      ],
+      "call_sites": [
+        "getPrimitiveBoardLine"
+      ],
+      "unattended": false
+    }
+  ]
+}

@@ -49,7 +49,8 @@
     "win32"
   ],
   "scripts": {
-    "test": "node test/syntax-gate.mjs && node test/dev-path-scan.mjs && node test/doc-refs.mjs && node test/smoke.mjs && node test/plugin-harness.mjs",
+    "test": "node test/syntax-gate.mjs && node test/dev-path-scan.mjs && node test/doc-refs.mjs && node test/capability-gate.mjs && node test/smoke.mjs && node test/plugin-harness.mjs && node test/mutants.mjs",
+    "mutants": "node test/mutants.mjs",
     "pcb": "node cli/pcb.mjs",
     "mcp": "node mcp/server.mjs",
     "install-clients": "node install/install.mjs",

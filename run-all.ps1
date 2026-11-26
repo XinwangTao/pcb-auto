@@ -14,7 +14,12 @@ param(
   # 而此前 run-all 从不传这个字段 —— 所以整晚一次帧都没抓到，视频只能拿占位图。
   # 注意：EDA 的 saveFileToFileSystem 要求目录**事先存在**，否则返回 false 而不报错，
   # 所以这里先建目录并把绝对路径传下去。
-  [switch]$Record
+  [switch]$Record,
+  # 外部 invoke 的超时（毫秒）。流水线自身预算是它减 60 秒。
+  # 原来写死 590000（9.8 分钟）。实测大板子不够：ESP32-S3 麦克风（26 器件/111 连接）
+  # 光 place+connect 就吃掉 155 秒，布线还要 200~600 秒。默认值保持 590000 不变，
+  # 老设计行为完全不变；只有明确需要时才用参数放大，免得拖慢夜间无人值守循环。
+  [int]$InvokeTimeoutMs = 590000
 )
 $ErrorActionPreference = 'Stop'
 
@@ -61,7 +66,8 @@ $LockFile = Join-Path $Root '.pipeline.lock'
 # 所以超时必须与流水线自己的预算对齐，否则超时后留下幽灵调用，
 # 紧接着的下一次 invoke 一定不是 JSON —— 实测表现为「整批设计无声失败、策略=?」。
 # 实测 d7：外部跑满 1316.6s 两次 REQUEST_TIMEOUT，紧接的 d8 直接 SESSION_NOT_FOUND。
-$InvokeTimeoutMs = 590000
+# $InvokeTimeoutMs 由 param 块传入（默认 590000，见上方注释）。
+# 以前这里重新赋值，会把 -InvokeTimeoutMs 参数直接覆盖掉 —— 参数看起来生效了其实没有。
 $PipelineBudgetMs = $InvokeTimeoutMs - 60000     # 60s 余量给结果回传与落盘
 
 function Log($msg, $color = 'Cyan') { Write-Host "[pcb-auto] $msg" -ForegroundColor $color }
@@ -78,6 +84,10 @@ $ScriptBackup = Join-Path $Root 'scripts\pipeline3.js.lastgood'
 $NodeExe      = Resolve-Node
 
 function Test-PipelineSyntax([string]$path) {
+  # 这个函数承载**两道**闸门，失败时返回值都是 $false，调用方无从分辨。
+  # 以前调用方就统一按「文件正在被编辑」处理，于是契约缺陷被报成语法错误（假话），
+  # 并且触发了静默回退旧版。这里把失败的那一关记下来，供调用方分流。
+  $script:GateFailed = 'syntax'
   if (-not (Test-Path $path)) { return $false }
   # 第一关：能不能解析。
   $probe = @'
@@ -94,6 +104,9 @@ catch (e) { console.error(e.message); process.exit(3); }
   } catch { return $false }
   finally { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
 
+  # 从这里往下都是**第二关**（契约引用完整性）。切换失败归属，
+  # 让调用方知道「语法是好的」，从而不去回退 .lastgood。
+  $script:GateFailed = 'contract'
   # 第二关：契约引用完整性。
   # 语法合法 ≠ 能跑。实测 d8-led-8ch（20:13，白跑 598s）：
   #   EXECUTION_ERROR: drcLeafCount is not defined
@@ -169,12 +182,32 @@ function Get-PipelineScript {
   $rev = $null
   $fallback = $false
   if (Test-PipelineSyntax $ScriptFile) {
+    # 只有**两道闸门都过**才刷新备份。以前是「语法过就刷新」，
+    # 而那时 $false 也可能来自契约关 —— 一份契约有缺陷的文件会被当成完好备份存下来，
+    # 下一次真需要回退时就把缺陷当成安全网。
     try { Copy-Item $ScriptFile $ScriptBackup -Force } catch { }
     $rev = Get-FileFingerprint $ScriptFile
+  } elseif ($script:GateFailed -eq 'contract') {
+    # 语法通过、契约不通过。这**不是**「文件正在被编辑」，所以**不回退**。
+    # 回退只会拿一份没人记得内容的旧代码跑一整轮，把「我的脚本有缺陷」伪装成「这块板跑挂了」，
+    # 而且产物目录里的指纹显示的是那份旧代码，事后归因全错。
+    # 实测 2026-11-26：.lastgood 里躺着的正是 sha=9F6545030111 —— 因「7 轮布线更差」
+    # 被主动回退掉的那一版。备份不等于好的，除非它刚刚通过过同样的闸门。
+    # 退出码归 2：这是我的脚本的缺陷，不是对被测设计/板子的判决。
+    Log '' 'Red'
+    Log '  pipeline3.js 语法通过，但返回契约检查未通过。' 'Red'
+    Log '  这不是「文件正在被编辑」，所以不回退 .lastgood ——' 'Red'
+    Log '  回退只会拿一份你不知道内容的旧代码跑一整轮，把缺陷掩盖成一次运行失败。' 'Red'
+    Log '  请按上面 staticcheck 指出的行号修掉再重跑。' 'Red'
+    Log '' 'Red'
+    exit 2
   } else {
-    Log 'pipeline3.js 语法检查未通过（可能正在编辑）-> 改用上一次完好备份' 'Yellow'
-    if (-not (Test-PipelineSyntax $ScriptBackup)) {
-      throw 'pipeline3.js 与备份都无法通过语法检查，停止以免污染 session'
+    Log 'pipeline3.js 语法不通（可能正在编辑）-> 改用上一次完好备份' 'Yellow'
+    if (-not (Test-PipelineSyntax $ScriptBackup) -or $script:GateFailed -ne 'syntax') {
+      # 备份也不能只是「语法过」：它必须同样通过契约闸门，否则回退到它毫无意义。
+      Log '  备份同样没通过闸门（或它自己契约不通过），不能用它替跑。' 'Red'
+      Log '  这不是环境问题：请先把 scripts\pipeline3.js 修到 syntax + 契约都过。' 'Red'
+      exit 2
     }
     $rev = Get-FileFingerprint $ScriptBackup
     $fallback = $true

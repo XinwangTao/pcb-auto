@@ -10,7 +10,11 @@
  * 而这两个宿主包只存在于 DSH 进程里，所以这里用加载器钩子把它们换成桩 ——
  * 被测的 `plugin/index.js` 一字不改。
  *
- * 不重启 DSH、不启动服务器、不写盘。
+ * 不重启 DSH、不启动服务器。
+ *
+ * 会**写盘一次**：`pcb_census` 的 live 扫描把结果写到 `out/_probe/fab-census.json`，
+ * 而那份文件同时是随仓库发布的证据（`docs/FAILURES.md` 第 15 条、`交付-README.md`
+ * 都引它的 `measured_at`）。所以这里先存后还，并断言字节完全相同。
  *
  *   node test/plugin-harness.mjs
  *
@@ -20,7 +24,7 @@
 import { register } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(join(HERE, '..'))
@@ -143,6 +147,21 @@ check('每个工具都有可渲染的 output（描述 + render）', () => {
   return `${ctx._tools.length} 个`
 })
 
+// `pcb_census` 的 live 扫描会**写盘**：它的输出路径就是
+// `out/_probe/fab-census.json`（`core/ops.mjs:426`），而同一份文件又是随仓库
+// 发布的证据 —— `docs/FAILURES.md` 第 15 条和 `交付-README.md` 的
+// 「测于 2026-11-26T11:33:01+08:00」都直接引它。
+//
+// 实测 2026-11-26T16:2x：不加这一步时，跑一次这条闸门就把证据换成新数字
+// （dirs 56 → 60，199 insertions / 68 deletions），`git status` 多出一处 out/ 改动，
+// 而文档里的 56/53 没跟着变 —— 文档与证据从此不一致，且没有任何闸门会红。
+//
+// 一条只读闸门不该有这种副作用。`test/smoke.mjs` 早就是这么做的（存、跑、还）。
+const EVIDENCE = join(ROOT, 'out', '_probe', 'fab-census.json')
+// 它是受版本控制的文件。缺了就说明这份检出坏了 —— 那样「有没有被改写」根本无从测量，
+// 不能当成通过。
+const evidenceBefore = existsSync(EVIDENCE) ? readFileSync(EVIDENCE) : null
+
 // 真正跑一次：证明「插件 → core → 子进程」这条链没断。
 let censusResult = null
 let censusErr = null
@@ -152,6 +171,8 @@ try {
   censusResult = await tool.execute({}, { signal: undefined })
 } catch (e) {
   censusErr = e
+} finally {
+  if (evidenceBefore !== null) writeFileSync(EVIDENCE, evidenceBefore)
 }
 
 check('pcb_census.execute() 真的跑到了 core（端到端）', () => {
@@ -165,6 +186,16 @@ check('pcb_census.execute() 真的跑到了 core（端到端）', () => {
     throw new Error(`量具没跑成：${censusResult.reason}\n${(censusResult.raw || '').slice(0, 400)}`)
   }
   return `exitCode=${censusResult.exitCode} source=${censusResult.source} dirs=${censusResult.dirs}`
+})
+
+check('实跑 census 之后把发布的证据文件还回去了（字节一致）', () => {
+  assert(evidenceBefore !== null,
+    'out/_probe/fab-census.json 不存在 —— 它是随仓库发布的证据，缺了就无法测量是否被覆盖')
+  const after = readFileSync(EVIDENCE)
+  assert(Buffer.compare(after, evidenceBefore) === 0,
+    `out/_probe/fab-census.json 被改写了（${evidenceBefore.length} B → ${after.length} B）—— `
+    + '它是 docs/FAILURES.md 第 15 条和 交付-README.md 引用的证据，必须在跑完还回去')
+  return `${evidenceBefore.length} B 一字不差`
 })
 
 check('render 能把真实结果渲染成文本（模型看到的就是这个）', () => {

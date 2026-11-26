@@ -33,6 +33,24 @@ import { execFileSync } from 'node:child_process'
 /** 环境问题（不是「发现了失败」）的退出码。 */
 export const ENV_EXIT = 2
 
+/**
+ * git 可执行文件名。默认就是 `git`（走 PATH）。
+ *
+ * 为什么要留一个 seam：这段 `bail() → exit 2` 的分支**没有任何测试能打到**，
+ * 而它的存在理由恰恰是一件真实发生过的事故（把 git 从 PATH 去掉后三个闸门
+ * 全部崩成退出码 1，「没装 git」被报成「你的代码有问题」）。
+ * 一段没有测试保护的事故修复，下一次重构时最容易被删掉，而删掉它的那次改动
+ * 在 CI 上是全绿的 —— 因为没有任何用例覆盖它。
+ *
+ * 所以允许用 `PCB_AUTO_GIT` 指到一个不存在的可执行文件来制造"缺失"，
+ * 与 `PCB_AUTO_PWSH` / `PCB_AUTO_PYTHON` / `PCB_AUTO_NODE` 同一惯例。
+ *
+ * **不要用改 PATH 的办法测这条分支。** 在 Windows 上删掉 PATH 会把 pwsh / python /
+ * node 一起弄丢，测试就红在一个跟 git 毫无关系的地方 —— 那时你分不清是
+ * "git 缺失没被正确处理"还是"测试自己不可移植"。
+ */
+const GIT = process.env.PCB_AUTO_GIT || 'git'
+
 const GIT_HINT = [
   '',
   '这个闸门需要 git：它靠 `git ls-files` 决定「哪些文件属于这个仓库」。',
@@ -66,7 +84,7 @@ export function gitLines(args, opts = {}) {
   const { root, nul = false, maxBuffer = 64 << 20 } = opts
   let out
   try {
-    out = execFileSync('git', args, {
+    out = execFileSync(GIT, args, {
       cwd: root,
       encoding: 'utf8',
       maxBuffer,

@@ -1,0 +1,320 @@
+{
+  "version": "2.0.0",
+  "projectId": "e8e738925140e62450b8c95038c9b11de310232c17638b279832eb5add22d947",
+  "components": {
+    "gge2": {
+      "props": {
+        "Footprint": "dc808b2c1d740ffe",
+        "Designator": "C1",
+        "LCSC Part Name": "100nF ±10% 50V",
+        "Supplier Part": "C14663",
+        "Manufacturer": "YAGEO(国巨)",
+        "Manufacturer Part": "CC0603KRX7R9BB104",
+        "Supplier Footprint": "0603",
+        "JLCPCB Part Class": "Basic Part",
+        "Datasheet": "https://item.szlcsc.com/datasheet/CC0603KRX7R9BB104/15331.html",
+        "Supplier": "LCSC",
+        "Add into BOM": "yes",
+        "3D Model": "ac125912035d415993ca9572d50418b1",
+        "3D Model Title": "C0603_L1.6-W0.8-H0.8",
+        "3D Model Transform": "62.992,31.496,0,0,0,0,0,0,0",
+        "Value": "100nF",
+        "Tolerance": "±10%",
+        "Voltage Rating": "50V",
+        "Temperature Coefficient": "X7R",
+        "Name": "CC0603KRX7R9BB104",
+        "Description": "容值:100nF;精度:±10%;额定电压:50V;温度系数:X7R;",
+        "Unique ID": "gge2",
+        "Reuse Block": "",
+        "Group ID": "",
+        "Channel ID": "$1I3",
+        "DeviceName": "CC0603KRX7R9BB104",
+        "FootprintName": "C0603",
+        "Device": "fe2156f7f7f2f560",
+        "PCB Layer": "TopLayer",
+        "Convert to PCB": "yes"
+      },
+      "footprintAttrKeys": [
+        "Footprint",
+        "Designator"
+      ],
+      "pinInfoMap": {
+        "1": {
+          "name": "",
+          "number": "1",
+          "net": "VDD",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "2": {
+          "name": "",
+          "number": "2",
+          "net": "GND",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        }
+      },
+      "altLibs": {}
+    },
+    "gge3": {
+      "props": {
+        "Footprint": "697a2e5d0fe9c794",
+        "Designator": "J1",
+        "LCSC Part Name": "2.54-1*8-BLACK",
+        "Supplier Part": "C9900192758",
+        "Manufacturer": "",
+        "Manufacturer Part": "2.54-1*8-BLACK",
+        "Supplier Footprint": "排针插件,P=2.54mm-黑色",
+        "JLCPCB Part Class": "Extended Part",
+        "Datasheet": "",
+        "Supplier": "LCSC",
+        "Add into BOM": "yes",
+        "3D Model": "493d9cad4ac14a6191a73ab1918dc562",
+        "3D Model Title": "HDR-TH_8P-P2.54-V-M-4",
+        "3D Model Transform": "800.038,100,0,0,0,0,0,0,-118.11",
+        "Name": "2.54-1*8-BLACK",
+        "Description": "",
+        "Unique ID": "gge3",
+        "Reuse Block": "",
+        "Group ID": "",
+        "Channel ID": "$1I4",
+        "Value": "2.54-1*8-BLACK",
+        "DeviceName": "2.54-1*8-BLACK",
+        "FootprintName": "HDR-TH_8P-P2.54-V-M-4",
+        "Device": "c40d3f8c586b6611",
+        "PCB Layer": "TopLayer",
+        "Convert to PCB": "yes"
+      },
+      "footprintAttrKeys": [
+        "Footprint",
+        "Designator"
+      ],
+      "pinInfoMap": {
+        "1": {
+          "name": "",
+          "number": "1",
+          "net": "VDD",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "2": {
+          "name": "",
+          "number": "2",
+          "net": "GND",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "3": {
+          "name": "",
+          "number": "3",
+          "net": "SDA",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "4": {
+          "name": "",
+          "number": "4",
+          "net": "SCL",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "5": {
+          "name": "",
+          "number": "5",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "6": {
+          "name": "",
+          "number": "6",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "7": {
+          "name": "",
+          "number": "7",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "8": {
+          "name": "",
+          "number": "8",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        }
+      },
+      "altLibs": {}
+    },
+    "gge1": {
+      "props": {
+        "Footprint": "905142cb5b481ff4",
+        "Designator": "U1",
+        "LCSC Part Name": "1-101381-01 1-101381-01 ±3%模拟温湿度传感器 (0-65% RH)",
+        "Supplier Part": "C86346",
+        "Manufacturer": "Sensirion(瑞士盛思锐)",
+        "Manufacturer Part": "SHT30-ARP-B2.5KS",
+        "Supplier Footprint": "DFN-8-EP(2.5x2.5)",
+        "JLCPCB Part Class": "Extended Part",
+        "Datasheet": "https://item.szlcsc.com/datasheet/SHT30-ARP-B2.5KS/87522.html",
+        "Supplier": "LCSC",
+        "Add into BOM": "yes",
+        "3D Model": "bc1ff5dd6aff4b369d2fdcf934ef0d2a",
+        "3D Model Title": "DFN-8_L2.5-W2.5-H1.0-P0.50",
+        "3D Model Transform": "99.2124,98.425,0,0,0,0,-0.504,0.395,0",
+        "Temperature Range": "-40℃~+125℃",
+        "Humidity": "0%RH~100%RH",
+        "Interface": "-",
+        "Voltage - Supply": "2.4V~5.5V",
+        "Current - Supply": "217uA",
+        "Humidity Tolerance": "±3%RH",
+        "Temperature Tolerance": "±0.3℃",
+        "Resolution": "14bit",
+        "Features": "温度补偿；工厂校准",
+        "Name": "SHT30-ARP-B2.5KS",
+        "Description": "温度范围:-40℃~+125℃;湿度范围:0%RH~100%RH;接口类型:-;湿度精度:±3%RH;",
+        "Unique ID": "gge1",
+        "Reuse Block": "",
+        "Group ID": "",
+        "Channel ID": "$1I2",
+        "Value": "SHT30-ARP-B2.5KS",
+        "DeviceName": "SHT30-ARP-B2.5KS",
+        "FootprintName": "DFN-8_L2.5-W2.5-P0.50-TL-EP",
+        "Device": "9dc8003ef1489337",
+        "PCB Layer": "TopLayer",
+        "Convert to PCB": "yes"
+      },
+      "footprintAttrKeys": [
+        "Footprint",
+        "Designator"
+      ],
+      "pinInfoMap": {
+        "1": {
+          "name": "",
+          "number": "1",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "2": {
+          "name": "",
+          "number": "2",
+          "net": "SDA",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "3": {
+          "name": "",
+          "number": "3",
+          "net": "SCL",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "4": {
+          "name": "",
+          "number": "4",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "5": {
+          "name": "",
+          "number": "5",
+          "net": "VDD",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "6": {
+          "name": "",
+          "number": "6",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "7": {
+          "name": "",
+          "number": "7",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "8": {
+          "name": "",
+          "number": "8",
+          "net": "GND",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "9": {
+          "name": "",
+          "number": "9",
+          "net": "GND",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        }
+      },
+      "altLibs": {}
+    }
+  },
+  "designRule": {
+    "trackPhysics": {
+      "copperThickness1oz": {
+        "name": "copperThickness1oz",
+        "isDefault": true,
+        "unit": "mm",
+        "strokeValue": {
+          "1": {
+            "default": 0.254,
+            "min": 0.127,
+            "max": 2.54
+          }
+        }
+      },
+      "copperThickness2oz": {
+        "name": "copperThickness2oz",
+        "isDefault": false,
+        "unit": "mm",
+        "strokeValue": {
+          "1": {
+            "default": 0.254,
+            "min": 0.20299934,
+            "max": 2.54
+          }
+        }
+      }
+    },
+    "netRule": {
+      "GND": {
+        "net": "GND",
+        "ruleMap": {
+          "TrackPhysics": ""
+        }
+      },
+      "VDD": {
+        "net": "VDD",
+        "ruleMap": {
+          "TrackPhysics": ""
+        }
+      },
+      "SCL": {
+        "net": "SCL",
+        "ruleMap": {
+          "TrackPhysics": ""
+        }
+      },
+      "SDA": {
+        "net": "SDA",
+        "ruleMap": {
+          "TrackPhysics": ""
+        }
+      }
+    }
+  },
+  "netClass": {},
+  "equalLengthNetGroup": {},
+  "differentialPair": {},
+  "differentialPairGroups": {}
+}

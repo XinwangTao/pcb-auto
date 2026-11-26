@@ -672,13 +672,92 @@ try {
 } catch (e) { errors.push('outline: ' + (e && e.message)); }
 log('outline0', { ok: outlineOk, ...outlineInfo });
 
-// ---------- 7. 自动布局 ----------
+// ---------- 7. 摆放：有显式摆放表就按表摆，没有才交给自动布局 ----------
 await cam('pcb');   // 布局前全板视图
 await cam('pcb', true); await shot('pcb-imported');
 phase('autoLayout');
 let layoutState = null;
+
+// 显式摆放：设计文件里给了 _placement（位号 -> {x, y, rot}）就按它摆。
+// 为什么这不是"多余的一层"：
+//   startAutoLayout 是单次黑盒调用，没有 keepout、没有锁定、没有分区约束。
+//   它按线长优化，于是把 ESP32-S3 模组摆到板子中间、天线四周全是器件与铺铜，
+//   而 Espressif 官方**明确禁止**这个形态（"模组不能放在板子中间，四周挖空来提供净空区"）。
+//   设计文件里写坐标也没用：布局阶段会把它们推翻。所以只能整段跳过自动布局。
+// 坐标口径：mil、笛卡尔、y 向上。与 getState_X/Y 同口径，**不要**塞 mm。
+const placementMode = (D._placement && typeof D._placement === 'object'
+  && Object.keys(D._placement).length > 0) ? 'explicit' : 'auto';
+
+// 按表摆放并**逐个复读核对**。不核对等于换了一种不负责的方式：
+// modify 不抛异常不代表器件真的到了那个坐标（本项目已被"没抛异常≠成功"坑过多次）。
+async function placeExplicitly(table) {
+  const rep = { requested: 0, moved: 0, notFound: [], missed: [], maxErrMil: 0 };
+  // 没有"按位号查 id"的接口（IPCB_FindPrimitivesOptions 只有 bbox/layers/types/net/locked/cursor/limit），
+  // 只能全量取 id 再比对 Designator。
+  const ids = (await eda.pcb_PrimitiveComponent.getAllPrimitiveId()) || [];
+  const objs = await eda.pcb_PrimitiveComponent.get(ids);
+  const arr = (Array.isArray(objs) ? objs : [objs]).filter(Boolean);
+  const byDes = new Map();
+  for (const c of arr) {
+    const d = c.getState_Designator?.();
+    if (d != null) byDes.set(String(d), c);
+  }
+  for (const des of Object.keys(table)) {
+    const t = table[des];
+    if (!t || !Number.isFinite(Number(t.x)) || !Number.isFinite(Number(t.y))) continue;
+    rep.requested++;
+    const c = byDes.get(String(des));
+    if (!c) { rep.notFound.push(String(des)); continue; }
+    const pid = c.getState_PrimitiveId();
+    const beforeRot = Number(c.getState_Rotation?.() || 0);
+    const wantRot = Number.isFinite(Number(t.rot)) ? Number(t.rot) : beforeRot;
+    try {
+      await eda.pcb_PrimitiveComponent.modify(pid, {
+        x: Number(t.x), y: Number(t.y), rotation: wantRot,
+      });
+      // 文档示例明确写了：modify 之后必须重新 get 才读得到新值。
+      // 用 modify 的返回值或缓存对象判定，读到的可能还是旧坐标 —— 那会让"已到位"永远为真。
+      const c2 = await eda.pcb_PrimitiveComponent.get(pid);
+      const gx = Number(c2?.getState_X?.()), gy = Number(c2?.getState_Y?.());
+      const err = Math.max(Math.abs(gx - Number(t.x)), Math.abs(gy - Number(t.y)));
+      if (Number.isFinite(err)) {
+        rep.maxErrMil = Math.max(rep.maxErrMil, err);
+        if (err <= 1) rep.moved++;
+        else rep.missed.push({ des: String(des), want: [Number(t.x), Number(t.y)],
+          got: [Math.round(gx), Math.round(gy)], errMil: Math.round(err) });
+      } else {
+        rep.missed.push({ des: String(des), why: 'readback NotANumber' });
+      }
+    } catch (e) {
+      rep.missed.push({ des: String(des), why: String(e && e.message).slice(0, 90) });
+    }
+  }
+  return rep;
+}
+
+let explicitPlacement = null;
+if (placementMode === 'explicit') {
+  try {
+    explicitPlacement = await placeExplicitly(D._placement);
+    log('explicitPlacement', { mode: placementMode, requested: explicitPlacement.requested,
+      moved: explicitPlacement.moved, notFound: explicitPlacement.notFound,
+      missed: explicitPlacement.missed, maxErrMil: Math.round(explicitPlacement.maxErrMil) });
+    if (explicitPlacement.requested === 0) errors.push('explicitPlacement: 摆放表为空');
+    if (explicitPlacement.notFound.length > 0) {
+      errors.push('explicitPlacement: 板上找不到 ' + explicitPlacement.notFound.join(','));
+    }
+    if (explicitPlacement.missed.length > 0) {
+      errors.push('explicitPlacement: 坐标未到位 '
+        + explicitPlacement.missed.map(m => m.des).join(','));
+    }
+  } catch (e) { errors.push('explicitPlacement: ' + String(e && e.message).slice(0, 120)); }
+}
+log('placementMode', placementMode);
 try {
-  const job = await eda.pcb_Document.startAutoLayout();
+  // 显式摆放模式下**不调用**自动布局：它会推翻手工坐标。
+  // 置 null 让下面 `if (job?.jobId)` 整段跳过，layoutState 保持 null —— 这是诚实的，
+  // 因为自动布局确实没跑过；把它填成 'completed' 就是让一个字段兼两种含义。
+  const job = placementMode === 'explicit' ? null : await eda.pcb_Document.startAutoLayout();
   // 420000 是硬上限，与外部 590s 掐断线不匹配：布局一旦慢，调用会被外部掐断，
   // 而 render 里的代码仍在跑 → 幽灵调用。改成以剩余预算为上界。
   if (job?.jobId) {
@@ -735,7 +814,26 @@ try {
     bbox: padN ? [xMin, yMin, xMax, yMax].map(v => Math.round(v)) : null,
     span: [Math.round(spanW), Math.round(spanH)],
     board: [bw0, bh0] });
-  if (!fits && padN > 0 && Number.isFinite(xMin)) {
+  // 【显式摆放时不许扩板框】实测 2026-11-26 15:36（ESP32S3_Wireless_Mic_V2）：
+  // 布局表按 1000x3700 算好，U1 rot=180 让天线朝 -Y、焊盘边压在 y=-3700、
+  // 天线整段落在板外 —— 这是 Espressif 指南「强烈推荐天线伸出板边」的落地。
+  // 但焊盘跨度 3708 > bh0-40=3660 被判"不合"，下面这段把板框放大到 1035x3828，
+  // 新下边 -3887.3，于是天线被推回基板上：overhangMil 从正数变成 **-3603**。
+  // 一个为"容纳连接器"写的自愈，静默推翻了这块板唯一的设计意图。
+  // 显式摆放时板框与布局表是一个整体，都由设计者给出，这一段无权改。
+  if (!fits && padN > 0 && Number.isFinite(xMin) && placementMode === 'explicit') {
+    const overW = Math.max(0, Math.round(spanW - (bw0 - 40)));
+    const overH = Math.max(0, Math.round(spanH - (bh0 - 40)));
+    log('outlineFit.explicitFixed', {
+      board: [bw0, bh0], span: [Math.round(spanW), Math.round(spanH)],
+      over: [overW, overH], note: '显式摆放：板框是设计意图，不放大',
+    });
+    // 真的超出去要判失败，不许"换块更大的板"糊过去 —— 那会把缺陷变成沉默。
+    if (overW > 0 || overH > 0) {
+      errors.push('outlineFit: 显式摆放的焊盘跨度 ' + Math.round(spanW) + 'x' + Math.round(spanH)
+        + ' 超出板框 ' + bw0 + 'x' + bh0 + '（显式摆放不改板框，请修布局表或板框）');
+    }
+  } else if (!fits && padN > 0 && Number.isFinite(xMin)) {
     try {
       // delete 返回 false 时不抛。删不掉旧的板框 = 板上会**同时存在两个板框**，
       // 而板框层有两条闭合轮廓时 DRC / 可打样检查看到的是哪一条并不确定。
@@ -793,6 +891,106 @@ try {
     });
   }
 } catch (e) { errors.push('outlineCheck: ' + (e && e.message)); }
+
+// ---------- 7.3 天线净空区 ----------
+// 这块板的射频件是 ESP32-S3-WROOM-1，PCB 天线在模组**短端**（那一端没有邮票孔焊盘）。
+// Espressif 硬件设计指南的三条要求，以及它们在 PCB 上能否落地：
+//   ① 天线区及外扩 15mm 内严禁铺铜/走线/摆放元件 —— 侧向 15mm 在本板（宽 25.4mm）上
+//      无解，只能由非金属壳体保证，属机械约束，PCB 表达不了。**这里不假装满足它。**
+//   ② 天线端向内 6mm 全层无铜 —— 用 pcb_PrimitiveRegion 落地，见下。
+//   ③ 强烈推荐天线伸出板边；**禁止**"模组放板中间、四周挖空" —— 由摆放表让天线整段悬出。
+// 为什么必须显式建 region 而不是指望布线/铺铜自己避开：
+//   布线引擎配置（IPCB_AutoRouteEngineConfig）**没有** keepout 概念，
+//   铺铜也不会自动躲开天线。不罩住就是"知道要求但没执行"。
+let antennaKeepout = null;
+try {
+  const K = D._antennaKeepout;
+  if (K && typeof K === 'object' && Number.isFinite(K.x0) && Number.isFinite(K.y0)) {
+    const kw = K.x1 - K.x0, kh = K.y1 - K.y0;
+    // 【坐标系，别搞反】createPolygon 的 R 模式 (x, y) 是矩形**顶边左角**，
+    // 映射到笛卡尔是 X∈[x, x+w]、Y∈[y-h, y]。
+    // 实测（scripts/_probe-coord.js，2026-11-26，结论来自读回 bbox 而不是文档猜测）：
+    //   ['R', 1200, 700, 400, 200] → bbox X[1200,1600] Y[500,700]
+    //   ['R', 0, 0, 2600, 1900]    → bbox X[-5,2605] Y[-1905,5]（板框，两侧各多 5mil 线宽）
+    // 所以给定笛卡尔 X[x0,x1]、Y[y0,y1]（y0 < y1），要写 ['R', x0, y1, w, h, 0, 0]。
+    // 搞反了净空区会落到板外，而且**不会报错** —— 这正是要写死这条注释的原因。
+    const poly = eda.pcb_MathPolygon.createPolygon(['R', K.x0, K.y1, kw, kh, 0, 0]);
+    // layer 12 = MULTI：一次罩住所有铜层。
+    // ruleType：2=禁元件 5=禁布线 6=禁填充 7=禁覆铜。
+    // **故意不含 2**：模组自身必须坐在这个位置上，对它禁元件会与自身冲突，
+    // 结果是一条永远为真的"违规" —— 永远为真的检查等于没有检查。
+    const reg = await eda.pcb_PrimitiveRegion.create(12, poly, [5, 6, 7], 'ANT_KEEPOUT', 10, false);
+    // 复核不信摆放表：读回真实 bbox，数出到底谁侵入了净空区。
+    let intruders = [];
+    let overhangMil = null;
+    // 允许留在净空区里的器件（通常是模组自己）。为什么要把"谁被判过"记下来：
+    // 下面 overhangMil 是一个有符号的差值，取错对象时它**看起来仍然像实测值**
+    // （本次 -3603，而板框实测 minY=-3887.3）。不带依据的数字没法被复核。
+    const allowSeen = [];
+    let overhangDetail = null;
+    try {
+      const allow = new Set((K.allowDesignators || []).map(String));
+      // 板边界用**实测**板框 bbox：7.2 的自愈可能放大过板框，拿设计值当板边界会判错对象。
+      let bMinY = -bh0;
+      for (const pid of (await eda.pcb_PrimitivePolyline.getAllPrimitiveId()) || []) {
+        const pl = await eda.pcb_PrimitivePolyline.get(pid);
+        if (pl?.getState_Layer?.() !== 11) continue;
+        const bb = await eda.pcb_Primitive.getPrimitivesBBox([pid]);
+        if (bb && Number.isFinite(bb.minY)) bMinY = bb.minY;
+        break;
+      }
+      const cIds = (await eda.pcb_PrimitiveComponent.getAllPrimitiveId()) || [];
+      const cObjs = await eda.pcb_PrimitiveComponent.get(cIds);
+      for (const c of (Array.isArray(cObjs) ? cObjs : [cObjs]).filter(Boolean)) {
+        const des = String(c.getState_Designator?.());
+        let bb = null;
+        try { bb = await eda.pcb_Primitive.getPrimitivesBBox([c.getState_PrimitiveId()]); } catch (e) { }
+        if (!bb || !Number.isFinite(bb.minY)) continue;
+        const hit = bb.minX < K.x1 && bb.maxX > K.x0 && bb.minY < K.y1 && bb.maxY > K.y0;
+        if (!hit) continue;
+        if (allow.has(des)) {
+          allowSeen.push(des);
+          overhangMil = Math.round(bMinY - bb.minY);
+          overhangDetail = {
+            des,
+            boardMinY: Math.round(bMinY * 10) / 10,
+            partMinY: Math.round(bb.minY * 10) / 10,
+            partMaxY: Math.round(bb.maxY * 10) / 10,
+            partMinX: Math.round(bb.minX), partMaxX: Math.round(bb.maxX),
+          };
+        } else intruders.push(des);
+      }
+    } catch (e) { log('antennaVerifyErr', String(e && e.message).slice(0, 120)); }
+    antennaKeepout = { built: !!reg, ruleType: [5, 6, 7], layer: 12,
+      box: [K.x0, K.y0, K.x1, K.y1], intruders, overhangMil,
+      allowSeen, overhangDetail };
+    log('antennaKeepout', antennaKeepout);
+    // "region 建出来了"不等于"净空有效"。器件侵入与天线未悬出都要让整轮失败，
+    // 否则这块板会带着用户明确点出来的那个缺陷交付，而 _run.json 还写着 ok。
+    if (!reg) errors.push('antennaKeepout: region 未创建');
+    if (intruders.length > 0) {
+      errors.push('antennaKeepout: 器件侵入净空区 ' + intruders.join(','));
+    }
+    // 【"没测到"不许和"测到了没问题"同形】
+    // 设计里点名允许待在净空区的器件，如果在净空区里一个都没找到，
+    // overhangMil 会保持 null。原来的代码对 null 什么都不做 ——
+    // 于是「net 区里没有模组」和「模组悬出量合格」在 _run.json 里完全一样。
+    const allowList = (K.allowDesignators || []).map(String);
+    if (allowList.length > 0 && allowSeen.length === 0) {
+      errors.push('antennaKeepout: 净空区内没找到应在此处的器件 '
+        + allowList.join(',') + ' —— 悬出量无从测量，不能当作合格');
+    }
+    if (overhangMil != null && overhangMil <= 0) {
+      errors.push('antennaKeepout: 天线未悬出板边 overhang=' + overhangMil + 'mil'
+        + (overhangDetail ? '（板边 ' + overhangDetail.boardMinY + ' / 器件 ' + overhangDetail.partMinY + '）' : ''));
+    }
+  } else {
+    log('antennaKeepout', { skipped: '设计文件没有 _antennaKeepout' });
+  }
+} catch (e) {
+  errors.push('antennaKeepout: ' + String(e && e.message).slice(0, 120));
+  log('antennaKeepoutErr', String(e && e.message).slice(0, 160));
+}
 
 // ---------- 7.4 把板上的槽（Slot）罩成禁布区，让布线器一开始就绕开 ----------
 // 实测依据：d13（太阳能+锂电+OLED）的失败特征反复是 `Clearance Error | Slot Region to Track`，
@@ -1031,6 +1229,14 @@ await sleep(800);
 // 只有覆铜在 rebuildAllCopperRegions() 后会真正生成铜皮并连接同网焊盘。
 await cam('pcb');   // 铺铜前全板视图
 phase('copperPour');
+// 【为什么包成函数】下面的相位原来在 autoRouting **之前**就把两层铜铺满，
+// 布线器随后带着 keep:true 进场，只能在 8mil 缝里挤 —— 实测 26 器件/111 连接的
+// 板上，这个顺序让布线器永远差 12~14 根线布不通，并留下
+// `Clearance Error | Slot Region to Track`（走线撞铺铜边界）。
+// 所以改成：这里先铺（留出 pcb-pour 这一帧与 pourCount 语义），
+// 布线前删掉覆铜边框，布通后再调用同一个函数补铺。
+// 一个函数两处调用，避免「两处各自实现一遍然后漂移」。
+async function doCopperPours() {
 let pourCount = 0;
 try {
   // 从板框 polyline 的 bbox 取实际范围，避免坐标系猜错
@@ -1093,12 +1299,48 @@ try {
     } catch (e) { log('pourRebuildErr', String(e && e.message).slice(0, 200)); }
   }
 } catch (e) { log('pourFail', String(e && e.message)); }
+return pourCount;
+}
+let pourCount = await doCopperPours();
 await sleep(2500);
 
 // ---------- 8. 自动布线 ----------
 // 极速引擎：layers 数组 + 地孔策略；EP(散热焊盘)被本体包围，必须打地过孔才能连出
 await cam('pcb', true);   // 强制激活 PCB：否则布线结果不落盘
 await shot('pcb-pour');
+
+// ---------- 布线前清掉预先铺好的铜 ----------
+// 删除的是**覆铜边框**（PrimitivePour）；填充的实铜（PrimitivePoured）由边框派生。
+// 删完必须 rebuildAllCopperRegions()，否则实铜仍留在画布上，布线器还会撞它。
+// 这里只是「让出空间」，不是取消铺铜：布线变体的 cfg 里带着 pours，
+// 布线器会在自身结束时给 GND 铺铜；万一它没铺，下面还会补铺一次。
+// 绝不动 pourCount 的主语义 —— 它记的是「我们主动铺过几块」，见文件末尾 pourRebuildOk。
+let pourClearedForRouting = 0;
+try {
+  const pourIds = (await eda.pcb_PrimitivePour.getAllPrimitiveId()) || [];
+  let pourDelFail = 0;
+  for (const pid of pourIds) {
+    // delete 在失败时 resolve(false) 而不是抛 —— try/catch 抓不到。
+    // 不看返回值就自增，等于把"请求删除"记成"已删除"：
+    // 随后 if (cleared > 0) 会跳过 rebuild，布线器就在一层自以为没了的铜上开工。
+    try {
+      if ((await eda.pcb_PrimitivePour.delete(pid)) === true) pourClearedForRouting++;
+      else pourDelFail++;
+    } catch (e) {
+      pourDelFail++;
+      log('pourDelErr', { pid, m: String(e && e.message).slice(0, 80) });
+    }
+  }
+  if (pourDelFail > 0) log('pourDelFail', { fail: pourDelFail, ok: pourClearedForRouting });
+  if (pourClearedForRouting > 0) {
+    try { await eda.pcb_PrimitivePour.rebuildAllCopperRegions(); } catch (e) { }
+    await sleep(800);
+  }
+  log('pourClearedForRouting', { found: pourIds.length, cleared: pourClearedForRouting });
+} catch (e) {
+  // 读不到/删不掉都不能当成「已经清干净」继续布 —— 那就等于在不知道的情况下铺满铜布线。
+  log('pourClearFail', String(e && e.message).slice(0, 160));
+}
 phase('autoRouting');
 let routeState = null, routeAttempts = [];
 // ---------- 布线器规则覆盖 ----------
@@ -1159,12 +1401,40 @@ const variants = [
 const ROUTE_OPT = { FAST: EPCB_AutoRoutingOptimization.ULTRA_FAST, STRONG: EPCB_AutoRoutingOptimization.COMPLETION };
 // 主循环 3 轮用 FAST；若 3 轮后仍有断连，再补 1 轮 STRONG（第 4 轮）。
 // iter===3 就是那个保底轮次。
+//
+// 【曾经试过给保底轮 4 次机会（iter 3..6），实测**更差**，已回退，别再试】
+// 对照同一块板 designs/mic-esp32s3.json（26 器件 / 111 连接 / 2600x1900 mil），
+// 两次都是 attempt 1 即 [smart-fit]、同一个 pipeline、只有轮数不同：
+//
+//   iter 上限 4（现行）：连接错误 16（Track 3 / SMD 13）  间距错误  5
+//   iter 上限 7（已回退）：连接错误 16（Track 2 / SMD 13 / TH 1）间距错误 31
+//                                                         ↑ SMD Pad to Track 2→15
+//                                                          新增 Slot Region to Track 7
+// 多出来的 3 个 COMPLETION 轮对连通性**零改善**（都停在 14 个断连），
+// 却把间距违规翻了 6 倍。那次还测到更反直觉的一点：
+// STRONG 轮跑满 765 秒（正常跑完，未被取消）只把断连压到 14；
+// 而预算小、151 秒就被 capRaw 掐断的那次反而压到 12。
+// 即「给布线器更多时间」在这块板上是负收益 —— COMPLETION 模式在反复推翻自己。
+// 所以本仓库那条「重试阶梯会让结果变差」不只在设计层成立，在**布线轮次**层也成立。
+// 走线计数：判「这次 attempt 到底产出了什么」的唯一依据。
+// 三个返回形态都要区分：数组（有走线，可能是 0 条）、非数组/抛异常（读不出来）。
+// 0 和"读不出来"必须分开 —— 0 是有意义的结论（这次 attempt 空转），
+// -1 不是结论，不能拿去驱动"换下一个变体"这种决定。
+const countTracks = async () => {
+  try {
+    const ids = await eda.pcb_PrimitiveLine.getAllPrimitiveId();
+    return Array.isArray(ids) ? ids.length : -1;
+  } catch (e) { return -1; }
+};
 for (let iter = 0; iter < 4; iter++) {
   const isStrong = (iter === 3);
   if (isStrong) {
     // 只有在前面所有 FAST 轮次都没能清零断连时才走到这里
     log('routeEscalate', { reason: 'FAST 3 轮后仍有断连，升级 COMPLETION 兜底' });
   }
+  let tracksAddedThisIter = 0;
+  // 连续「超时且零新增走线」的次数。见下方 TIMEOUT 分支里的长注释。
+  let timeoutNoOpStreak = 0;
   for (const v of variants) {
     // 预算闸：变体数从 5 增到 7，且带间距余量的配置更容易布不完。
     // 不设闸的话最坏情况是 7×(600~900s) 远超外部 590s 的 invoke 超时，
@@ -1177,6 +1447,7 @@ for (let iter = 0; iter < 4; iter++) {
     try {
       const isFirstTry = isStrong;
       const opt = isStrong ? ROUTE_OPT.STRONG : ROUTE_OPT.FAST;
+      const linesBefore = await countTracks();
       const job = await eda.pcb_Document.startAutoRouting({
         optimization: opt,
         existingPrimitiveMode: v.keep ? EPCB_AutoRoutingExistingPrimitiveMode.KEEP
@@ -1228,10 +1499,29 @@ for (let iter = 0; iter < 4; iter++) {
         // 且此时 left≈257s > 240s、capRaw≈77s > capNeed 45s ⇒ 保底轮一定能跑。
         const fastCap = isStrong ? 900000 : 120000;
         const r = await waitJob(job.jobId, Math.min(fastCap, capRaw), isFirstTry ? 'route' : 'route2');
-        routeAttempts.push({ iter, variant: v.name, jobId: job.jobId, state: r.state, ms: r.ms });
+        // 【判据：真实新增的走线数，不是作业自报的 state】
+        // 实测 2026-11-26 15:36（26 器件 / 111 连接 / 1000x3700 mil）：
+        //   4 次 route 全部 state=completed，7.2 / 7.2 / 6.0 / 8.5 秒，
+        //   stillUnconnected 恒为 121，走线一条都没画。
+        // 原来这里无条件 break，于是 variants[1..6] 从来没执行过
+        // （全语料 143 个目录里 129 个只出现过 variants[0] 一个名字）。
+        // 作业状态回答"作业怎么结束的"，这里要问的是"板子通没通"。
+        const linesAfter = await countTracks();
+        const linesAdded = (linesBefore >= 0 && linesAfter >= 0) ? linesAfter - linesBefore : null;
+        tracksAddedThisIter += (linesAdded === null ? 0 : Math.max(0, linesAdded));
+        routeAttempts.push({ iter, variant: v.name, jobId: job.jobId, state: r.state, ms: r.ms, linesAdded });
         routeState = r.state;
-        log('route', { iter, variant: v.name, state: r.state, ms: r.ms });
-        if (r.state === 'completed') break;
+        log('route', { iter, variant: v.name, state: r.state, ms: r.ms, linesAdded });
+        if (r.state === 'completed') {
+          if (linesAdded === 0) {
+            // 空转：一个图元都没画。换下一份引擎配置 —— 这不是"重试同一个东西"。
+            // keep=true 时已有铜不会被动，所以不会累加副作用。
+            log('routeNoOp', { iter, variant: v.name, ms: r.ms, tracks: linesAfter });
+          } else {
+            // 有产出（或读不出来，保守）：保持原有行为，不加轮次。
+            break;
+          }
+        }
         if (r.state === 'TIMEOUT' || r.state === 'ERR') {
           // 等超时不等于作业停了。不取消就换变体 → 同板双布线器。
           // cancelAutoJob 是协作式取消（EDA docs：写回前被取消则已算出的几何不会落到画布）。
@@ -1239,6 +1529,31 @@ for (let iter = 0; iter < 4; iter++) {
             const cc = await eda.pcb_Document.cancelAutoJob(job.jobId);
             log('routeCancelled', { iter, state: r.state, ok: cc });
           } catch (e) { log('routeCancelErr', { iter, m: String(e && e.message).slice(0, 80) }); }
+          // 【超时 ≠ 这份配置不适用】实测 2026-11-26T15:44–16:15
+          // （ESP32S3_Wireless_Mic_V2，26 器件 / 111 连接 / 1000x3700 mil，预算 1740s）：
+          //   7 份引擎配置全部 state=TIMEOUT，耗时 120681/120687/120828/120799/
+          //   120765/120985/120946 ms —— 极差 304 ms，全都精确撞在上限上；
+          //   linesAdded 全为 0。阶梯本身吃掉 937.1s（54.3% 预算），
+          //   零产出；紧接着 drc 只剩 135s，6 个导出全部 skipped=budget。
+          // 同极差 = 限制因素是时间不是配置，换配置只会把同样的 120s 再烧一遍。
+          // 而 completed + 0 是另一回事：那才是「这份配置布不出来」的铁证，该换配置。
+          // 所以这里按「超时且零新增走线」计数，连续两次就收手。
+          if (r.state === 'ERR' || (r.state === 'TIMEOUT' && linesAdded !== null && linesAdded === 0)) {
+            timeoutNoOpStreak++;
+          } else {
+            timeoutNoOpStreak = 0;
+          }
+          if (timeoutNoOpStreak >= 2) {
+            const notTried = variants.length - routeAttempts.length;
+            log('routeLadderAbort', {
+              iter, after: routeAttempts.length, streak: timeoutNoOpStreak,
+              tried: routeAttempts.map((a) => a.variant),
+              notTried,
+              why: '连续 2 次超时且零新增走线 —— 限制因素是时间不是配置，换配置不会更快',
+              savedMsApprox: Math.max(0, notTried) * 120000,
+            });
+            break;
+          }
         }
       }
     } catch (e) {
@@ -1297,7 +1612,13 @@ for (let iter = 0; iter < 4; iter++) {
     errors.push('iterDrc: ' + String(e && e.message).slice(0, 120));
     // 查不出断点数 → 视为仍有断连，继续下一轮（不要 break）
   }
-  log('routeIter', { iter, stillUnconnected });
+  log('routeIter', { iter, stillUnconnected, tracksAdded: tracksAddedThisIter });
+  // 一整轮 7 份引擎配置合计一条走线都没画出来 —— 再换轮次只会重复同一件事。
+  // 不判这条的话，4 轮 x 7 变体 x ~8 秒 ≈ 224 秒纯空转，把收尾预算吃掉。
+  if (tracksAddedThisIter === 0) {
+    log('routeAllVariantsNoOp', { iter, variants: variants.length, stillUnconnected });
+    break;
+  }
   // 布线器作业的 state 说的是「作业怎么结束的」，闸门问的是「板子通没通」。
   // 实测事故（2026-11-26 01:09 gen-rp2040 / smart-fit）：COMPLETION 保底轮跑到
   // 133.6s 被我们按 capRaw **主动取消**（协作式取消，已算出的几何不落画布），
@@ -1316,6 +1637,24 @@ for (let iter = 0; iter < 4; iter++) {
   await sleep(800);
 }
 log('routeAttempts', routeAttempts);
+
+// ---------- 布线结束后把铜铺回来 ----------
+// 三种情况都要能分辨，不许混成一个数字：
+//   repoured > 0  → 布线器没铺，我们自己补了（并累加 pourCount，让下游守卫继续生效）
+//   kept    > 0   → 布线器已铺，我们只重建填充
+//   neither       → 一块铜都没有；这是真缺陷，如实记 0 并让 pourRebuildOk 去判
+try {
+  let kept = 0;
+  try { kept = ((await eda.pcb_PrimitivePour.getAllPrimitiveId()) || []).length; } catch (e) { kept = -1; }
+  let repoured = 0;
+  if (kept === 0) repoured = await doCopperPours();
+  if (kept > 0 || repoured > 0) {
+    await eda.pcb_PrimitivePour.rebuildAllCopperRegions();
+    await sleep(800);
+  }
+  pourCount += repoured;
+  log('pourRestoredAfterRouting', { kept, repoured, pourCount });
+} catch (e) { log('pourRestoreErr', String(e && e.message).slice(0, 160)); }
 // ---------- 验证 engineConfig.rules 是否真的生效 ----------
 // 官方文档明确警告：rules/layers 写错**不会报错**，只是该项静默不生效。
 // 同一份文档也警告过 layers 的旧写法问题，说明这套配置有静默失效的历史。
@@ -1337,11 +1676,37 @@ try {
   }
   const pairs = [...sizes.entries()].sort((a, b) => b[1] - a[1]);
   const specHit = pairs.some(([k]) => k === `${MARGIN_RULES.via.h}/${MARGIN_RULES.via.d}`);
+  // 【一个字段不许表达两个意思】
+  // `rulesApplied:false` 在 32/143 个目录里出现，但这个读数混杂了两件事：
+  // 它数全部过孔，而其中唯一存在的往往是 ground.epVias 打的地孔
+  // （实测 epViaAt 的 near 值 19.4~25.6；EP 地孔尺寸由 ground.epVias 控制，
+  // 本来就不受 rules.via 约束）。
+  // 所以 false 只证明「没有过孔符合 spec」，不能证明「rules 被引擎忽略了」。
+  // 特别是布线器一条走线都没画时，根本不存在信号过孔，此时对 rules.via 无从判断。
+  const tracksAddedTotal = routeAttempts.reduce((s, a) => s + (a.linesAdded || 0), 0);
+  let rulesVerdict, rulesWhy;
+  if (specHit) {
+    rulesVerdict = 'applied';
+    rulesWhy = '存在符合 spec 的过孔';
+  } else if (tracksAddedTotal === 0 && viaIds.length > 0) {
+    rulesVerdict = 'unmeasurable';
+    rulesWhy = '布线器一条走线都没画，只有 EP 地孔，无法据此判断 rules.via';
+  } else if (viaIds.length === 0) {
+    rulesVerdict = 'unmeasurable';
+    rulesWhy = '板上没有过孔，rules.via 无观测对象';
+  } else {
+    rulesVerdict = 'ignored';
+    rulesWhy = '存在信号过孔但无一符合 spec';
+  }
   log('routeRulesProof', {
     specVia: `${MARGIN_RULES.via.h}/${MARGIN_RULES.via.d}`,
     vias: viaIds.length,
     sizes: pairs.slice(0, 6).map(([k, n]) => ({ holeDia: k, n })),
-    rulesApplied: specHit,
+    tracksAdded: tracksAddedTotal,
+    verdict: rulesVerdict,
+    why: rulesWhy,
+    // 保留旧字段但**只表示"有 spec 过孔"这一件事**，不再兼任"rules 生效"的判决。
+    specViasPresent: specHit,
   });
 } catch (e) { log('routeRulesProofErr', { m: String(e && e.message).slice(0, 100) }); }
 // 最后重建一次覆铜，确保铜皮反映最终走线
@@ -4452,10 +4817,22 @@ if ((routeState === 'TIMEOUT' || routeState === 'budget')
 // 做成函数而不是常量：`_run.json` 写失败时 catch 里会 push 进 errors，
 // 若把 OK 算成一个提前求值的常量，那次失败就不会进判定 —— 等于新开一个漏洞。
 // 两处都调 computeOK()，永远按「当下」的 errors 算，不可能分叉。
+// 布局是否真的完成，两种模式各自的证据不同，**不能共用一个字段**：
+//   自动模式：layoutState === 'completed' 是自动布局作业自己报告的终态。
+//   显式模式：不调用自动布局（它会推翻手工坐标），layoutState 恒为 null。
+//            此时"完成"由 placeExplicitly 的逐个复读坐标证明：
+//            请求数与到位数相等，且没有找不到的位号。
+// 以前这里直接判 layoutState，一旦引入显式模式就会出现「摆好了但判定为假」，
+// 或者更糟：为了让判定通过而把 layoutState 填成 'completed'，那是对读者撒谎。
+const placementOk = placementMode === 'explicit'
+  ? (!!explicitPlacement && explicitPlacement.requested > 0
+     && explicitPlacement.moved === explicitPlacement.requested
+     && explicitPlacement.notFound.length === 0)
+  : (layoutState === 'completed');
 const computeOK = () => errors.length === 0 && mismatches.length === 0 && !!outlineOk
     && (routeState === 'completed' || routeRecovered === true)
     && drcPassed === true && schDrcErrors === 0
-    && layoutState === 'completed' && imported === true
+    && placementOk === true && imported === true
     && exports.length === 6 && exports.every(e => e && e.ok === true)
     && artifacts.length >= 6;
 
@@ -4480,6 +4857,14 @@ try {
       errors: errors.length, mismatches: mismatches.length,
       outlineOk: !!outlineOk,
       routeState, routeRecovered, layoutState, imported,
+      // 摆放证据：显式模式下 layoutState 恒为 null，只看它会把摆好的板判成没布局。
+      placementMode, placementOk,
+      placements: explicitPlacement ? {
+        requested: explicitPlacement.requested, moved: explicitPlacement.moved,
+        notFound: explicitPlacement.notFound, missed: explicitPlacement.missed,
+        maxErrMil: Math.round(explicitPlacement.maxErrMil) } : null,
+      // 天线净空：null = 设计没给这块信息（不能读成通过）
+      antennaKeepout,
       drcPassed, drcLeafCount, drcTotalCount, schDrcErrors,
       exportsOk: exports.filter(e => e && e.ok === true).length, exportsTotal: exports.length,
       artifacts: artifacts.length,
@@ -4529,7 +4914,8 @@ return {
   schDrc,
   schDrcErrors, schDrcWarns,
   schDrcRules: [...new Set((schDrcViolations || []).map(v => v?.rule))],
-  imported, outlineOk, layoutState, routeState,
+  imported, outlineOk, layoutState, placementMode, placementOk,
+  placements: explicitPlacement, antennaKeepout, routeState,
   drcPassed,
   drcDetailCount: Array.isArray(drcDetails) ? drcDetails.length : null,
   // 叶子级违规数：顶层"违规组"计数会把 1 组 5 条显示成 1，看不出严重程度

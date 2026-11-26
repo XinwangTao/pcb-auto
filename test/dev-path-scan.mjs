@@ -36,7 +36,8 @@
  */
 
 import { gitLines } from './_git.mjs'
-import { readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -225,6 +226,86 @@ export function exemptionIds() {
   return EXEMPT.map((e) => e.id)
 }
 
+/**
+ * 正控（positive control）：拿一个**合成的坏样本**跑一次自己的检测，
+ * 证明「检测器本身还活着」。
+ *
+ * 为什么必须要这一段：本文件头部记着一次真实事故 —— 第一版一条都没匹配上，
+ * 输出「0 处引用，PASS」。检测器坏了，闸门照绿，而且绿得毫无破绽。
+ *
+ * 正控失败时的退出码是 **2（没能测量）**，不是 0（通过）、也不是 1（发现了失败）。
+ * 因为这时「功能级 0 处」这个读数根本不可信：它可能真的是 0，也可能只是
+ * 检测器不会数了。把不可信的读数报成任何一个结论，都是这个仓库反复吃过亏的那种错。
+ *
+ * 两个方向都测，缺一个就会退化成摆设：
+ *   · 正向：坏样本必须被抓到（抓不到 = 检测器瞎了）
+ *   · 反向：干净样本必须不命中（恒命中 = 检测器只会喊狼来了，同样不可用）
+ *
+ * 注意陷阱：不要用「同一个正则既检测又自证」。那永远自洽，测不出任何东西。
+ * 这里用的是**独立构造的样本字符串**，而且刻意用拼接来避免本文件自己
+ * 命中 developer-path 规则（本文件在 SELF_REFERENTIAL 里，但不必依赖这一点）。
+ *
+ * @returns {{ok: boolean, checks: {name: string, pass: boolean, detail: string}[]}}
+ */
+export function positiveControl() {
+  const checks = []
+  const dir = mkdtempSync(join(tmpdir(), 'devpath-pc-'))
+  try {
+    // 只命中 dev-node-path 这一条规则的样本。写死成一条规则，是为了让
+    // 「有人改坏了这条规则」真的能让正控失败 —— 若样本能命中两条规则，
+    // 改坏其中一条会被另一条掩盖。
+    const BAD = 'E:' + '\\APP' + '\\nodejs24' + '\\probe-not-real'
+    const CLEAN = 'E:\\some\\ordinary\\relative\\path'
+
+    writeFileSync(join(dir, 'probe.md'), `看这里 ${BAD} 就完了\n`, 'utf8')
+    writeFileSync(join(dir, 'clean.md'), `看这里 ${CLEAN} 很干净\n`, 'utf8')
+    mkdirSync(join(dir, 'scripts'), { recursive: true })
+    // 走豁免路径：命中但 severity 必须是 historical（证明分级逻辑还活着）
+    writeFileSync(join(dir, 'scripts', 'note.md'), `历史记录 ${BAD}\n`, 'utf8')
+
+    const hits = scan(dir, { files: ['probe.md', 'clean.md', 'scripts/note.md'] })
+    const onProbe = hits.filter((h) => h.file === 'probe.md')
+    const onClean = hits.filter((h) => h.file === 'clean.md')
+    const onExempt = hits.filter((h) => h.file === 'scripts/note.md')
+
+    checks.push({
+      name: '坏样本必须被抓到',
+      pass: onProbe.length > 0,
+      detail: `${onProbe.length} 处` + (onProbe.length ? `（规则 ${onProbe[0].rule}）` : ' —— 检测器没数出来'),
+    })
+    checks.push({
+      name: '坏样本必须判成功能级',
+      pass: onProbe.length > 0 && onProbe.every((h) => h.severity === 'functional'),
+      detail: onProbe.length ? onProbe.map((h) => h.severity).join(',') : '无命中',
+    })
+    checks.push({
+      name: '干净样本必须不命中',
+      pass: onClean.length === 0,
+      detail: onClean.length ? `${onClean.length} 处误报 —— 检测器在喊狼来了` : '0 处',
+    })
+    checks.push({
+      name: '豁免路径必须判成历史级',
+      pass: onExempt.length > 0 && onExempt.every((h) => h.severity === 'historical'),
+      detail: onExempt.length ? `${onExempt.length} 处 / ${onExempt[0].severity}` : '无命中 —— 豁免分级没生效',
+    })
+    checks.push({
+      name: '规则表不能是空的',
+      pass: RULES.length > 0,
+      detail: `${RULES.length} 条规则`,
+    })
+    checks.push({
+      name: '规则 id 不能重复',
+      pass: new Set(RULES.map((r) => r.id)).size === RULES.length,
+      detail: `${new Set(RULES.map((r) => r.id)).size} 个不同的 id / ${RULES.length} 条`,
+    })
+  } catch (e) {
+    checks.push({ name: '正控自身没跑起来', pass: false, detail: String(e && e.message) })
+  } finally {
+    try { rmSync(dir, { recursive: true, force: true }) } catch { }
+  }
+  return { ok: checks.every((c) => c.pass), checks }
+}
+
 /** 总账。`functional` 必须为 0；`deadExemptions` 必须为空。 */
 export function summary(hits) {
   const functional = hits.filter((h) => h.severity === 'functional')
@@ -243,10 +324,21 @@ export function summary(hits) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const hits = scan()
   const s = summary(hits)
+  const pc = positiveControl()
 
   if (process.argv.includes('--json')) {
-    console.log(JSON.stringify({ ...s, hits, exemptions: exemptionHealth(hits) }, null, 2))
+    console.log(JSON.stringify({
+      ...s, hits, exemptions: exemptionHealth(hits),
+      positiveControl: pc,
+      // 检测器坏了的时候，`ok` 这个读数不可信，必须显式降级，不许跟正常结果混在一起。
+      measured: pc.ok,
+    }, null, 2))
   } else {
+    console.log('  正控（证明检测器还活着）：')
+    for (const c of pc.checks) {
+      console.log(`    ${c.pass ? '✓' : '✗'}  ${c.name}  —  ${c.detail}`)
+    }
+    console.log('')
     const show = (label, subset) => {
       if (!subset.length) {
         console.log(`  ${label}：0 处`)
@@ -277,8 +369,16 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
 
     console.log('\n  ── 判决 ──')
     console.log(`    功能级 ${s.functional} 处 / 历史级 ${s.historical} 处 / 失效豁免 ${s.deadExemptions.length} 条`)
-    console.log(`    ${s.ok ? 'PASS 别人的克隆里没有会炸的本机路径' : 'FAIL'}`)
+    if (!pc.ok) {
+      // 检测器自己坏了。这时上面那些数字全都不可信 —— 尤其「功能级 0 处」
+      // 既可能真的是 0，也可能只是它不会数了。不许把它报成 PASS。
+      console.log('    UNMEASURED 正控失败：检测器本身没通过自检，上面的读数不可信')
+    } else {
+      console.log(`    ${s.ok ? 'PASS 别人的克隆里没有会炸的本机路径' : 'FAIL'}`)
+    }
   }
 
+  // 顺序：检测器坏了先归 2（没能测量），再谈 1（发现了失败）。
+  if (!pc.ok) process.exit(2)
   process.exit(s.ok ? 0 : 1)
 }

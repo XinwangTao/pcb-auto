@@ -6,7 +6,11 @@
 #   3) EDA 有外壳 + 文档两个窗口（同一进程），文档窗口才是编辑器。
 param(
   [int]$X = 0, [int]$Y = 0, [int]$W = 1280, [int]$H = 800,
-  [switch]$MinimizeOthers
+  [switch]$MinimizeOthers,
+  # 看门狗每 2 秒调一次本脚本把 EDA 拉回前台。若每次都 MoveWindow/ShowWindow，
+  # 录下来的画面会每 2 秒抖一下 —— 那不是"AI 在操作"，是录制本身在动。
+  # -NoMove 只做置前，不动窗口位置与大小。
+  [switch]$NoMove
 )
 
 Add-Type -TypeDefinition @'
@@ -70,15 +74,17 @@ if ($MinimizeOthers) {
   Start-Sleep -Milliseconds 400
 }
 
-# 其他 EDA 窗口（外壳/弹窗）挪出录制区
-foreach ($item in ($edaWins | Where-Object { $_.H -ne $main.H })) {
-  [RecWin]::MoveWindow([IntPtr]$item.H, 3000, 0, [Math]::Max(400,$item.W), [Math]::Max(300,$item.Ht), $true) | Out-Null
-}
+if (-not $NoMove) {
+  # 其他 EDA 窗口（外壳/弹窗）挪出录制区
+  foreach ($item in ($edaWins | Where-Object { $_.H -ne $main.H })) {
+    [RecWin]::MoveWindow([IntPtr]$item.H, 3000, 0, [Math]::Max(400,$item.W), [Math]::Max(300,$item.Ht), $true) | Out-Null
+  }
 
-# 主窗口：恢复 + 定位 + 置顶（HWND_TOPMOST=-1，SWP_SHOWWINDOW=0x40）
-[RecWin]::ShowWindow($mh, 9) | Out-Null
-[RecWin]::MoveWindow($mh, $X, $Y, $W, $H, $true) | Out-Null
-[RecWin]::SetWindowPos($mh, [IntPtr](-1), $X, $Y, $W, $H, 0x40) | Out-Null
+  # 主窗口：恢复 + 定位 + 置顶（HWND_TOPMOST=-1，SWP_SHOWWINDOW=0x40）
+  [RecWin]::ShowWindow($mh, 9) | Out-Null
+  [RecWin]::MoveWindow($mh, $X, $Y, $W, $H, $true) | Out-Null
+  [RecWin]::SetWindowPos($mh, [IntPtr](-1), $X, $Y, $W, $H, 0x40) | Out-Null
+}
 [RecWin]::BringWindowToTop($mh) | Out-Null
 [RecWin]::SetForegroundWindow($mh) | Out-Null
 Start-Sleep -Milliseconds 800

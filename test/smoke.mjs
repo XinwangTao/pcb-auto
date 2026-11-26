@@ -877,6 +877,63 @@ check('collect-data 指定的 run 不存在时退 2 且给出下一步，不抛�
   return both.split('\n').find((l) => l.includes('没能开始'))?.trim().slice(0, 56) ?? ''
 })
 
+console.log('\n\x1b[1m12 · git 缺失要退 2，不能说反话\x1b[0m')
+
+// 背景（这条闸门自己的事故记录）：三个闸门都靠 `git ls-files` 决定「哪些文件属于这个仓库」。
+// 把 git 从 PATH 去掉时，它们**全部**崩成退出码 1，打印的是一段
+// `node:internal/child_process` 的栈。而 1 在这个契约里的含义是「发现了失败」——
+// 于是「这台机器没装 git」被报成「你的代码有语法错误」，而这两种情况的处置完全相反：
+// 前者去装 git，后者去改代码。一个检查工具把自己的环境缺陷报成了对被测对象的判决。
+//
+// `test/_git.mjs` 后来改成了 exit 2 + 一段可照做的处置说明。但那段代码
+// **没有任何测试打到过** —— 也就是说，它随时可能被下一次重构删掉而 CI 全绿。
+// 这一组就是来钉住它的。
+//
+// 制造缺失的手段是 `PCB_AUTO_GIT`（见 _git.mjs 的注释），不去改 PATH：
+// 在 Windows 上删 PATH 会把 pwsh / python / node 一起弄丢，测试就红在无关的地方。
+for (const gate of ['syntax-gate.mjs', 'dev-path-scan.mjs', 'doc-refs.mjs']) {
+  check(`${gate} 在 git 缺失时退 2 且给出可照做的处置`, () => {
+    const r = spawnSync(NODE, [join(ROOT, 'test', gate)], {
+      cwd: ROOT, encoding: 'utf8', timeout: 120_000, windowsHide: true,
+      env: { ...process.env, PCB_AUTO_GIT: 'C:\\__nope__\\git.exe' },
+    })
+    const both = `${r.stdout ?? ''}\n${r.stderr ?? ''}`
+    // 2 = 环境问题。若这里变成 1，就是把「没装 git」判成了「代码有问题」。
+    assert(r.status === 2, `退出码 ${r.status}，期望 2（环境问题）。` +
+      `1 的含义是「发现了失败」，用它表示缺 git 就是把环境缺陷说成代码缺陷：\n${both.slice(0, 400)}`)
+    // 不许退化成 Node 的栈：读者读不出该做什么。
+    assert(!/node:internal\/child_process/.test(both),
+      `消息里有 Node 内部栈，读者看不出原因是缺 git：${both.slice(0, 300)}`)
+    // 必须有「可照做」的话。只退 2 不给话，读者仍然不知道该装什么。
+    assert(/处置/.test(both) && /PATH/.test(both),
+      `没有可照做的处置说明（应含「处置」与「PATH」）：${both.slice(0, 300)}`)
+    assert(/git/i.test(both), `消息里没提 git：${both.slice(0, 200)}`)
+    return `exit 2 · ${(both.match(/\[env\][^\n]*/) || [''])[0].slice(0, 52)}`
+  })
+}
+
+// 反向判别，缺了它上面三条会一起变成废纸：
+// 如果哪天有人把 bail() 挪到脚本入口，那所有调用都会退 2，
+// 而上面三条**依然全绿**（它们只检查"缺 git 时退 2"）。这一条要求：
+// 给了具名文件、根本不需要 git 的时候，闸门必须正常工作、不因 git 缺失而退 2。
+check('反过来：给了具名文件时不需要 git，不该被连坐退 2', () => {
+  const tmp = join(ROOT, 'out', `_gitseam-${process.pid}.mjs`)
+  mkdirSync(dirname(tmp), { recursive: true })
+  writeFileSync(tmp, 'export const ok = 1\n', 'utf8')
+  try {
+    const r = spawnSync(NODE, [join(ROOT, 'test', 'syntax-gate.mjs'), tmp], {
+      cwd: ROOT, encoding: 'utf8', timeout: 120_000, windowsHide: true,
+      env: { ...process.env, PCB_AUTO_GIT: 'C:\\__nope__\\git.exe' },
+    })
+    assert(r.status === 0, `退出码 ${r.status}，期望 0：具名文件不需要枚举，` +
+      `git 缺失不该影响它。若这里退 2，说明 bail 被挪到了入口，` +
+      `所有调用都会被连坐：\n${(r.stdout ?? '') + (r.stderr ?? '')}`.slice(0, 400))
+    return 'exit 0 · 具名文件路径未被 git 缺失连坐'
+  } finally {
+    try { rmSync(tmp, { force: true }) } catch { }
+  }
+})
+
 console.log('\n────────────────────────────────────────────────────────────')
 if (failures.length === 0) {
   console.log(`  \x1b[32mSMOKE=PASS\x1b[0m   ${pass} 项全过`)
