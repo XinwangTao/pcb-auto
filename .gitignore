@@ -92,3 +92,8 @@ desktop.ini
 
 # 复核时把新页写到旁路，不动已发布的 out/交付说明.html
 /out/_probe/_dossier-fresh.html
+
+# run-all.ps1 每次构建都重写它（第 501 行），内容是本次运行的实际参数，含 outDir 绝对路径。
+# 跟踪它有两个后果：跟文档跑一次 build 工作区就脏了；仓库里永久躺着一个作者机器的路径。
+# 下划线前缀在本仓库一直表示「不是交付物」（test/dev-path-scan.mjs 的 scratch-probes 豁免）。
+/scripts/_args_live.json
