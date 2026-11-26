@@ -804,7 +804,13 @@ check('verify 被抓进管道时中文不乱码、判据不整条消失', () => 
   { cwd: ROOT, encoding: 'utf8', timeout: 300_000, windowsHide: true, env: { ...process.env, NO_COLOR: '1' } })
   const out = r.stdout ?? ''
   const err = (r.stderr ?? '').slice(-400)
-  assert(r.status === 0, `verify 退出码 ${r.status}，期望 0${err ? '\n' + err : ''}`)
+  // verify 是三态契约：0 全过 / 1 有判据没过 / 2 没能测量。
+  // **全新克隆里正确的答案是 2** —— out/ 下一个产物目录都没有，一条判据都没样本。
+  // 这条闸门只测编码，不该替 verify 的判定下结论，所以 0 和 2 都收；
+  // 但 1 不能当绿放过去（那就是「判据没过」），要把它自己的 FAIL 行端出来。
+  assert(r.status === 0 || r.status === 2,
+    `verify 退出码 ${r.status}：0 全过 / 2 没能测量都算正常，1 是判据没过 —— ` +
+    `这条闸门只测编码，不下那个结论，所以它红了就照实报：\n${err}`)
   const bad = (out.match(/\uFFFD/g) || []).length
   assert(bad === 0, `输出里有 ${bad} 个 U+FFFD —— PowerShell 按系统代码页写中文，读到的人看到乱码`)
   // 两条与语料无关的中文：节标题 + `-SkipCensus` 那条判据。它们必然出现。
@@ -813,7 +819,8 @@ check('verify 被抓进管道时中文不乱码、判据不整条消失', () => 
   const summary = /PASS\s+(\d+)\s+INFO\s+(\d+)\s+WARN\s+(\d+)\s+FAIL\s+(\d+)\s+ERROR\s+(\d+)/.exec(out)
   assert(summary, '没有汇总行 PASS n INFO n WARN n FAIL n ERROR n')
   assert(Number(summary[5]) === 0, `ERROR=${summary[5]}，期望 0（判据自己崩了）`)
-  return `${summary[0].replace(/\s+/g, ' ')} · 0 个 U+FFFD`
+  const ns = Number((/NOSAMPLE\s+(\d+)/.exec(out) || [])[1] || 0)
+  return `${summary[0].replace(/\s+/g, ' ')}${ns ? ` · NOSAMPLE ${ns}` : ''} · 0 个 U+FFFD`
 })
 
 console.log('\n────────────────────────────────────────────────────────────')
