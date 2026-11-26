@@ -3057,6 +3057,13 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
         : '这一轮 clearance 越修越多，整轮撤回',
       fixedRequested: prevFixed, fixedGivenBack: 0 };
     const delFail = [], restoreFail = [], viaRestoreFail = [], viaUnrestorable = [];
+    // 第三种结果：create 没抛、也确实回了对象，只是读不到 id。
+    // 以前这种和「create 失败」混在 viaRestoreFail 里，而那个 catch 不记录异常消息，
+    // 于是「孔到底补回来了没有」这个问题在日志里根本没有答案。
+    // 实测 v5（2026-11-26T19:49）clearanceRevertViaRestoreFail n=4，四条 GND 缝合孔
+    // 全部记成"补不回来"，同期 GND Connection Error 从 4 涨到 8 —— 两者是否同因，
+    // 当时无法判定，因为唯一的证据被吞了。
+    const viaRestoreUnverified = [];
     for (const cid of roundCreated.reverse()) {
       // ★ delete 失败是 resolve(false)，不抛。只要"没抛"就 rb.deleted++，
       //   rb.deleted 会虚高到"等于尝试数"，而离线统计拿它当"确实撤掉了多少铜"。
@@ -3105,9 +3112,35 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
           const nv = await eda.pcb_PrimitiveVia.create(
             m.net || '', Number(m.x), Number(m.y),
             Number(b.holeDiameter), Number(b.diameter), m.viaType || undefined);
-          const nid = nv?.getState_PrimitiveId?.();
-          if (!nid) viaRestoreFail.push(m.id); else rb.viaRestored++;
-        } catch (e) { viaRestoreFail.push(m.id); }
+          // 【判定成功靠什么】旧写法只看 `nv?.getState_PrimitiveId?.()` 是否为真，
+          // 而 create 真失败时返回 undefined、成功时可能返回一个读不到 id 的对象
+          // （本版本大量 getState_* / getPrimitive*ById 接口是 @alpha，实测返回 null）。
+          // 两种情况被记成同一个 viaRestoreFail，于是"补不回来"这个结论读不出原因。
+          // 现在分开记：
+          //   nv 假      → create 没给出对象 = 确实没补回来（viaRestoreFail）
+          //   nv 真但无 id → 对象在，是否落板未证（viaRestoreUnverified，自带 create 返回形状）
+          if (!nv) {
+            viaRestoreFail.push(m.id);
+            log('viaRestoreDiag', { id: m.id, at: [Math.round(Number(m.x)), Math.round(Number(m.y))],
+              net: m.net || '', ret: String(nv), why: 'create 返回空值：确实没补回来' });
+          } else {
+            const nid = nv?.getState_PrimitiveId?.();
+            if (!nid) {
+              viaRestoreUnverified.push(m.id);
+              log('viaRestoreDiag', { id: m.id, at: [Math.round(Number(m.x)), Math.round(Number(m.y))],
+                net: m.net || '', ret: 'object', hasGetId: typeof nv?.getState_PrimitiveId,
+                keys: (() => { try { return Object.keys(nv).slice(0, 8); } catch (e) { return null; } })(),
+                why: 'create 回了对象但读不到 id：孔可能在板上，无法证实' });
+            } else {
+              rb.viaRestored++;
+            }
+          }
+        } catch (e) {
+          viaRestoreFail.push(m.id);
+          log('viaRestoreDiag', { id: m.id, at: [Math.round(Number(m.x)), Math.round(Number(m.y))],
+            net: m.net || '', threw: String(e && e.message).slice(0, 200),
+            why: 'create 抛异常：确实没补回来' });
+        }
         continue;
       }
       const patch = {};
@@ -3127,13 +3160,22 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
     if (restoreFail.length) log('clearanceRevertLineRestoreFail', { n: restoreFail.length, ids: restoreFail });
     if (viaRestoreFail.length) log('clearanceRevertViaRestoreFail', { n: viaRestoreFail.length, ids: viaRestoreFail });
     if (viaUnrestorable.length) log('clearanceRevertViaUnrestorable', { n: viaUnrestorable.length, ids: viaUnrestorable });
+    if (viaRestoreUnverified.length) log('clearanceRevertViaUnverified', { n: viaRestoreUnverified.length, ids: viaRestoreUnverified });
     // ★ 回滚失败不能只打日志：这条线已经没有任何补偿手段能救回来。
     //   为什么**不**改成 delete：删掉一条被截短的 Track 会让该网在这个位置**确定地**断开，
     //   而断网是不可逆的 PCB 事实；截短铜保留了恢复所需的一切（roundMods 里有 id +
     //   原 endX/endY 或原 lineWidth）。用不可逆换可观测，方向反了。
     //   （d11 已有先例：删掉信号网上的一个 via → 整网断开 → 4 种板框尺寸全失败。）
     //   所以唯一负责任的做法是让本条结论**知道它的存在**，而不是让日志与判定脱钩。
-    clearanceRevertOk = (restoreFail.length || delFail.length) ? false : true;
+    // ★ 这个布尔量回答的是「本轮撤回有没有完全回退」。它原来只数 restoreFail / delFail，
+    //   **把 viaRestoreFail 和 viaUnrestorable 两个桶整个漏掉了** —— 也就是说：
+    //   删掉的过孔一个都没补回来时，只要线都接回去了，它照样报 true。
+    //   这是「一个字段承载两种含义」的反面：一个字段只承载了四分之一的含义。
+    //   实测 v5（2026-11-26T19:49）四个 GND 缝合孔全部 create 失败，若同时没有线失败，
+    //   旧写法会给出 clearanceRevertOk=true —— 而板子上有 4 个孤岛。
+    //   viaRestoreUnverified 单列且也计入 false：没证实 = 不能声明撤回成功。
+    clearanceRevertOk = (restoreFail.length || delFail.length
+      || viaRestoreFail.length || viaUnrestorable.length || viaRestoreUnverified.length) ? false : true;
     for (const id of restoreFail) danglingLines.add(String(id));   // 被截短的悬空线
     for (const id of delFail) danglingLines.add(String(id));      // 没删掉的多余铜（同一类残留）
     if (restoreFail.length || delFail.length) {
