@@ -30,8 +30,13 @@
 | 18 | 真 | `outlineFit` 只比焊盘 bbox 尺寸不比位置：实测 122 mil 焊盘挂在板外，却报成「超 48 mil」 | `scripts/pipeline3.js:823-840` |
 | 19 | 真 | 天线净空带 240 mil 高、压住模组自己焊盘，`NO_WIRES` 封死出线（DRC 里 7 条 Prohibited Region） | `scripts/pipeline3.js:996-1012,1031-1035` |
 | 20 | 真 | 同网表 1000 mil 布不通、1300 mil 布得通：7 份配置 0 条 vs 602 条，限制因素是板宽 | `designs/mic-esp32s3-v2.json`；`designs/mic-esp32s3-v3.json` |
+| 21 | 真 | `run-all.ps1` 用 `2>&1 \| Out-String` 把 stderr 并进 JSON，一次 6/6 产物齐全的构建被判成 `NON_JSON 未知输出` 并整轮重跑 | `run-all.ps1` 的四处 invoke 捕获点 |
+| 22 | 真 | 强轮上限 6 比 4 差：多两轮约 280s、DRC 收益 0，还把断连从 6 推到 105 | `scripts/pipeline3.js` 的 `MAX_ROUTE_ITERS` / `routeIter` |
+| 23 | 真 | `patchDrc` 两轮两败（33→56、62→84，均整轮撤回），`patchTotal` 恒 0 | `scripts/pipeline3.js` 的 `patchVerify` / `patchReverted` |
+| 24 | 真 | `doc-refs` 只判被引用那一行非空，不判内容还对不对 —— 插 70 行后它继续亮绿灯 | `test/doc-refs.mjs` |
+| 25 | 真 | 遥测改名只在成功路径上，失败那一轮的 `_run.json` / `_log.json` 被下一轮直接覆盖 | `run-all.ps1` 的 `_run-<idx>-<tag>` 改名块 |
 
-**统计口径。** 20 条：**15 真 / 3 部分真 / 2 假 / 0 未证实**。
+**统计口径。** 25 条：**20 真 / 3 部分真 / 2 假 / 0 未证实**。第 21-25 条测于 2026-11-26（ISO 8601 见各条正文），分母都是**当次单次运行**，不是整个 `out\` 语料 —— 因此它们不受清理窗口影响；凡引用语料级数字的地方（第 9、16、17 条）时点与分母写在正文或 `out\_probe\fab-census.json` 的 `measured_at`。
 
 语料规模：`out\` 下 **56 个含 `_run.json` 的目录**，其中 **53 个可下单**、3 个有阻断、0 个解析失败。来源是快照 `out\_probe\fab-census.json`，**测于该文件的 `measured_at` 字段**（引用时直接读它，不要读 mtime —— 理由见下一段。这里故意不写「第 N 行」：那种引用会在任何一次插入后指错地方）。
 
@@ -770,3 +775,133 @@ node scripts/fabcheck.js out/d1 > /dev/null; echo $?                            
 `scripts/fabcheck.js` 输出 JSON（`blockers` 是数组）；`cli/pcb.mjs fabcheck` 输出摘要对象（`blockers` 是字符串、`blockerIds` 才是数组）。两个入口别混着解析。
 
 **引用数字时带三样东西：** 分母（是「有 `_run.json` 的目录」还是「所有目录」）、时点（普查快照里的 `measured_at` 字段，**不是**文件 mtime）、窗口（`--settle` 的值）。三者缺一，数字下次就对不上。`out\` 会被 `scripts/cleanup.ps1` 按「保留最新 40 个 + 每个设计名最新 1 份」滚动裁剪，所以任何「N 个目录里 M 个…」都会随时间和清理动作变化。
+
+## 六、2026-11-26 夜里新测出来的五条
+
+### 21. `2>&1 | Out-String` 把日志并进 JSON，把一次成功构建判成 `NON_JSON`
+
+**现象。** `out/ESP32S3_Wireless_Mic_V3-20261126-163653` 那次构建跑了 781.5 s，
+`_run.json` 里 `routeState:"completed"`、`exportsOk 6/6`、`imported:true`、`outlineOk:true`，
+`padOffBoard` 四项全 0 —— 也就是说**活儿干完了**。而 `run-all.ps1` 打印
+`输出不是 JSON（NON_JSON 未知输出）`，然后 `重建 session` 并重跑了一整轮。
+
+**根因（判别实验，不是推断）。** 探针 `F:\cache\temp\probe-stdout-encoding\probe.ps1`
+在 pwsh 7.7.0、`[Console]::OutputEncoding = utf-8 (65001)` 下跑四种组合：
+
+| 组合 | 结果 |
+|---|---|
+| `2>&1` + 默认编码 | **抛** `Unexpected character encountered while parsing value: l`，raw 头 80 字节 = `[log] routeIter iter=0\n{"ok":true,...}` |
+| 只取 stdout + 默认编码 | 解析成功，中文正常 |
+| 只取 stdout + 强制 utf8 | 解析成功 |
+| stdout + `stderr` 重定向到文件 | 解析成功，stderr 文件内容 = `[log] routeIter iter=0` |
+
+所以**编码不是原因，合流才是**。`cli/pcb.mjs` 第 6 行自己写着
+「输出默认是单行 JSON（stdout），日志走 stderr —— 这样 `pcb fabcheck | jq` 永远可用」。
+被测程序遵守了契约，是调用方把它拆散的两个流又粘回去了。
+
+**为什么当时连原因都查不出来。** 解析失败时**没有留任何原始输出**（仓库里一个 `fail-*.txt` 都没有），
+所以能拿到的全部线索就是 `NON_JSON` 这四个字。这跟 AGENTS.md
+「量具读不到输入时不许沉默」是同一类错：它不是沉默，是**只留下一句没有内容的话**。
+
+**还有一层。** 一个**本地解析**缺陷被报成了**会话**失败，于是唯一的处置是
+`Reset-Session` + 整轮重跑。而预算是在多次尝试之间共享的（第一轮结束时
+`budgetEnd {totalMs:1440000, leftMs:658460}`），所以这次误判直接吃掉了那次运行一半的实际工作量。
+「工具不许把自己的输入/环境缺陷报成对被测对象的判决」—— 这条被违反了。
+
+**已修。** `run-all.ps1` 新增 `Invoke-PipelineRaw`（stdout / stderr 分开取、强制 UTF-8 解码、
+整体解析失败时抢救式抠出最外层 `{...}` 再试一次）与 `Save-InvokeFailure`（解析失败一定把两个流的
+头 4000 字节落盘到 `fail-*.txt`）。五处捕获点统一走它，并加了一条残留检查：
+**`invoke` 行里不许再出现 `2>&1`（注释不算）**。
+
+三向证明（`F:\cache\temp\probe-stdout-encoding\prove.ps1`，从落地后的 `run-all.ps1` **原样抽出**函数体、
+不手抄，配假 CLI）：
+
+- A `stderr` 有噪声 + `stdout` 干净 → 解析成功，中文正确 ← 正是本次事故的形状；
+- B `stdout` 前面还有一行垃圾 → 靠 `{...}` 抢救成功；
+- C `stdout` 完全不是 JSON → **必须失败**（否则这段抢救就是个永不失败的假闸门）。
+
+### 22. 强轮上限 6 比 4 差，而且 DRC 直方图跟布线结果无关
+
+**实测。** 同设计、同板（1300×3700）、同一份脚本，前四轮逐字节一致，之后每次强轮一好一坏：
+
+```
+iter0 FAST  122 -> 72   tracksAdded 537
+iter1 FAST   72 -> 72   tracksAdded  17
+iter2 FAST   72 -> 72   tracksAdded   4
+iter3 强轮   72 ->  6   tracksAdded 186   delta -66   ← 目前最好
+iter4 强轮    6 -> 105  tracksAdded  12   delta +99   ← 15 倍恶化
+iter5 强轮  105 -> 20   tracksAdded   1   delta -85
+```
+
+**更关键的一半。** 4 轮（`iter<4`）与 6 轮跑出来的 DRC **完全一样**：`drcLeafCount 33` /
+`drcTotalCount 66`，`byType` 逐格相同 —— `Slot Region to Track 10`、`SMD Pad to Track 7`、
+`Connection Error | SMD Pad 6`、`Track to Track 4`、`Hole to Hole 3`、
+`Connection Error | Track 2`、`SMD Pad to Via 1`。
+
+两次运行的断连数分别是 6 和 20（另一次同设计运行是 181），DRC 直方图一格没变。
+**所以这 33 个叶子不是布线质量的函数**，它是布局与几何决定的。这个结论直接改变了主攻方向：
+再调布线参数不会动它。
+
+**已修。** `MAX_ROUTE_ITERS` 回到 4（只给一次强轮）；四道预算闸
+（`left() < 240000` / `capRaw < capNeed` / `tracksAddedThisIter === 0` / `stillUnconnected === 0`）
+全部保留。另加 `routeRegressed` 一条日志：强轮把断连推高时单列，带倍率。
+此前要人把若干条 `routeIter` 摆在一起心算才看得出拐点，而这个上限该写几完全取决于拐点在哪。
+
+**顺带承认一件事。** 这条结论的一半证据（4 轮那次的 `byType`）**已经在磁盘上没了** ——
+原因见第 25 条。本文引用它时只能写「2026-11-26T16:50 现场读数」，不能指向某个可复查的文件。
+
+### 23. `patchDrc` 两轮两败
+
+**实测。** 两次运行，`patchVerify` 都是「改完更差」：
+
+| 运行 | before | after | 处置 |
+|---|---|---|---|
+| 162010 | 62 | 84 | 撤回（`deleted 12 / total 12`） |
+| 163653 attempt 1 | 33 | 56 | 撤回（`deleted 10 / restored 5 / viaRestored 1`） |
+
+`patchReverted` 的 `why` 字段自己写着「这一轮把板子改断了（Connection Error 变多）—— 断路比间距违规严重，整轮撤回」，
+`patchTotal` 两次都是 0。也就是说这个阶段花掉 19.7 s，**产出是负的**，而它自己知道，也有能力撤回。
+
+**这一条的性质。** 它不是"补丁写得不好"，是"补丁这个动作在这块板上不成立"：
+板子已经紧到没有挪动空间，任何局部挪动都会撞出新断路。所以它必须**先证明能改善再落地**，
+而不是"先改再验、验不好再回滚"—— 回滚把 19.7 s 和一次重铺铜的扰动都留在了板上。
+
+### 24. `doc-refs` 只判「引用的那一行非空」
+
+**实测。** 我在 `run-all.ps1` 里插了 70 行（`body` 全部下移），`doc-refs` 照样
+`DOCREFS=PASS 发布文档 58 处引用有效`。因为它只检查被引用行**不是空行**。
+而同一轮里 `scripts/pipeline3.js` 的插入把 `docs/FAILURES.md` 引用的 `:2139`
+顶成了一行空白，它才终于变红。
+
+**后果（实测的三个例子）。** 改前正文说 `L833` 是
+`eda.pcb_PrimitiveRegion.create(12, spoly, [5, 7], ...)` —— 实测在 **L1085**；
+说 `L875` 是 `if (slotKeepout.found === 0)` —— 实测 **L1127**；
+说 `L2456` 是 `log('slotHoleUsed')` —— 实测 **L2897**。
+三处都指到了别的代码，而闸门全绿。
+
+**为什么这比"红"更糟。** 一个红的闸门会被人修；一个只在恰好落到空行时才红的闸门，
+会让所有引用悄悄烂掉，而每个读文档的人都以为它被校验过。
+
+**已改。** 第 9 条的位置列从行号改成**事件名/函数名**
+（`slotKeepout` / `slotPadGeometry` / `ensureGeoIdx` / `slotHoleUsed` / `noSideIsViaOrTrack`），
+正文行号按当前文件重新核对。这也正是 AGENTS.md 说的「闸门只锚在稳定子串上」。
+
+**还没做的。** 闸门本身没变强。真正的修法是让 `doc-refs` 支持
+`file:line#<必须出现的子串>` 形式，两者同时成立才算引用有效。这条留给后面。
+
+### 25. 遥测改名只在成功路径上，失败那一轮的证据被下一轮覆盖
+
+**现象。** `out/ESP32S3_Wireless_Mic_V3-20261126-163653/` 里只有
+`_run.json` / `_log.json`，**没有** `_run-1-smart-fit.json` 之类的分轮副本。
+而 `run-all.ps1` 的改名块本该把每一轮的遥测落成 `_run-<idx>-<tag>.json`。
+
+**根因。** 改名块在 `ConvertFrom-Json` **成功之后**的路径上。第 21 条那个缺陷让第一轮
+解析失败并 `continue`，于是改名没执行；第二轮把同名 `_run.json` / `_log.json` 直接覆盖。
+`New-Item -Force` + 同名写入，不报错、不提示，**上一轮的测量结果就此消失**。
+
+**后果（就是我这次踩到的）。** 第 22 条要比较"4 轮"和"6 轮"的 `byType`，
+而 4 轮那份已经不存在了；第 21 条要引用那次 781.5 s 构建的 `pathNeeded` 清单，
+也只能靠现场读数。**一次失败会连带销毁它自己的证据**，这正是最难复盘的那种组合。
+
+**该怎么修。** 改名（以及任何"留存本轮遥测"的动作）放进 `finally`，
+而不是放在成功分支里。名字里已经带了轮次和 tag，所以同名覆盖本来就不该发生。
