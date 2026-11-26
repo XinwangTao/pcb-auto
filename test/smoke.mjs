@@ -288,9 +288,23 @@ check('locateRoot 在不给 config 时也能找到仓库根', () => {
   `])
   assert(out.code === 0, `退出 ${out.code}\n${out.stderr}`)
   const r = JSON.parse(out.stdout.trim().split('\n').pop())
+
+  // 不要断言目录**名字**。全新克隆的目录可以叫任何名字（CI 里通常是 pcb-auto-xxxx），
+  // 写死名字的断言在开发者本机永远绿、在别人的机器上永远红 —— 这是最糟的一种测试。
+  // 真正要验的是「返回的根确实是一个能用的 pcb-auto 仓库」。
+  assert(r.how === '包位置自动探测', `期望自动探测，得到 ${r.how}`)
   assert(
-    r.root.toLowerCase().replace(/\\/g, '/').endsWith('pcb-auto'),
-    `root 不对：${r.root}`,
+    existsSync(join(r.root, 'core', 'ops.mjs')),
+    `root 下没有 core/ops.mjs：${r.root}`,
+  )
+  assert(
+    existsSync(join(r.root, 'cli', 'pcb.mjs')),
+    `root 下没有 cli/pcb.mjs：${r.root}`,
+  )
+  // 而且必须就是本测试所在的仓库，不能是别的地方。
+  assert(
+    r.root.toLowerCase().replace(/\\/g, '/') === ROOT.toLowerCase().replace(/\\/g, '/'),
+    `root 不是本仓库：${r.root} vs ${ROOT}`,
   )
   return r.how
 })
