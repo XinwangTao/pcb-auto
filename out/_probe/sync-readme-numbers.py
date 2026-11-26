@@ -51,8 +51,12 @@ def load_census():
     for k in ("all", "self_ok_true", "blocker_ids", "settle_s", "in_flight"):
         if k not in j:
             die("census 缺字段 %s（量具改过？）" % k)
-    tm = datetime.datetime.fromtimestamp(os.path.getmtime(CENSUS))
-    return j, tm
+    # 时点必须来自文件里的字段，不能来自 mtime。
+    # mtime 是文件系统属性：clone 之后它等于克隆时刻，写出来的
+    # 「测于 <时刻>」对每个读者都是错的。字段跟着 blob 走。
+    if not j.get("measured_at"):
+        die("fab-census.json 缺 measured_at 字段 —— 重跑 fab-census.py。不要退回 mtime：那会写出一个对读者无意义的时点。")
+    return j, j["measured_at"]
 
 
 def page_idea_numbers():
@@ -117,9 +121,10 @@ def build():
     inflight = len(j["in_flight"] or [])
 
     L = []
-    L.append("以下为 **%s** 同一时刻跑出来的快照：离线 DFM 普查的时间戳是 `fab-census.json` 的 mtime，"
+    L.append("以下快照：离线 DFM 普查**测于 `%s`**（读 `fab-census.json` 的 `measured_at` 字段，"
+             "不用 mtime —— 克隆之后它等于克隆时刻），"
              "想法级统计由 `out\\交付说明.html` 当场生成，结果行来自循环日志。"
-             % tm.strftime("%Y-%m-%d %H:%M"))
+             % tm)
     L.append("**这一节由 `out\\_probe\\sync-readme-numbers.py` 生成，不要手改** —— "
              "手写过三次，三次都漂成了和页面互相矛盾的数字。")
     L.append("")
@@ -152,8 +157,10 @@ def build():
                        for k, v in sorted(blk.items(), key=lambda kv: -kv[1]))
         L.append("- 那 %d 个目录的 %d 条阻断**不是同一类**，共 %d 种：%s。"
                  % (A["fab_blocked"], sum(blk.values()), len(blk), seg))
-        L.append("  **不是流水线没跑完**（两目录 `_run.json` 齐全、`ok=false`），"
-                 "是几何自洽这一步没过。")
+        # 曾经这里写死「两目录」，而同一行上面的数字是活的 —— 阻断变成 3 个时，
+        # 一句里就 3 和 2 并存。个数必须来自同一个变量。
+        L.append("  **不是流水线没跑完**（这 %d 个目录的 `_run.json` 都齐全、`ok=false`），"
+                 "是几何自洽这一步没过。" % A["fab_blocked"])
     L.append("- 自述 `ok=true` 的 **%d 个目录里 %d 个可打样（%s%%）**%s。"
              % (S["n"], S["fab_ok"],
                 "%.1f" % (100.0 * S["fab_ok"] / S["n"]) if S["n"] else "0.0",

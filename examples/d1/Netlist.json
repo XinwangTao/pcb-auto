@@ -1,0 +1,160 @@
+{
+  "version": "2.0.0",
+  "projectId": "92fa27c8ab055705c17f2b83d641e197615760a05e256ff536203baa1802ff5e",
+  "components": {
+    "gge1": {
+      "props": {
+        "Footprint": "de60a14902480cb8",
+        "Designator": "U1",
+        "LCSC Part Name": "1-101381-01 1-101381-01 ±3%模拟温湿度传感器 (0-65% RH)",
+        "Supplier Part": "C86346",
+        "Manufacturer": "Sensirion(瑞士盛思锐)",
+        "Manufacturer Part": "SHT30-ARP-B2.5KS",
+        "Supplier Footprint": "DFN-8-EP(2.5x2.5)",
+        "JLCPCB Part Class": "Extended Part",
+        "Datasheet": "https://item.szlcsc.com/datasheet/SHT30-ARP-B2.5KS/87522.html",
+        "Supplier": "LCSC",
+        "Add into BOM": "yes",
+        "3D Model": "bc1ff5dd6aff4b369d2fdcf934ef0d2a",
+        "3D Model Title": "DFN-8_L2.5-W2.5-H1.0-P0.50",
+        "3D Model Transform": "99.2124,98.425,0,0,0,0,-0.504,0.395,0",
+        "Temperature Range": "-40℃~+125℃",
+        "Humidity": "0%RH~100%RH",
+        "Interface": "-",
+        "Voltage - Supply": "2.4V~5.5V",
+        "Current - Supply": "217uA",
+        "Humidity Tolerance": "±3%RH",
+        "Temperature Tolerance": "±0.3℃",
+        "Resolution": "14bit",
+        "Features": "温度补偿；工厂校准",
+        "Name": "SHT30-ARP-B2.5KS",
+        "Description": "温度范围:-40℃~+125℃;湿度范围:0%RH~100%RH;接口类型:-;湿度精度:±3%RH;",
+        "Unique ID": "gge1",
+        "Reuse Block": "",
+        "Group ID": "",
+        "Channel ID": "$1I2",
+        "DeviceName": "SHT30-ARP-B2.5KS",
+        "FootprintName": "DFN-8_L2.5-W2.5-P0.50-TL-EP",
+        "Device": "b843d6f43fc318b4",
+        "PCB Layer": "TopLayer",
+        "Convert to PCB": "yes"
+      },
+      "footprintAttrKeys": [
+        "Footprint",
+        "Designator"
+      ],
+      "pinInfoMap": {
+        "1": {
+          "name": "",
+          "number": "1",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "2": {
+          "name": "",
+          "number": "2",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "3": {
+          "name": "",
+          "number": "3",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "4": {
+          "name": "",
+          "number": "4",
+          "net": "",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "5": {
+          "name": "",
+          "number": "5",
+          "net": "VDD",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "6": {
+          "name": "",
+          "number": "6",
+          "net": "GND",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "7": {
+          "name": "",
+          "number": "7",
+          "net": "VDD",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "8": {
+          "name": "",
+          "number": "8",
+          "net": "GND",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        },
+        "9": {
+          "name": "",
+          "number": "9",
+          "net": "GND",
+          "pinClass": "",
+          "pinDifferentialPairClass": ""
+        }
+      },
+      "altLibs": {}
+    }
+  },
+  "designRule": {
+    "trackPhysics": {
+      "copperThickness1oz": {
+        "name": "copperThickness1oz",
+        "isDefault": true,
+        "unit": "mm",
+        "strokeValue": {
+          "1": {
+            "default": 0.254,
+            "min": 0.127,
+            "max": 2.54
+          }
+        }
+      },
+      "copperThickness2oz": {
+        "name": "copperThickness2oz",
+        "isDefault": false,
+        "unit": "mm",
+        "strokeValue": {
+          "1": {
+            "default": 0.254,
+            "min": 0.20299934,
+            "max": 2.54
+          }
+        }
+      }
+    },
+    "netRule": {
+      "VDD": {
+        "net": "VDD",
+        "ruleMap": {
+          "TrackPhysics": ""
+        }
+      },
+      "GND": {
+        "net": "GND",
+        "ruleMap": {
+          "TrackPhysics": ""
+        }
+      }
+    }
+  },
+  "netClass": {},
+  "equalLengthNetGroup": {},
+  "differentialPair": {},
+  "differentialPairGroups": {}
+}

@@ -178,8 +178,19 @@ def main():
     for r in rows:
         by_batch.setdefault(r["batch"] or "(无)", []).append(r)
 
+    # 时点必须是**文件里的字段**，不能只靠 mtime。
+    # mtime 是文件系统属性：任何人 git clone 之后它都等于克隆时刻，
+    # 于是文档里「测于 <某时刻>」这句话对每个读者都是错的，而且他无法察觉。
+    # 字段跟着 blob 走，克隆/拷贝/checkout 都不会改它。
+    _off = time.strftime("%z", time.localtime(now)) or "+0000"
+    if len(_off) == 5:
+        _off = _off[:3] + ":" + _off[3:]
+    _measured_at = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(now)) + _off
+
     summary = {
         "generated_for": "pcb-auto 交付物可打样性普查",
+        # 这份快照是什么时候测的。引用本文件的任何数字都要连同这个字段一起引。
+        "measured_at": _measured_at,
         "fabcheck_sha256_12": _sha(FAB),
         "all": tally(rows),
         "self_ok_true": tally([r for r in rows if r["self_ok"] is True]),

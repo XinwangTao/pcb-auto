@@ -28,7 +28,7 @@
 
 ```bash
 node cli/pcb.mjs list                    # 5 个操作自描述
-node cli/pcb.mjs fabcheck out/d1         # 退出码就是答案
+node cli/pcb.mjs fabcheck examples/d1         # 退出码就是答案
 node install/install.mjs --list          # 19 个客户端的接入方式
 ```
 
@@ -333,7 +333,9 @@ node scripts\idea2design.js "做一块 RP2040 主控板，USB 供电，带 LDO �
 
 ## 环境
 
-- CLI：`E:\APP\lceda-pro\lceda-pro.exe`（4.1.111，GUI 与 CLI 同一个 exe）
+- CLI：**嘉立创 EDA Pro 4.1.111** 的 `lceda-pro.exe`（GUI 与 CLI 是同一个 exe）。
+  脚本不写死它的位置，按「环境变量 `PCB_AUTO_LCEDA` → 常见安装位置 → PATH」解析；
+  解析不到会直接停下并打印试过的每一条路径。同理 `PCB_AUTO_NODE`、`PCB_AUTO_PYTHON`。
 - session id 存 `pcb-auto\.session`；所有调用带 `--ext-uuid eda`
 - `--code` 有 32KB 命令行上限 → 一律用 `--code-file`
 - PCB 内部单位 **mil**（1mm = 39.37mil）；DRC 规则配置单位却是 **mm**

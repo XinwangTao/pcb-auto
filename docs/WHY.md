@@ -153,13 +153,13 @@ census 的 settle 窗口比一次尝试还短导致测到了上一次的残留�
 node cli/pcb.mjs census --settle 180
 
 # 2) 逐块板复算可下单性（退出码就是答案）
-node cli/pcb.mjs fabcheck out/d1
+node cli/pcb.mjs fabcheck examples/d1
 
 # 3) 复算交付一致性（19 组判据，包含跨文件对账）
 pwsh -NoProfile -File verify-delivery.ps1
 ```
 
-而且这三条命令**同时**会重现我的失败：`out/d1` 会返回 `exit 1`（一条已知误判的阻断），
+而且这三条命令**同时**会重现我的失败：`examples/d1` 会返回 `exit 1`（一条已知误判的阻断），
 `census` 会告诉你 3 个目录打不了样，`verify` 会打印那 2 条 WARN。
 
 **一个能让你看到失败的演示，比一个只让你看到成功的演示更可信。**

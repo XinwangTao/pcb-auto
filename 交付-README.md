@@ -34,7 +34,7 @@
 ## 核心数字（口径写死，不混用）
 
 <!-- 核心数字:BEGIN -->
-以下为 **2026-11-26 09:52** 同一时刻跑出来的快照：离线 DFM 普查的时间戳是 `fab-census.json` 的 mtime，想法级统计由 `out\交付说明.html` 当场生成，结果行来自循环日志。
+以下快照：离线 DFM 普查**测于 `2026-11-26T11:20:35+08:00`**（读 `fab-census.json` 的 `measured_at` 字段，不用 mtime —— 克隆之后它等于克隆时刻），想法级统计由 `out\交付说明.html` 当场生成，结果行来自循环日志。
 **这一节由 `out\_probe\sync-readme-numbers.py` 生成，不要手改** —— 手写过三次，三次都漂成了和页面互相矛盾的数字。
 
 - **30 条去重后的中文想法** → **28 条做成了可下单的板（93.3%）**；2 条做出来但不合格、0 条当时正在构建、0 条还没轮到。来源：`out\交付说明.html` 第 4 节（由 `make-dossier.py` 生成）。
@@ -42,7 +42,7 @@
   **这个 56 的分母要说清**：同一刻磁盘上有 **63 个产物目录**，其中 **56 个有 `_run.json`**、58 个有 `Gerber.zip`。普查只收「有 `_run.json` 且已沉淀」的，所以有 7 个没有 `_run.json` 的目录不在里面。
   其中 **2 个是带完整 Gerber 的真产物**（`SHT30_PinHeader-20261125-004304`、`d1`），它们不是被误排除的杂项，而是「早期跑法不写 `_run.json`」留下的测量盲区 —— 补测结果见「已知限制」第 1 条。
 - 那 3 个目录的 20 条阻断**不是同一类**，共 4 种：`gerber.coord.outside` **13** 条（图元落在自己板框外）、`pnp.outside` **3** 条（贴片坐标出框）、`gerber.copper.thin` **2** 条（总铜图元数太少）、`drill.outside` **2** 条（钻孔出框）。
-  **不是流水线没跑完**（两目录 `_run.json` 齐全、`ok=false`），是几何自洽这一步没过。
+  **不是流水线没跑完**（这 3 个目录的 `_run.json` 都齐全、`ok=false`），是几何自洽这一步没过。
 - 自述 `ok=true` 的 **48 个目录里 48 个可打样（100.0%）**，没有反例。
 - 独立口径（设计运行级）：循环日志 `overnight-20261126-015151.log` 共 **83 条结果行**，**70 PASS / 13 FAIL（84.3%）**，涉及 **35 个设计名**。
   这是**另一个单位**：一条结果行 = 一个设计的一整轮（可能含 4 次策略重试），和上面的「想法」「目录」都不能互换。
@@ -161,7 +161,7 @@ pwsh -File run-all.ps1 -Idea "做一个 SHT30 温湿度采集板，I2C 经排针
 pwsh -File accept.ps1 -Design designs\x.json -VerifyOnly
 
 # 离线 DFM：这块板能不能直接下单
-E:\APP\nodejs24\node.exe scripts\fabcheck.js out\<产物目录>
+node scripts\fabcheck.js out\<产物目录>
 
 # 全部证据一键重验（实测约 17 s；加 -SkipCensus 更快）
 pwsh -File verify-delivery.ps1

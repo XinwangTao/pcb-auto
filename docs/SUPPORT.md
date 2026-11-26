@@ -42,7 +42,7 @@
 | **DeepSeek Harness (DSH)** | 原生插件（Cordis bundle） | 插件装载 → 注册 5 个工具 → 真调 `pcb_fabcheck` 得到 `exitCode=1` → 根路径写错时抛明确错误 |
 | **Claude Code** | 原生插件 + MCP | `.claude-plugin/plugin.json` + `.mcp.json` 已就位；MCP 层与下面同一个服务器 |
 | **任意 MCP 客户端** | MCP stdio | 完整握手：`initialize`（协议协商 2025-06-18）→ `notifications/initialized` → `tools/list`（5 工具）→ `ping` → `tools/call` → 未知工具 `-32602` → 未知方法 `-32601`；stdout 只有 JSON，日志全在 stderr |
-| **任意 shell Agent** | CLI | `pcb list` / `pcb fabcheck out/d1`（位置参数与具名参数都通）/ 退出码 0 / 1 / 2 三态 |
+| **任意 shell Agent** | CLI | `pcb list` / `pcb fabcheck examples/d1`（位置参数与具名参数都通）/ 退出码 0 / 1 / 2 三态 |
 
 ---
 
@@ -121,7 +121,7 @@
 ```bash
 # 1) 最通用：任何 Agent 能跑命令就能用
 node cli/pcb.mjs list
-node cli/pcb.mjs fabcheck out/d1
+node cli/pcb.mjs fabcheck examples/d1
 
 # 2) 它有 MCP，但配置格式怪：只给它这一条，让它自己去读
 node install/install.mjs --print cursor

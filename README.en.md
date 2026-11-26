@@ -29,7 +29,7 @@ adapter.
 
 ```bash
 node cli/pcb.mjs list                    # self-describing list of the 5 operations
-node cli/pcb.mjs fabcheck out/d1         # the exit code is the answer
+node cli/pcb.mjs fabcheck examples/d1         # the exit code is the answer
 node install/install.mjs --list          # 19 client configurations
 ```
 

@@ -86,7 +86,7 @@ Two source designs can share one product name, so 44 is a name count, not a uniq
 
 Other measured facts:
 
-- 33 design JSON files under `designs/`; 247 files under `scripts/`.
+- `designs/` holds design JSON; `scripts/` holds the CommonJS pipeline. Counts drift — run `git ls-files 'designs/*.json' 'scripts/**' | wc -l` instead of trusting a number here.
 - `verify-delivery.ps1 -SkipCensus` → `PASS 18 / INFO 12 / WARN 2 / FAIL 0 / ERROR 0`, `VERDICT=PASS`, exit 0.
 - The full run (with census) reports `PASS 19`.
 
@@ -121,7 +121,7 @@ conservative rather than optimistic. That is a measurement, not a guarantee. Use
 git clone https://github.com/XinwangTao/pcb-auto
 cd pcb-auto
 node cli/pcb.mjs list
-node cli/pcb.mjs fabcheck out/d1          # exit 1: 1 blocker, a known false positive
+node cli/pcb.mjs fabcheck examples/d1          # exit 1: 1 blocker, a known false positive
 node cli/pcb.mjs census --settle 180      # ~20 s, recomputes the table above
 node cli/pcb.mjs idea-to-design "做一个 SHT30 温湿度采集板" --dry
 ```

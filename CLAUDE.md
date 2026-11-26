@@ -22,7 +22,7 @@ If the MCP server is not connected, the same five operations are available as a 
 
 ```bash
 node cli/pcb.mjs list
-node cli/pcb.mjs fabcheck out/d1
+node cli/pcb.mjs fabcheck examples/d1
 ```
 
 ## The one rule that matters most
@@ -33,7 +33,7 @@ They answer different questions. See [AGENTS.md](AGENTS.md) §三条不许.
 ## Never
 
 - Add ESM `import`/`export` to `scripts/*.js` — the root `package.json` deliberately has no
-  `"type": "module"` and 247 CommonJS files depend on that. Use `.mjs` for new ESM code.
+  `"type": "module"` and every `.js` under `scripts/` is CommonJS. Use `.mjs` for new ESM code.
 - Quote a number without its denominator, settle window, and as-of time.
 - Claim a board has been manufactured. None has.
 - Use `os.kill(pid, 0)` on Windows to probe liveness — it calls `TerminateProcess`.
