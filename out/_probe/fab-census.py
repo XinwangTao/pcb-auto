@@ -191,6 +191,21 @@ def main():
         "generated_for": "pcb-auto 交付物可打样性普查",
         # 这份快照是什么时候测的。引用本文件的任何数字都要连同这个字段一起引。
         "measured_at": _measured_at,
+        # 这几行是给**读这个文件的陌生人**看的，不是给作者看的。
+        # 本文件被发布在公开仓库里，而它描述的是作者机器上 out\ 的现状。
+        # 没有这段说明，一个全新克隆的人会看到「56 个目录 / 53 可下单」，
+        # 然后在自己空空的 out\ 里跑同一条命令得到 0 —— 那是**正确答案**，
+        # 但他会以为是自己装错了。这个仓库反复批评的正是这种
+        # 「看起来正常的数字，其实描述的是别人的机器」。
+        "corpus_scope": (
+            "作者机器上 out\\ 下带 _run.json 的产物目录。"
+            "这些数字**不是这份代码的属性**，而是一次测量。"
+        ),
+        "not_a_property_of_code": (
+            "全新克隆里 out\\ 是空的，跑同一条命令会得到 0 个目录 —— "
+            "那是正确答案，不是失败。要复现这些数字，得先跑出产物。"
+        ),
+        "reproduce": "node cli/pcb.mjs census --settle 180",
         "fabcheck_sha256_12": _sha(FAB),
         "all": tally(rows),
         "self_ok_true": tally([r for r in rows if r["self_ok"] is True]),
