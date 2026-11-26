@@ -127,49 +127,49 @@ jobs:
             console.log("OK：如实报 0 个目录、source=live，并明确说明这不是全部通过");
           '
 
-          - name: census 不许改写已发布的报告（证据不是量具的输出路径）
-            shell: bash
-            run: |
-              if ! git diff --quiet -- out/_probe/fab-census.json; then
-                echo "::error::census 改写了随仓库发布的报告 —— 量具把自己的证据销毁了"
-                git diff --stat -- out/_probe/fab-census.json
-                exit 1
-              fi
-              echo "OK：报告一字节未变"
+      - name: census 不许改写已发布的报告（证据不是量具的输出路径）
+        shell: bash
+        run: |
+          if ! git diff --quiet -- out/_probe/fab-census.json; then
+            echo "::error::census 改写了随仓库发布的报告 —— 量具把自己的证据销毁了"
+            git diff --stat -- out/_probe/fab-census.json
+            exit 1
+          fi
+          echo "OK：报告一字节未变"
 
-          - name: make-dossier 在空语料上必须拒绝覆盖发布页
-            shell: bash
-            run: |
-              set +e
-              python3 out/_probe/make-dossier.py
-              code=$?
-              set -e
-              echo "--- 退出码 $code ---"
-              if [ "$code" != "2" ]; then
-                echo "::error::期望退出码 2（没能测量），得到 $code"
-                exit 1
-              fi
-              if ! git diff --quiet -- 'out/交付说明.html'; then
-                echo "::error::发布页被改写了 —— 复核不许销毁它要复核的证据"
-                git diff --stat -- 'out/交付说明.html'
-                exit 1
-              fi
-              echo "OK：拒绝覆盖，发布页一字节未变"
+      - name: make-dossier 在空语料上必须拒绝覆盖发布页
+        shell: bash
+        run: |
+          set +e
+          python3 out/_probe/make-dossier.py
+          code=$?
+          set -e
+          echo "--- 退出码 $code ---"
+          if [ "$code" != "2" ]; then
+            echo "::error::期望退出码 2（没能测量），得到 $code"
+            exit 1
+          fi
+          if ! git diff --quiet -- 'out/交付说明.html'; then
+            echo "::error::发布页被改写了 —— 复核不许销毁它要复核的证据"
+            git diff --stat -- 'out/交付说明.html'
+            exit 1
+          fi
+          echo "OK：拒绝覆盖，发布页一字节未变"
 
-          - name: verify 不许有副作用（退出码不限，但不许改写已发布的证据）
-            shell: bash
-            run: |
-              set +e
-              node cli/pcb.mjs verify > /tmp/verify.json 2> /tmp/verify.err
-              code=$?
-              set -e
-              echo "--- verify 退出码 $code ---"
-              tail -20 /tmp/verify.json || true
-              tail -10 /tmp/verify.err || true
-              if ! git diff --quiet -- 'out/交付说明.html' out/_probe/fab-census.json; then
-                echo "::error::verify 改写了已发布的证据文件 —— 复核把自己要复核的东西改坏了"
-                git diff --stat
-                exit 1
-              fi
-              echo "OK：verify 没有副作用"
+      - name: verify 不许有副作用（退出码不限，但不许改写已发布的证据）
+        shell: bash
+        run: |
+          set +e
+          node cli/pcb.mjs verify > /tmp/verify.json 2> /tmp/verify.err
+          code=$?
+          set -e
+          echo "--- verify 退出码 $code ---"
+          tail -20 /tmp/verify.json || true
+          tail -10 /tmp/verify.err || true
+          if ! git diff --quiet -- 'out/交付说明.html' out/_probe/fab-census.json; then
+            echo "::error::verify 改写了已发布的证据文件 —— 复核把自己要复核的东西改坏了"
+            git diff --stat
+            exit 1
+          fi
+          echo "OK：verify 没有副作用"
 
