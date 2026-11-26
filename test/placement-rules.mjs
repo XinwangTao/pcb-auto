@@ -181,6 +181,10 @@ const CASES = [
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'place-rules-'));
 const results = [];
 let n = 0;
+// CASES 表之外还有几个「独立证明块」（基线不是 v3 的那些）。它们必须逐个登记，
+// 否则汇总行只会报 CASES.length，读者会以为新加的块不存在 —— 那是一次静默漏报。
+// 结尾有一条 n === CASES.length + blocks.length 的不变式钉住它。
+const blocks = [];
 
 const applyCase = (c, kind) => {
   const d = JSON.parse(fs.readFileSync(DESIGN, 'utf8'));
@@ -228,6 +232,7 @@ try {
   // 这条断言就变成在测「v3 有没有 PCB 缺陷」，而不是在测「缺输入会不会退 2」。
   // 变量没有被隔离的断言，passed 和 failed 都读不出结论。
   n++;
+  blocks.push('未知料号：缺 R1 尺寸 ⇒ 必须退 2（不许装成通过）');
   {
     const d = JSON.parse(fs.readFileSync(path.join(ROOT, 'designs', 'mic-esp32s3-v5.json'), 'utf8'));
     const c0 = d.components.find((x) => x.des === 'R1');
@@ -252,6 +257,7 @@ try {
   // 不是副产物）；② v5 判绿；③ 把 v5 里 U4 的专属电容挪走，必须重新变红；
   // ④ 只轻推 3 mil 的阴性对照必须维持绿，且不允许触发别的判据。
   n++;
+  blocks.push('decoupling_near_ic：修前 v4 必红 → 修后 v5 必绿 → 挪走专属电容必再红 → 轻推 3 mil 必须不动');
   {
     const V4 = path.join(ROOT, 'designs', 'mic-esp32s3-v4.json');
     const V5 = path.join(ROOT, 'designs', 'mic-esp32s3-v5.json');
@@ -310,6 +316,98 @@ try {
       }
     }
   }
+  // ── bypass_cap_distance：两颗「必须贴住」的旁路电容，逐个证明判据会红 ──
+  // 这条判据是补上 decoupling_near_ic 的一个**结构性空洞**才出现的：后者把「单 IC 网」
+  // 整桶排除（理由是 EN 的 RC 延时不在乎距离），而那一个排除同时放过了 IMU_CPOUT /
+  // IMU_REGOUT 这类**必须在乎距离**的旁路。所以这里的证据必须分两个方向：
+  //   ① v5 现状判绿，且分母与「未判名单」都写在输出里（否则分母就没了）；
+  //   ② 把 C7 搬回它曾经待的地方（功放带 y=-2040）必须判红 —— 那个坐标是真实历史值；
+  //   ③ 单独搬 C6 也必须判红 —— 两个电容各判各的，不许只靠一颗就下结论；
+  //   ④ 阴性对照只推 5 mil，必须维持绿。
+  n++;
+  blocks.push('bypass_cap_distance：基线绿（分母=2 且未判名单必在）→ C7 搬回功放带必红 → 单独搬 C6 必红 → 轻推 5 mil 必须不动');
+  {
+    const V5 = path.join(ROOT, 'designs', 'mic-esp32s3-v5.json');
+    const RID = 'bypass_cap_distance';
+    const r5 = fs.existsSync(V5) ? runAudit(V5) : { spawnError: `缺样本 ${path.basename(V5)}` };
+    if (r5.spawnError) fail.push(`bypass[基线]: ${r5.spawnError}`);
+    else {
+      const v5v = verdicts(r5)[RID];
+      const d5 = (r5.rules || []).find((x) => x.id === RID) || {};
+      if (v5v !== 'pass') {
+        fail.push(`bypass[基线]: 期望 pass，实际 ${v5v} —— C6/C7 已经贴回 U5，判据却还在红：${String(d5.detail).slice(0, 160)}`);
+      } else if (!/分母=2 组/.test(d5.detail || '')) {
+        fail.push(`bypass[基线]: 通过了，但分母没写清 —— ${String(d5.detail).slice(0, 160)}`);
+      } else if (!/未判 2 个单 IC 带电容网/.test(d5.detail || '')) {
+        // 不属于任何角色的网必须**逐条列出未判**；不列出来就等于静默算作通过。
+        fail.push(`bypass[基线]: 没把「不属于任何距离敏感角色」的网列出来 —— ${String(d5.detail).slice(0, 160)}`);
+      } else note('bypass 基线 v5 → pass，分母=2 组（REGOUT/CPOUT）');
+
+      const d5raw = JSON.parse(fs.readFileSync(V5, 'utf8'));
+      // ② C7 搬回功放带原位（历史真实值 1080,-2040，实测距 U5 332 mil）
+      const mv7 = JSON.parse(JSON.stringify(d5raw));
+      mv7._placement.C7 = { x: 1080, y: -2040 };
+      const p7 = path.join(tmpDir, `bypass-mut7-${n}.json`);
+      fs.writeFileSync(p7, JSON.stringify(mv7, null, 1), 'utf8');
+      const r7 = runAudit(p7);
+      if (r7.spawnError) fail.push(`bypass[C7 搬回功放带]: ${r7.spawnError}`);
+      else {
+        const got = verdicts(r7)[RID];
+        const dd = (r7.rules || []).find((x) => x.id === RID) || {};
+        if (got !== 'fail') fail.push(`bypass[C7 搬回功放带]: 期望 fail，实际 ${got} —— 把 CPOUT 电容挪到 332 mil 外判据没反应`);
+        else if (!/IMU_CPOUT/.test(dd.detail || '')) {
+          fail.push(`bypass[C7 搬回功放带]: 判红了，但红的不是 CPOUT 那条 —— ${String(dd.detail).slice(0, 160)}`);
+        }
+        const coll = Object.keys(verdicts(r5)).filter((k) => k !== RID && verdicts(r5)[k] !== verdicts(r7)[k]);
+        if (coll.length) fail.push(`bypass[C7 搬回功放带]: 附带改变了 ${coll.join(',')} —— 判据之间串味`);
+      }
+      // ③ 只搬 C6（IMU_REGOUT），C7 保持原位
+      const mv6 = JSON.parse(JSON.stringify(d5raw));
+      mv6._placement.C6 = { x: 890, y: -2040 };
+      const p6 = path.join(tmpDir, `bypass-mut6-${n}.json`);
+      fs.writeFileSync(p6, JSON.stringify(mv6, null, 1), 'utf8');
+      const r6 = runAudit(p6);
+      if (r6.spawnError) fail.push(`bypass[C6 搬回功放带]: ${r6.spawnError}`);
+      else {
+        const got = verdicts(r6)[RID];
+        const dd = (r6.rules || []).find((x) => x.id === RID) || {};
+        if (got !== 'fail') fail.push(`bypass[C6 搬回功放带]: 期望 fail，实际 ${got} —— 把 REGOUT 电容挪远判据没反应`);
+        else if (!/IMU_REGOUT/.test(dd.detail || '')) {
+          fail.push(`bypass[C6 搬回功放带]: 判红了，但红的不是 REGOUT 那条 —— ${String(dd.detail).slice(0, 160)}`);
+        }
+        // 分母仍须是 2（两颗都在判）。判红时若分母塌成 1，说明它只判了被改坏的那颗。
+        else if (!/分母=2 组/.test(dd.detail || '')) {
+          fail.push(`bypass[C6 搬回功放带]: 判红时分母不是 2 —— ${String(dd.detail).slice(0, 160)}`);
+        }
+      }
+      // ④ 阴性对照：C7 朝远离 U5 的方向轻推 5 mil（76 → 81 mil），必须维持 pass
+      const ct = JSON.parse(JSON.stringify(d5raw));
+      ct._placement.C7 = { x: 425, y: -1720 };
+      const pc = path.join(tmpDir, `bypass-control-${n}.json`);
+      fs.writeFileSync(pc, JSON.stringify(ct, null, 1), 'utf8');
+      const rc = runAudit(pc);
+      if (rc.spawnError) fail.push(`bypass[对照]: ${rc.spawnError}`);
+      else if (verdicts(rc)[RID] !== 'pass') {
+        fail.push(`bypass[对照]: 只挪 5 mil 就翻成 ${verdicts(rc)[RID]} —— 判据对无关微动敏感`);
+      }
+
+      // ⑤ 边界正控：把 C7 放到**恰好等于**阈值的位置，必须放行；再远 1 mil 必须拦。
+      // 这一对是唯一能区分 `>` 与 `>=` 的证据 —— 没有它，把判据写成 `>=` 全绿通过。
+      // 算术：U5（C2912107 实测 189×205）在 x=650 ⇒ 左沿 555.5；C7（C3850164 实测 119×66）
+      // 中心在 x、右沿 x+59.5 ⇒ 间隙 = 555.5-(x+59.5) = 496-x。x=396 ⇒ 恰好 100 mil。
+      for (const [x, want, tag] of [[396, 'pass', '恰好 100 mil'], [395, 'fail', '101 mil']]) {
+        const be = JSON.parse(JSON.stringify(d5raw));
+        be._placement.C7 = { x, y: -1720 };
+        const pb = path.join(tmpDir, `bypass-edge-${x}-${n}.json`);
+        fs.writeFileSync(pb, JSON.stringify(be, null, 1), 'utf8');
+        const rb = runAudit(pb);
+        if (rb.spawnError) fail.push(`bypass[边界 ${tag}]: ${rb.spawnError}`);
+        else if (verdicts(rb)[RID] !== want) {
+          fail.push(`bypass[边界 ${tag}]: 期望 ${want}，实际 ${verdicts(rb)[RID]} —— 阈值写法很可能写成了相反的包含关系`);
+        }
+      }
+    }
+  }
 } finally {
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) { /* 临时目录，清不掉不影响判定 */ }
 }
@@ -334,5 +432,14 @@ if (fail.length) {
   console.error(`\nPLACEMENT-RULES=FAIL  ${fail.length}/${n} 项不通过 —— 摆放判据没有被证明会失败或会变绿`);
   process.exit(1);
 }
-console.log(`\nPLACEMENT-RULES=PASS  ${n}/${n} 项全过（${CASES.length} 条定向变异各自必翻 · ${CASES.length} 条阴性对照必不动 · 1 条未知料号必须退 2）`);
+// 分母自洽：每一项要么来自 CASES 表，要么在 blocks 里登记过。
+// 不相等说明有人加了证明块却忘了登记 —— 那种情况下 PASS 行会少报工作量。
+if (n !== CASES.length + blocks.length) {
+  console.error(`\nPLACEMENT-RULES=FAIL  计数不自洽：n=${n}，但 CASES=${CASES.length} + blocks=${blocks.length}`
+    + ' —— 有证明块没登记，汇总行会少报');
+  process.exit(1);
+}
+console.log(`\nPLACEMENT-RULES=PASS  ${n}/${n} 项全过 ——`);
+console.log(`  CASES 表 ${CASES.length} 条：定向变异各自必翻 ${nSens}/${CASES.length} · 阴性对照必不动 ${nSpec}/${CASES.length}`);
+for (const b of blocks) console.log(`  独立证明块：${b}`);
 process.exit(0);

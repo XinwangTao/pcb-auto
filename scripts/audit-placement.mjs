@@ -523,6 +523,94 @@ const RULES = [
         : { ok: true, value: `每条电源轨上的每个 IC 都配到了电容且不超阈值（${denom}）` };
     },
   },
+  {
+    id: 'bypass_cap_distance',
+    kind: 'PCB',
+    basis: '上一条判据只判「连到 ≥2 个 IC 的配电轨」，把单 IC 网整个排除了，理由是 EN 这类 RC 延时'
+         + '网对距离不敏感。**那个排除一次性把两种网塞进了同一个桶**：确实不敏感的'
+         + '（EN/BOOT 的 RC 延时、SPK_* 功率输出、CC1/CC2 连接器下拉），和**必须在乎距离的**'
+         + '（IMU_CPOUT / IMU_REGOUT —— MPU-6050 电荷泵与内部稳压器的旁路，数据手册要求贴着引脚）。'
+         + '实测代价：designs/mic-esp32s3-v5.json 里 C7 是 IMU_CPOUT 的 2.2nF，摆在离 U5'
+         + ' **332 mil（8.43 mm）** 处，而 C4 就贴在 26 mil —— C7 被放进了功放带，'
+         + 'relayout.mjs 那条带子的注释还把 CPOUT 写成功放的（MAX98357A 根本没有 CPOUT 引脚），'
+         + '所以没人发现。8.43 mm 的旁路走线，其自身电感在那个频点上已经不是低阻抗，这颗电容等于没装。'
+         + '本条把「距离敏感的单 IC 网」单独拿出来判；阈值按网名角色分档，每档的来源写在 why 里。'
+         + '不属于任何角色的单 IC 网**逐条列出未判**，不静默算作通过。'
+         + '已知边界：角色靠网名后缀识别，所以新设计若把 CPOUT 叫成别的名字，本条会不覆盖它 ——'
+         + '那时它会出现在「未判」名单里，而不是变成通过。',
+    fn: (d, g) => {
+      const conns = Array.isArray(d.connections) ? d.connections : [];
+      if (!conns.length) return { why: '设计文件没有 connections —— 无从判断哪颗电容给哪条支路做旁路' };
+      // 角色表：只有**距离有物理意义**的单 IC 网才进来。
+      // tolMil 的来源写在 src 里；这是设计限值，不是从本板实测反推出来的数字。
+      const ROLES = [
+        { re: /CPOUT$/i, tolMil: 100, src: 'MPU-6050 手册：CPOUT(pin 20) 外接 2.2nF，走线尽可能短' },
+        { re: /REGOUT$/i, tolMil: 150, src: 'MPU-6050 手册：REGOUT(pin 10) 内部稳压器旁路，要求同上' },
+      ];
+      const isIC = (des) => /^U\d+$/.test(des);
+      const isCap = (des) => /^C\d+$/.test(des);
+      const byNet = new Map();
+      for (const row of conns) {
+        if (!Array.isArray(row) || row.length < 3) {
+          return { why: `connections 里有形状不对的行，无法解读网表：${JSON.stringify(row)}` };
+        }
+        const [des, , net] = row;
+        if (!byNet.has(net)) byNet.set(net, new Set());
+        byNet.get(net).add(des);
+      }
+      const box = new Map(g.comps.map((c) => [c.des, c]));
+      const gap = (a, b) => {
+        const dx = a.x1 < b.x0 ? b.x0 - a.x1 : (b.x1 < a.x0 ? a.x0 - b.x1 : 0);
+        const dy = a.y1 < b.y0 ? b.y0 - a.y1 : (b.y1 < a.y0 ? a.y0 - b.y1 : 0);
+        return Math.hypot(dx, dy);
+      };
+      const misses = [];
+      const judged = [];
+      const notJudged = [];
+      const noBox = [];
+      for (const [net, desSet] of byNet) {
+        const ics = [...desSet].filter(isIC);
+        const caps = [...desSet].filter(isCap);
+        const role = ROLES.find((r) => r.re.test(net));
+        if (!role) {
+          // 只登记「单 IC 且带电容」的网 —— 它们正是上一条判据排除掉、本条本该接手的那批。
+          if (ics.length === 1 && caps.length) notJudged.push(`${net}(${caps.join('/')})`);
+          continue;
+        }
+        if (!caps.length) {
+          misses.push(`${net}: 网名匹配「${role.src}」，但网表上一颗电容都没有`);
+          continue;
+        }
+        if (!ics.length) {
+          return { why: `${net} 匹配到旁路角色，但网表上没有 IC —— 本条判据的结构假设不成立，不能硬判` };
+        }
+        for (const cp of caps) {
+          const bc = box.get(cp);
+          if (!bc) { noBox.push(`${net}: ${cp}`); continue; }
+          for (const ic of ics) {
+            const bi = box.get(ic);
+            if (!bi) { noBox.push(`${net}: ${ic}`); continue; }
+            const dd = gap(bi, bc);
+            judged.push(`${net}: ${cp}→${ic} ${Math.round(dd)} mil / 限 ${role.tolMil}`);
+            if (dd > role.tolMil) {
+              misses.push(`${net}: ${cp} 距 ${ic} ${Math.round(dd)} mil > 限 ${role.tolMil} mil（${role.src}）`);
+            }
+          }
+        }
+      }
+      const denom = `分母=${judged.length} 组「电容→IC」`
+        + (notJudged.length ? `；未判 ${notJudged.length} 个单 IC 带电容网（不属于任何距离敏感角色，不算通过）[${notJudged.join(',')}]` : '');
+      if (noBox.length) {
+        return { why: `${[...new Set(noBox)].join(' / ')} 尺寸未知 —— 缺尺寸就不能判，不能当成通过（${denom}）` };
+      }
+      if (!judged.length) {
+        return { why: `没有任何网匹配到距离敏感的旁路角色（已查 ${byNet.size} 个网）—— 这条判据在本设计上没有分母` };
+      }
+      return misses.length
+        ? { ok: false, why: `${misses.join(' / ')}（${denom}）` }
+        : { ok: true, value: `距离敏感旁路电容全部贴住（${judged.join('；')}）（${denom}）` };
+    },
+  },
 ];
 
 // ── 主流程 ────────────────────────────────────────────────────────────
