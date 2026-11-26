@@ -305,6 +305,24 @@ function parseDrill(text) {
   return { tools, marks, dec, inch };
 }
 
+// 线段 ab 是否触及轴对齐矩形 [x0,x1]×[y0,y1]（含端点在内、含擦边）。
+// 用 Liang–Barsky 裁剪，不用「端点在内」近似：一条横穿净空带的长走线，
+// 两个端点都在带外，只看端点会判成「带内为空」—— 那是最典型的假通过。
+function segHitsRect(a, b, x0, y0, x1, y1) {
+  const inA = a.x >= x0 && a.x <= x1 && a.y >= y0 && a.y <= y1;
+  if (inA) return true;
+  const dx = b.x - a.x, dy = b.y - a.y;
+  let t0 = 0, t1 = 1;
+  const clip = (p, q) => {         // 约束 p*t <= q
+    if (p === 0) return q >= 0;    // 平行于该边界：只要在正侧就整段可行
+    const r = q / p;
+    if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
+    else { if (r < t0) return false; if (r < t1) t1 = r; }
+    return true;
+  };
+  return clip(-dx, a.x - x0) && clip(dx, x1 - a.x) && clip(-dy, a.y - y0) && clip(dy, y1 - a.y) && t0 <= t1;
+}
+
 /* ============================ 检查主体 ============================ */
 
 function check(dir, opts) {
@@ -513,6 +531,84 @@ function check(dir, opts) {
           }
         }
       }
+      // ---------- 3b. 天线净空带：在**最终铜层**上实测，不信设计意图 ----------
+      // 设计 JSON 的 `_antennaKeepout` 只说明「打算让哪里干净」。真正决定能不能下单的
+      // 是成品 Gerber 里带内有没有铜 —— 这两件事在别处真的分过家：自动布线器/铺铜
+      // 都没有 keepout 概念，建了禁布区而铜照穿是完全可能的。
+      // 所以这里量的是成品，不是意图。
+      let kd = null;
+      try {
+        const sp = path.join(dir, '_design.snapshot.json');
+        if (fs.existsSync(sp)) {
+          const snap = JSON.parse(fs.readFileSync(sp, 'utf8'));
+          if (snap && snap._antennaKeepout) kd = snap._antennaKeepout;
+        }
+      } catch (e) { N('antenna.snapshot.parse', '_design.snapshot.json 解析失败，无法核对天线净空: ' + e.message); }
+
+      if (kd) {
+        const MIL = 0.0254;
+        const kx0 = Number(kd.x0) * MIL, kx1 = Number(kd.x1) * MIL;
+        const ky0 = Number(kd.y0) * MIL, ky1 = Number(kd.y1) * MIL;
+        // 倒置/非数的盒子会让「带内 0 个」恒真 —— 那是假通过，必须判红。
+        const boxOk = [kx0, kx1, ky0, ky1].every(Number.isFinite) && kx1 > kx0 && ky1 > ky0;
+        if (!boxOk) {
+          B('antenna.keepout.box', `_antennaKeepout 盒子无效（x0=${kd.x0} x1=${kd.x1} y0=${kd.y0} y1=${kd.y1}）：倒置或非数的盒子会让任何「带内为空」的结论恒真`, { box: kd });
+        } else if (!byExt.has('GTL')) {
+          N('antenna.keepout.unmeasured', '没有 GTL 层，天线净空无法在天线所在层上验证 —— 未检查，不算通过');
+        } else {
+          // 取线段（D01）与闪点（D03）。区域填充 G36/G37 的轮廓同样是 D01，
+          // 落进带内也照样算侵入 —— 对禁布区而言这是正确的保守方向。
+          const segsOf = (ext) => {
+            const raw = byExt.get(ext), g = layers.get(ext);
+            if (!raw || !g) return null;
+            const body = raw.data.toString('utf8').replace(/%[^*]*\*%/g, ' ').replace(/G04[^*]*\*/g, ' ');
+            const segs = [], flash = [];
+            let last = null;
+            for (const m of body.matchAll(/X(-?\d+(?:\.\d+)?)Y(-?\d+(?:\.\d+)?)[^XD]*?D0?([123])\*/g)) {
+              const pt = g.toMm(m[1], m[2]);
+              const d = m[3];
+              if (d === '1') { if (last) segs.push([last, pt]); last = pt; }
+              else { if (d === '3') flash.push(pt); last = pt; }
+            }
+            return { segs, flash };
+          };
+          const report = [];
+          let totalSegs = 0, totalFlash = 0, copperBad = 0, silkBad = 0;
+          const examples = [];
+          for (const ext of [...layers.keys()]) {
+            const isCopper = ext === 'GTL' || ext === 'GBL' || /^G\d+$/.test(ext);
+            const isSilk = SILK_LAYERS.includes(ext);
+            if (!isCopper && !isSilk) continue;
+            const r = segsOf(ext);
+            if (!r) continue;
+            const hitSegs = r.segs.filter(([a, b]) => segHitsRect(a, b, kx0, ky0, kx1, ky1));
+            const hitFlash = r.flash.filter((p) => p.x >= kx0 && p.x <= kx1 && p.y >= ky0 && p.y <= ky1);
+            if (isCopper) { totalSegs += r.segs.length; totalFlash += r.flash.length; }
+            const buts = [];
+            if (isCopper) { buts.push(`走线/轮廓 ${hitSegs.length}/${r.segs.length}`, `焊盘闪 ${hitFlash.length}/${r.flash.length}`); }
+            else buts.push(`线段 ${hitSegs.length}/${r.segs.length}`);
+            report.push({ layer: ext, copper: isCopper, segHits: hitSegs.length, segs: r.segs.length, flashHits: hitFlash.length, flash: r.flash.length });
+            const nHit = (isCopper ? hitSegs.length + hitFlash.length : hitSegs.length);
+            if (nHit) {
+              if (isCopper) copperBad += nHit; else silkBad += nHit;
+              for (const [a, b] of hitSegs.slice(0, 3)) examples.push({ layer: ext, from: [r3(a.x), r3(a.y)], to: [r3(b.x), r3(b.y)] });
+              for (const p of hitFlash.slice(0, 3)) examples.push({ layer: ext, flash: [r3(p.x), r3(p.y)] });
+            }
+          }
+          const boxMm = { x0: r3(kx0), x1: r3(kx1), y0: r3(ky0), y1: r3(ky1) };
+          facts.antennaKeepout = { boxMm, layers: report, copperHits: copperBad, silkHits: silkBad };
+          if (!totalSegs) B('antenna.keepout.unmeasured', '铜层里找不到任何 D01 线段，无法测量净空带 —— 未检查，不算通过', { layers: report.length });
+          else if (copperBad) {
+            B('antenna.keepout.copper', `天线净空带内有 ${copperBad} 个铜图元（走线/铺铜/焊盘）：天线被铜遮挡，实测效率会掉`, {
+              boxMm, hits: copperBad, examples: examples.slice(0, 6), layers: report,
+            });
+          } else {
+            P('antenna.keepout', `天线净空带（${boxMm.x0}..${boxMm.x1} × ${boxMm.y0}..${boxMm.y1} mm）在 ${report.filter((x) => x.copper).length} 个铜层上均无走线/铺铜/焊盘：${totalSegs} 段 D01 + ${totalFlash} 个闪点全部在带外`, { boxMm, layers: report });
+          }
+          if (silkBad) N('antenna.keepout.silk', `天线净空带内有 ${silkBad} 个丝印图元（油墨，非铜，不构成电气遮挡；禁布区规则类型里没有丝印档位）`, { silkHits: silkBad, layers: report.filter((x) => !x.copper) });
+        }
+      }
+
       // 铜层必须有内容
       const gtl = layers.get('GTL');
       const gbl = layers.get('GBL');
