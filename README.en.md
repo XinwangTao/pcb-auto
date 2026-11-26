@@ -11,7 +11,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-blueviolet.svg)](mcp/server.mjs)
-[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#honest-limitations)
+[![Platform](https://img.shields.io/badge/platform-any%20OS%20%7C%20build%3A%20Windows-lightgrey.svg)](#what-each-operation-needs)
 
 > **Nothing in the demo is an animation mock-up** — every frame shows real geometry on a
 > real LCEDA Pro canvas: the pipeline calls EDA's own `getCurrentRenderedAreaImage()` at
@@ -45,6 +45,22 @@ node cli/pcb.mjs list                    # self-describing list of the 5 operati
 node cli/pcb.mjs fabcheck examples/d1         # the exit code is the answer
 node install/install.mjs --list          # 19 client configurations
 ```
+
+### What each operation needs
+
+| Operation | Node floor | Also needs | Runs on |
+|---|---|---|---|
+| `idea-to-design` | ≥ 18.17 | nothing (Node built-ins only) | any OS (CI runs it on `ubuntu-latest`) |
+| `fabcheck` | ≥ 18.17 | nothing (Node built-ins only) | any OS (same) |
+| `census` | ≥ 18.17 | Python 3 (`python` on PATH, or point `PCB_AUTO_PYTHON` at it) | any OS |
+| `verify` | ≥ 18.17 | PowerShell 7 (`pwsh`) + Python 3 (for the full criteria, which include census) | any OS with `pwsh` |
+| `build` | ≥ 18.17 | PowerShell 7 + LCEDA Pro **4.1.111** | **Windows only** — it drives `lceda-pro.exe` for layout and routing |
+
+`package.json` declares **no `"os"` field**. The old `"os": ["win32"]` was an over-broad claim: it
+turned `build`'s dependency into a whole-package dependency, so Linux/macOS users could not even
+install the package to run `fabcheck`. What remains is the real constraint,
+`"engines": { "node": ">=18.17" }` — `run()` in `core/ops.mjs` uses `AbortSignal.any` (available since
+Node 18.17 / 20.3), so Node 18.0–18.16 throws a `TypeError` on the first child process.
 
 **Full platform matrix with verification levels: [docs/SUPPORT.md](docs/SUPPORT.md)** — covers Claude
 Code, Cursor, Windsurf, VS Code Copilot, Zed, Cline, Roo Code, Continue, Codex CLI, Gemini CLI,
@@ -84,7 +100,9 @@ measurement, not a guarantee — orderability is always `fabcheck`'s exit code.
 
 1. **No board produced here has ever been manufactured or electrically validated.** Every
    "orderable" claim is about files, not about a working circuit.
-2. **Windows only.** Requires PowerShell plus a Windows-only EDA server process.
+2. **`build` is Windows only.** It requires PowerShell plus a Windows-only EDA server process
+   (`lceda-pro.exe --owner`). The other four operations are OS-agnostic — but they only cover
+   design / check / census, not drawing a new board.
 3. **One EDA vendor only** — 嘉立创 EDA (LCEDA).
 4. **The autorouter is not good enough to trust blind**: 2 of 44 board names never produced an
    orderable directory. The retry ladder (larger board frame each time) often makes DRC **worse** —

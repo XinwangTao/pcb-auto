@@ -85,7 +85,8 @@ const INSTRUCTIONS = `pcb-auto 把「一句中文想法」变成「一块能下�
 已知事实（截至 2026-11-26，可自行用 pcb_census 复核）：
 - 56 个已沉淀产物目录：53 可打样，3 有阻断。
 - **没有任何一块板被真正制造过。** 全部结论都是「文件层面可打样」。
-- 只有 Windows + 嘉立创 EDA 一条技术路线。`
+- 从零画板（pcb_build）只有 Windows + 嘉立创 EDA 一条技术路线；pcb_idea_to_design /
+  pcb_fabcheck / pcb_census 不依赖 Windows（Node ≥ 18.17；census 另需 Python 3）。`
 
 /** @param {any} msg */
 async function handle(msg) {

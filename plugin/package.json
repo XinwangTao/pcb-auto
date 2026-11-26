@@ -19,9 +19,6 @@
   "engines": {
     "node": ">=22"
   },
-  "os": [
-    "win32"
-  ],
   "license": "MIT",
   "dsh": {
     "bundle": {

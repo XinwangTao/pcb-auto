@@ -59,7 +59,13 @@ const REF_RE = new RegExp(
   // `\p{L}` 而不是 `[A-Za-z]` —— 否则「交付-README.md」会被截成「README.md」，
   // 然后去核对另一个文件，给出一个看起来很确定、其实是错的判决。
   String.raw`([\p{L}\p{N}_][\p{L}\p{N}_./\\-]*` + REF_EXT_SRC + String.raw`)`
-  + String.raw`:\s*(\d+(?:\s*[-–,]\s*\d+)*)`,
+  + String.raw`:\s*(\d+(?:\s*[-–,]\s*\d+)*)`
+  // 【可选的内容锚点】紧跟行号的一对双引号。`file:123 "const X = 4;"` 表示
+  // 「第 123 行必须还含这段文字」。没有锚点的引用行为完全不变 —— 这是纯增量，
+  // 现有发布引用一条都不用改就能继续过。之所以不判「这一行非空」就完事：
+  // 非空只挡得住「指针落进空行」这一种腐烂，而行号整体位移落到**另一个有意义的行**
+  // 上时，它一个字都不会说（实测：run-all.ps1 插 70 行，56 处引用全错，闸门全绿）。
+  + String.raw`(?:\s+"([^"\n]{1,120})")?`,
   'gu',
 )
 
@@ -153,6 +159,21 @@ function parseNumbers(spec) {
   return nums.filter((n) => Number.isFinite(n) && n > 0)
 }
 
+/** 把一行压成可比较的形状：去掉首尾空白，内部连续空白折成一个空格。 */
+function normLine(s) {
+  return String(s == null ? '' : s).replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * 带内容锚点的引用：这一行还必须含锚点文字。
+ * 锚点只跟**行号列表里的第一个数**比 —— 范围引用 `a-b` 的语义是「从 a 到 b」，
+ * 锚点声明的是起始那片代码，要求端点 b 也含同一段文字会凭空造成假红。
+ */
+function anchorOk(lineText, anchor) {
+  if (!anchor) return true
+  return normLine(lineText).includes(normLine(anchor))
+}
+
 /** 范围的端点必须非空；范围内部允许空行（代码分段本来就是空行）。 */
 function endpointNumbers(spec) {
   return spec
@@ -184,6 +205,7 @@ const resolvedVia = new Map()
 const perDoc = []
 let totalRefs = 0
 let publishedRefs = 0
+let anchoredRefs = 0 // 有几处引用真的带了内容锚点（其余只验到「非空」）
 
 const docs = mdFiles()
 
@@ -234,6 +256,20 @@ for (const doc of docs) {
     for (const num of endpointNumbers(spec)) {
       if (num <= L.length && !L[num - 1].trim()) {
         sink.push({ doc, ref: `${target.rel}:${num}`, why: '端点那一行是空的' })
+      }
+    }
+    // 【内容锚点】声明了锚点，就要求首个行号那一行真的还含这段文字。
+    // 这是唯一能挡住「行号整体位移后落到另一个有意义的行上」的判据。
+    const anchor = m[3]
+    if (anchor) {
+      anchoredRefs += 1
+      const first = parseNumbers(spec)[0]
+      if (first && first <= L.length && !anchorOk(L[first - 1], anchor)) {
+        sink.push({
+          doc,
+          ref: `${target.rel}:${first}`,
+          why: `锚点「${anchor}」已不在这一行（现在这行是「${normLine(L[first - 1]).slice(0, 60)}」）`,
+        })
       }
     }
   }
@@ -308,6 +344,32 @@ const selfProblems = []
   if (!cj || cj[1] !== '交付-README.md') {
     selfProblems.push(`中文文件名识别不对：${CJK} 被读成 ${cj ? cj[1] : '（没匹配上）'}`)
   }
+  // 【锚点判据必须能失败】只在真文档上跑一遍不算验证：万一某天所有锚点都恰好命中，
+  // 一个永远返回 true 的 anchorOk 也会全绿。这里两个方向都钉住。
+  if (anchorOk('  const MAX_ROUTE_ITERS = 4;   // 上限', 'const MAX_ROUTE_ITERS = 4;') !== true) {
+    selfProblems.push('锚点判据在**该命中**时没命中 —— 闸门自己坏了')
+  }
+  if (anchorOk('  const MAX_ROUTE_ITERS = 6;', 'const MAX_ROUTE_ITERS = 4;') !== false) {
+    selfProblems.push('锚点判据在**不该命中**时命中了 —— 判据形同虚设')
+  }
+  if (anchorOk('  a  b   c', 'a b c') !== true) {
+    selfProblems.push('锚点判据不忽略空白差异 —— 会制造假红')
+  }
+  // 带锚点的引用串必须被解析出 group 3，否则上面整段检验根本不会被走到。
+  {
+    const WITH = 'scripts/pipeline3.js:1499 "const MAX_ROUTE_ITERS = 4;"'
+    REF_RE.lastIndex = 0
+    const w = REF_RE.exec(WITH)
+    if (!w || w[3] !== 'const MAX_ROUTE_ITERS = 4;' || w[2] !== '1499') {
+      selfProblems.push(`带锚点的引用解析不出来：${WITH} -> ${JSON.stringify(w && [w[1], w[2], w[3]])}`)
+    }
+    // 不带锚点的引用不能因为正则改动而多出 group 3
+    REF_RE.lastIndex = 0
+    const wo = REF_RE.exec('scripts/pipeline3.js:1499')
+    if (!wo || wo[3] !== undefined) {
+      selfProblems.push('不带锚点的引用被解析出了锚点 —— 正则会误吃正文里的引号')
+    }
+  }
   if (totalRefs === 0) {
     selfProblems.push('0 处引用。这不是「全部通过」，是没有样本 —— 扫描范围或正则坏了')
   }
@@ -339,7 +401,8 @@ section('闸门自身问题', selfProblems.map((s) => ({ doc: '(self)', ref: '�
 
 if (!hard.length && !tallyProblems.length && !selfProblems.length) {
   console.log(
-    `\n  ✓ 发布文档的 ${publishedRefs} 处引用全部指到非空的行，分类与计数一致`
+    `\n  ✓ 发布文档的 ${publishedRefs} 处引用全部指到非空的行`
+    + `（其中 ${anchoredRefs} 处还核对了内容锚点，其余只验到「非空」），分类与计数一致`
     + (soft.length ? `（另有 ${soft.length} 处分析记录里的历史引用已腐烂，不影响提交）` : ''),
   )
 }
@@ -350,6 +413,7 @@ console.log(
     bad
       ? `DOCREFS=FAIL  发布文档 ${hard.length} 处 + 对账 ${tallyProblems.length} 处 + 闸门自身 ${selfProblems.length} 处`
       : `DOCREFS=PASS  发布文档 ${publishedRefs} 处引用有效`
+        + `（${anchoredRefs} 处核对了内容锚点）`
         + (soft.length ? `；分析记录 ${soft.length} 处历史引用已腐烂（WARN）` : '')
   }`,
 )

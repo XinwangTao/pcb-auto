@@ -9,7 +9,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-blueviolet.svg)](mcp/server.mjs)
-[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](#已知限制)
+[![Platform](https://img.shields.io/badge/platform-any%20OS%20%7C%20build%3A%20Windows-lightgrey.svg)](#每个操作需要什么)
 
 **中文** | [English](README.en.md) | [演示片（31.6s）](https://github.com/XinwangTao/pcb-auto/releases/download/v1.0.0/ai-pcb-v9.mp4)
 
@@ -46,16 +46,23 @@ node install/install.mjs --list          # 19 个客户端的接入方式
 
 **「支持任何平台」说的是接入协议，不是运行依赖 —— 这两件事别混。**
 
-| 操作 | 需要什么 | 哪能跑 |
-|---|---|---|
-| `idea-to-design` | Node ≥ 18 | 任何系统 |
-| `fabcheck` | Node ≥ 18 | 任何系统 |
-| `census` | Node + Python 3 | 任何系统 |
-| `verify` | PowerShell 7（跑全判据还要 Python 3） | 任何装了 pwsh 的系统 |
-| `build` | PowerShell 7 + 嘉立创 EDA Pro 4.1.111 | **Windows** —— 它驱动 `lceda-pro.exe` 做布局布线 |
+### 每个操作需要什么
+
+| 操作 | Node 下限 | 还要装什么 | 哪能跑 |
+|---|---|---|---|
+| `idea-to-design` | ≥ 18.17 | 无 —— 只用 Node 内置模块 | 任何系统（CI 的 `ubuntu-latest` job 在跑它） |
+| `fabcheck` | ≥ 18.17 | 无 —— 只用 Node 内置模块 | 任何系统（同上） |
+| `census` | ≥ 18.17 | Python 3（命令名 `python`；不在 PATH 上就用 `PCB_AUTO_PYTHON` 指路） | 任何系统 |
+| `verify` | ≥ 18.17 | PowerShell 7（`pwsh`）+ Python 3（全判据含普查时要） | 任何装了 `pwsh` 的系统 |
+| `build` | ≥ 18.17 | PowerShell 7 + 嘉立创 EDA Pro **4.1.111** | **仅 Windows** —— 它驱动 `lceda-pro.exe` 做布局布线 |
+
+**`package.json` 里没有 `"os"` 字段。** 原来那行 `"os": ["win32"]` 是过宽的声明：它把 `build` 的依赖
+说成了整个包的依赖，于是 Linux/macOS 用户连 `fabcheck` 都装不上。现在只留真实的那条约束
+`"engines": { "node": ">=18.17" }` —— `core/ops.mjs` 的 `run()` 用 `AbortSignal.any`
+（Node 18.17 / 20.3 起才有），所以下限是 18.17 而不是 18.0：18.0–18.16 会在第一次跑子进程时抛 `TypeError`。
 
 所以：**把想法编译成设计、检查一块板能不能下单、复算打样率**，在 macOS / Linux / CI 上都做得到
-（CI 就在 `ubuntu-latest` 上跑这几个操作的契约测试）；**从零画出一块板**那一步要 EDA。
+（CI 就在 `ubuntu-latest` 上跑这几个操作的契约测试）；**从零画出一块板**那一步要 EDA + Windows。
 这不是适配问题，是依赖问题。
 
 `build` 在缺 EDA 的机器上退 **2**（「没能运行」）并告诉你去装什么，不会退 1（「跑完了但没全绿」）——
@@ -95,7 +102,8 @@ node cli/pcb.mjs census --settle 180
 ## 已知限制
 
 1. **没有任何一块板被真正制造过。** 所有「可打样」都是文件层面的判断，不是「焊出来能用」。
-2. **仅 Windows。** 依赖 PowerShell + 一个 Windows-only 的 EDA 服务端进程。
+2. **`build` 仅 Windows。** 它依赖 PowerShell + 一个 Windows-only 的 EDA 服务端进程（`lceda-pro.exe --owner`）。
+   其余四个操作不挑系统 —— 但它们只覆盖「设计 / 检查 / 统计」，画不出一块新板。
 3. **仅嘉立创 EDA** 一家厂商。
 4. **自动布线不够可靠**：44 个板名里 2 个（4.5 %）从未产出可下单目录。
    重试阶梯（换更大的板框）**经常让结果更差** —— 有设计从 1 个 DRC 组变成 2 个、SMD 违规从 1 涨到 46。

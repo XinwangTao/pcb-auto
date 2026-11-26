@@ -161,8 +161,22 @@ node install/install.mjs --write    # 写项目内配置文件（写前备份，
 
 ## 五、诚实边界
 
-- **只有 Windows 能真跑。** 原因是流水线依赖 PowerShell + 一个 Windows-only 的 EDA 服务端
-  （`lceda-pro.exe --owner`）。Linux/macOS 上三层外壳都能装载，但 `build` 会失败。
+- **「支持任何平台」说的是接入协议，不是运行依赖。** 运行依赖按操作分（下表），所以 `package.json`
+  **不声明 `"os"`**，只声明 `"engines": { "node": ">=18.17" }`：以前那行 `"os": ["win32"]` 把
+  `build` 的依赖说成了整个包的依赖，会让 Linux/macOS 用户连 `fabcheck` 都装不上。
+
+| 操作 | Node 下限 | 还要什么 | 哪能跑 |
+|---|---|---|---|
+| `idea-to-design` | ≥ 18.17 | 无（只用 Node 内置模块） | 任何系统 |
+| `fabcheck` | ≥ 18.17 | 无（只用 Node 内置模块） | 任何系统 |
+| `census` | ≥ 18.17 | Python 3（`python`，或用 `PCB_AUTO_PYTHON` 指路） | 任何系统 |
+| `verify` | ≥ 18.17 | PowerShell 7（`pwsh`）+ Python 3（全判据含普查时） | 任何装了 `pwsh` 的系统 |
+| `build` | ≥ 18.17 | PowerShell 7 + 嘉立创 EDA Pro **4.1.111** | **仅 Windows**（驱动 `lceda-pro.exe --owner`） |
+
+- **18.17 不是随手写的最小值**：`core/ops.mjs` 的 `run()` 用 `AbortSignal.any`，该 API 从 Node 18.17 /
+  20.3 才有；18.0–18.16 会在第一次跑子进程时抛 `TypeError`。
+- **`build` 在 Linux/macOS 上没有可替代依赖。** 三层外壳都能装载，但 `build` 会退 **2**（没能运行），
+  不会退 1（跑完了但没全绿）—— 后者会被读成「这块板有问题」，而真相是「这台机器没有画板的工具」。
 - **`cli/` 和 `mcp/` 是零依赖的**（只用 Node 内置模块），因为依赖越少，能用的地方越多。
 - **⚪ 那一整批我没有逐个验证。** 我验证的是协议，不是那些客户端。
   如果你在某个平台上踩到格式差异，那是配置问题，不是能力问题 —— 但我不假装我知道每个客户端的配置键名。

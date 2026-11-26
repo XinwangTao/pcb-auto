@@ -64,8 +64,10 @@ PowerShell/Node/Python 脚本加上类型化的工具接口。重写会漂移出
 
 ## 平台
 
-**Windows only。** 流水线是 PowerShell 5.1/7 + 一个 Windows-only 的 EDA 服务端（`lceda-pro.exe --owner`）。
-Linux/macOS 上插件能装载，但 `pcb_build` 会失败。
+**`pcb_build` 仅 Windows。** 它驱动 PowerShell 5.1/7 + 一个 Windows-only 的 EDA 服务端
+（`lceda-pro.exe --owner`）。Linux/macOS 上插件能装载，`pcb_idea_to_design` / `pcb_fabcheck` /
+`pcb_census` 可以用（要 Node ≥ 18.17；`pcb_census` 另需 Python 3），但 `pcb_build` 会退 **2**
+（没能运行，不是「板子有问题」）。`pcb_verify` 要 PowerShell 7。
 
 ## 已知限制
 

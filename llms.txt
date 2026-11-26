@@ -1,7 +1,8 @@
 # pcb-auto
 
 > An unattended pipeline that compiles a Chinese natural-language board idea into an orderable PCB
-> (schematic → layout → autorouting → DRC → Gerber/BOM/PnP). Open source, MIT, Windows-only.
+> (schematic → layout → autorouting → DRC → Gerber/BOM/PnP). Open source, MIT. Only `build` is
+> Windows-only; `idea-to-design` and `fabcheck` run anywhere Node ≥ 18.17 runs.
 > Its distinguishing property is not the demo — it is that **every number it publishes carries its
 > denominator and its as-of time**, and it **publishes the errors found in its own documentation**.
 
@@ -14,7 +15,8 @@ for language models. Everything here is recomputable from the repository.
 - **Output**: a product directory containing Gerber, Excellon drill, BOM, pick-and-place, and a
   `_run.json` gate summary.
 - **Automation level**: zero human intervention. An overnight loop ran 373 rounds unattended.
-- **Toolchain**: 嘉立创 EDA (LCEDA) driven via its CLI + a documented API; PowerShell, Node, Python.
+- **Toolchain**: 嘉立创 EDA (LCEDA) driven via its CLI + a documented API. Node runs every operation;
+  PowerShell 7 runs `build` / `verify`; Python 3 runs `census` / `verify`.
 
 ## Interface: one core, three shells
 
@@ -38,6 +40,20 @@ protocol-level coverage for any MCP or shell client).
 | `fabcheck` | **the authority** on "can this be ordered as-is" | 0 orderable / 1 blocked / 2 bad args |
 | `census` | run `fabcheck` over every settled product directory | 0 |
 | `verify` | re-run all delivery consistency assertions | 0 / 1 |
+
+## Runtime requirements, per operation
+
+| Operation | Node floor | Also needs | Runs on |
+|---|---|---|---|
+| `idea-to-design` | ≥ 18.17 | nothing (Node built-ins only) | any OS |
+| `fabcheck` | ≥ 18.17 | nothing (Node built-ins only) | any OS |
+| `census` | ≥ 18.17 | Python 3 (`python`, or set `PCB_AUTO_PYTHON`) | any OS |
+| `verify` | ≥ 18.17 | PowerShell 7 (`pwsh`) + Python 3 | any OS with `pwsh` |
+| `build` | ≥ 18.17 | PowerShell 7 + LCEDA Pro 4.1.111 | **Windows only** |
+
+`package.json` deliberately declares no `"os"` field: the old `"os": ["win32"]` blocked installing the
+package on Linux/macOS just to run `fabcheck`. The one hard constraint is `engines.node >= 18.17`
+(`AbortSignal.any` in `core/ops.mjs`).
 
 **Critical**: orderability is `fabcheck`'s exit code, never `_run.json.ok`. They answer different
 questions. See [Mistake to avoid](#mistake-to-avoid).
@@ -94,7 +110,8 @@ Other measured facts:
 
 1. **No board produced by this project has ever been physically manufactured or electrically
    validated.** Every "orderable" claim is a statement about *files*, not about a working circuit.
-2. **Windows only.** The pipeline needs PowerShell and a Windows-only EDA server process.
+2. **`build` is Windows only.** It needs PowerShell and a Windows-only EDA server process. The other
+   four operations are OS-agnostic, but they cannot draw a new board — see "Runtime requirements" above.
 3. **One EDA vendor.** 嘉立创 EDA (LCEDA). Not KiCad, not Altium, not Eagle.
 4. **The autorouter is not reliable enough to trust blind.** In this corpus 2 of 44 board names
    (4.5 %) never produced an orderable directory, and one of them was tried twice. The retry ladder
