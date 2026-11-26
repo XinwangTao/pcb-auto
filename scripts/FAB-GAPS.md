@@ -1,5 +1,10 @@
 # FAB-GAPS · 7 条缺口复查
 
+> 引用里的 `verify-artifacts.js` 在写作时被简写成 `v-a.js`，而仓库里没有这个名字的文件 ——
+> 现已改回全名。**行号仍然对得上**（2026-11-26 复核：`:338` 是
+> `const drills = zipNames.filter((n) => /\.DRL$/i.test(n));`，`:411` 是 `d01 + d03 < 3` 那句），
+> 所以下面每条结论都还成立、每条指针都能点开核对。
+
 快照：2026-11-25 20:20。**全程只读**：未开 EDA、未调 `lceda-pro.exe`、未跑 `run-all.ps1`；pipeline3.js 只读不写（该文件 20:15 仍在被实时修改，行号仅对本快照有效，定位请用 grep 关键词）。
 工具：`E:\APP\nodejs24\node.exe`（v24.19.0），全离线——ZIP/OOXML/Gerber/NC 用 Node 内置模块解析，不依赖 xlsx 模块、python、pwsh。
 
@@ -8,12 +13,12 @@
 |#| FAB-AUDIT §4 缺口 | 校验器是否仍漏 | 产物侧现状 | 阻断 |
 |---|---|---|---|---|
 | ① | TestPoints 不校验 | **仍漏**（verify-artifacts 全文无 TestPoints 引用） | **仍存在**，且非确定性 | 否 |
-| ② | 钻孔只数文件名不数孔 | **仍漏**（v-a.js:338-344 只数 `.DRL` 个数） | **仍存在**：6/6 抽查有重复孔 | 否 |
+| ② | 钻孔只数文件名不数孔 | **仍漏**（verify-artifacts.js:338-344 只数 `.DRL` 个数） | **仍存在**：6/6 抽查有重复孔 | 否 |
 | ③ | 元件值↔物料不比对 | **仍漏** | **仍存在**：4 份 run 命中 4.7k/1.2k→实发 1k | **是（会错件）** |
-| ④ | 板框只要 `d01+d03≥3` 不验闭合 | **仍漏**（v-a.js:411） | 12/12 抽查实际闭合且尺寸对 | 否 |
-| ⑤ | 空层不查、丝印阈值 3 太松 | **仍漏**（v-a.js:414-419 只查 GTS/GTO，GBS/GBO 完全不查） | GBO 每份都 0 图元（合规） | 否 |
-| ⑥ | PDF 只看字节数 | **仍漏**（v-a.js:427-430） | 6/6 均 `%PDF-1.4`/6 页/`%%EOF` | 否 |
-| ⑦ | PnP 单位写死 mm×39.37、不断言表头 | **仍漏**（v-a.js:352、357-359） | 仍混杂（见 §2） | 否 |
+| ④ | 板框只要 `d01+d03≥3` 不验闭合 | **仍漏**（verify-artifacts.js:411） | 12/12 抽查实际闭合且尺寸对 | 否 |
+| ⑤ | 空层不查、丝印阈值 3 太松 | **仍漏**（verify-artifacts.js:414-419 只查 GTS/GTO，GBS/GBO 完全不查） | GBO 每份都 0 图元（合规） | 否 |
+| ⑥ | PDF 只看字节数 | **仍漏**（verify-artifacts.js:427-430） | 6/6 均 `%PDF-1.4`/6 页/`%%EOF` | 否 |
+| ⑦ | PnP 单位写死 mm×39.37、不断言表头 | **仍漏**（verify-artifacts.js:352、357-359） | 仍混杂（见 §2） | 否 |
 
 "仍漏"= 校验器代码自审计以来未改，洞还在；"仍存在"= 产物里真的能抓到。两者都已由新检查器 `scripts\fabcheck.js` 补上（②③⑦ 直接可判，①⑤⑥ 见下）。
 
@@ -56,20 +61,20 @@ fabcheck 即按此判：`gerber.mask.bottom.empty` / `gerber.silk.bottom.empty` 
 
 ## 3 其余五条细节
 
-**① TestPoints**：v-a.js 完全不看该文件。`fix-artifacts.js:24-33` 只在 run-all 的"自述通过"分支被调用（`run-all.ps1:415`），而 `record-full.ps1:67`、`d7d8-run.ps1:72`、`record-real.ps1:75` 直接调 pipeline3 → 不经过 fix。实测并存两种状态：
+**① TestPoints**：verify-artifacts.js 完全不看该文件。`fix-artifacts.js:24-33` 只在 run-all 的"自述通过"分支被调用（`run-all.ps1:415`），而 `record-full.ps1:67`、`d7d8-run.ps1:72`、`record-real.ps1:75` 直接调 pipeline3 → 不经过 fix。实测并存两种状态：
 - `out\LED_RGB_Indicator-20261125-193838\TestPoints.xlsx` 8107B（已改名，正确；3 sheet，sharedStrings 含"测试点覆盖率"、"0%"）；
 - `out\RP2040_Minimal-20261125-194222\TestPoints.csv` 8306B，头 `50 4b 03 04 0a 00` = ZIP/xlsx（名字骗人，CSV 解析器必崩）。
 根因在导出侧：`pipeline3.js:1965` 把 `getTestPointFile()` 的返回值直接命名 `.csv`。
 
-**③ 值↔物料**：v-a.js 无此比对（只在 §4 给了粘贴代码）。实测命中——`SHT30_LDO_Module-193402`、`SHT30_Module_Full-193042`、`SHT30_Module_Full-185314` 的 `R1,R2 标 4.7k`、`AI_…-192147` 的 `R1,R2 标 4.7k` + `R4 标 1.2k`，四条全指向 `0402WGF1001TCE`（`C11702` = 1kΩ）→ 实发 1k。反例：`LED_RGB-193838` 的 `1kΩ/C11702`、`5.1kΩ/0402WGF5101TCE` 相符，说明判据不误报。这一条我按**警告**输出（`bom.value.mismatch`），因为它不改 PCB 可制造性，但会错件。
+**③ 值↔物料**：verify-artifacts.js 无此比对（只在 §4 给了粘贴代码）。实测命中——`SHT30_LDO_Module-193402`、`SHT30_Module_Full-193042`、`SHT30_Module_Full-185314` 的 `R1,R2 标 4.7k`、`AI_…-192147` 的 `R1,R2 标 4.7k` + `R4 标 1.2k`，四条全指向 `0402WGF1001TCE`（`C11702` = 1kΩ）→ 实发 1k。反例：`LED_RGB-193838` 的 `1kΩ/C11702`、`5.1kΩ/0402WGF5101TCE` 相符，说明判据不误报。这一条我按**警告**输出（`bom.value.mismatch`），因为它不改 PCB 可制造性，但会错件。
 
-**④ 板框**：v-a.js:411 仍只 `d01+d03<3`。实测 12/12 的 GKO 都是 4×D01 + 首点回环闭合、尺寸与 `_run.json` 毫厘不差（LED_RGB 30.48×22.86mm = 1200×900mil）。→ 产物没坏，校验器仍漏。
+**④ 板框**：verify-artifacts.js:411 仍只 `d01+d03<3`。实测 12/12 的 GKO 都是 4×D01 + 首点回环闭合、尺寸与 `_run.json` 毫厘不差（LED_RGB 30.48×22.86mm = 1200×900mil）。→ 产物没坏，校验器仍漏。
 
-**⑤ 空层/丝印**：v-a.js:414-419 仅 GTS/GTO 且 `n<3`。GBS/GBO 从未检查。另测出丝印轻微超框（`ESP32C3_Minimal-185851` GTO 9 个图元到 X=51.417，板宽 50.8，超 0.6mm）——印刷会被裁，可接受，fabcheck 记为警告。
+**⑤ 空层/丝印**：verify-artifacts.js:414-419 仅 GTS/GTO 且 `n<3`。GBS/GBO 从未检查。另测出丝印轻微超框（`ESP32C3_Minimal-185851` GTO 9 个图元到 X=51.417，板宽 50.8，超 0.6mm）——印刷会被裁，可接受，fabcheck 记为警告。
 
-**⑥ PDF**：v-a.js:427-430 只看 `size>10000`。实测 6/6 为 `25 50 44 46 2d 31 2e 34`（`%PDF-1.4`）、6 页、尾部 `%%EOF`。
+**⑥ PDF**：verify-artifacts.js:427-430 只看 `size>10000`。实测 6/6 为 `25 50 44 46 2d 31 2e 34`（`%PDF-1.4`）、6 页、尾部 `%%EOF`。
 
-**⑦ PnP**：v-a.js:352 精确取 `Mid X`，:357-359 写死 `*39.3701`。现状混杂：UTF-16LE（`ff fe`，5 份）与 UTF-8 BOM（`ef bb bf`）并存；TAB 与逗号并存；`"13.122mm"` 与裸 `17.532` 并存，后缀有无与 run 时间无规律（`LED_RGB-193838` 无、`RP2040_Minimal-194222` 有）。导出意图是 mm（`pipeline3.js:1963` 第三参 `'mm'`），但下游不该靠猜：fabcheck 用 `后缀 > mmol 拟合`（仅当 mm 落不进板框、mil 落得进且全整数才判 mil）。
+**⑦ PnP**：verify-artifacts.js:352 精确取 `Mid X`，:357-359 写死 `*39.3701`。现状混杂：UTF-16LE（`ff fe`，5 份）与 UTF-8 BOM（`ef bb bf`）并存；TAB 与逗号并存；`"13.122mm"` 与裸 `17.532` 并存，后缀有无与 run 时间无规律（`LED_RGB-193838` 无、`RP2040_Minimal-194222` 有）。导出意图是 mm（`pipeline3.js:1963` 第三参 `'mm'`），但下游不该靠猜：fabcheck 用 `后缀 > mmol 拟合`（仅当 mm 落不进板框、mil 落得进且全整数才判 mil）。
 
 ## 4 建议改动（**只建议，未动手**）
 
