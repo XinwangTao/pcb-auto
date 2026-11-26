@@ -358,7 +358,7 @@ function Remove-OrphanLceda {
 function Test-SessionAlive([string]$sid) {
   if (-not $sid) { return $false }
   try {
-    $probe = (& $CLI invoke --session $sid --ext-uuid eda --code 'return 1' --timeout 30000 2>&1 | Out-String)
+    $probe = (& $CLI invoke --session $sid --ext-uuid eda --code 'return 1' --timeout 30000 2>$null | Out-String)
     $j = $probe | ConvertFrom-Json
     return [bool]($j.ok)
   } catch { return $false }
@@ -575,6 +575,67 @@ if ($baseArea -gt [Math]::Max($estArea * 2.2, $FIVExFIVE_MIL2)) {
 # SESSION_CLOSED / SESSION_NOT_FOUND 说明 session 已被别处 abort 或工程侧失效。
 # 两种都必须换一个干净 session，直接 continue 只会把整批设计一起拖死。
 # session abort 是唯一能杀掉「卡死窗口/仍在跑的代码」的命令。
+# ══ invoke 输出的唯一正确取法 ══
+# 旧写法是 `(& $CLI invoke ... 2>&1 | Out-String)` —— 把 stderr 合并进了 JSON 字符串。
+# `cli/pcb.mjs:6` 写明「输出默认是单行 JSON（stdout），日志走 stderr」,两个流本该分开。
+# 判别实验（2026-11-26T16:56，F:\cache\temp\probe-stdout-encoding\probe.ps1）：
+#   2>&1 + 默认编码   -> ConvertFrom-Json 抛
+#        Unexpected character encountered while parsing value: l
+#        （raw 头 80 字节 = "[log] routeIter iter=0\n{"ok":true,...}"，stderr 排在 `{` 前面）
+#   只取 stdout       -> 解析成功，中文正常 —— 所以原因不是编码，是合流
+# 代价：out/ESP32S3_Wireless_Mic_V3-20261126-163653 那次 781.5s 的构建，6/6 产物全导出、
+# routeState=completed，却因这一行被判成 `NON_JSON 未知输出`，重建 session 重跑一整轮；
+# 而且当时**没留任何原始输出**，原因无法事后追溯。
+# 所以这里一次做三件事：两个流分开 / 强制 UTF-8 解码 / 解析失败一定落盘。
+function Invoke-PipelineRaw {
+  param([string]$ArgsFile, [int]$TimeoutMs, [string]$Tag)
+  $errFile = Join-Path ([IO.Path]::GetTempPath()) ('pcb-invoke-{0}-{1}.err' -f $Tag, [Guid]::NewGuid().ToString('N'))
+  $prevOut = [Console]::OutputEncoding
+  $out = $null
+  try {
+    [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false
+    $out = (& $CLI invoke --session $sid --ext-uuid eda --code-file (Get-PipelineScript) --args (Get-Content $ArgsFile -Raw) --timeout $TimeoutMs 2> $errFile | Out-String)
+  } finally { [Console]::OutputEncoding = $prevOut }
+  $errText = ''
+  if (Test-Path $errFile) {
+    try { $errText = [IO.File]::ReadAllText($errFile, [Text.Encoding]::UTF8) } catch { }
+    Remove-Item $errFile -Force -ErrorAction SilentlyContinue
+  }
+  $parsed = $null
+  $parseErr = $null
+  if ($out) {
+    try { $parsed = $out | ConvertFrom-Json } catch { $parseErr = $_.Exception.Message }
+    if ($null -eq $parsed) {
+      # 抢救：整体解析不了就把最外层 {...} 抠出来再试一次。这正好救回「若干行 + JSON」的形状，
+      # 代价只有一次正则 —— 换回的是一整轮不必重跑的流水线。
+      $m = [regex]::Match($out, '(?s)\{.*\}')
+      if ($m.Success) { try { $parsed = $m.Value | ConvertFrom-Json } catch { } }
+    }
+  } else { $parseErr = 'stdout 为空' }
+  return [pscustomobject]@{ raw = $out; err = $errText; res = $parsed; parseErr = $parseErr }
+}
+
+# 解析失败时把原始输出落盘。没有它，`NON_JSON` 这四个字就是全部线索。
+function Save-InvokeFailure {
+  param($Inv, [string]$Tag, [string]$OutDir)
+  if (-not $OutDir -or -not $Inv) { return }
+  $p = Join-Path $OutDir ('fail-{0}-{1}.txt' -f $Tag, [DateTime]::Now.ToString('HHmmss'))
+  try {
+    $outLen = 0; if ($Inv.raw) { $outLen = $Inv.raw.Length }
+    $errLen = 0; if ($Inv.err) { $errLen = $Inv.err.Length }
+    $sb = New-Object Text.StringBuilder
+    [void]$sb.AppendLine('parseErr: ' + [string]$Inv.parseErr)
+    [void]$sb.AppendLine('stdoutLen: ' + [string]$outLen)
+    [void]$sb.AppendLine('stderrLen: ' + [string]$errLen)
+    [void]$sb.AppendLine('--- stdout (head 4000) ---')
+    if ($Inv.raw) { [void]$sb.AppendLine($Inv.raw.Substring(0, [Math]::Min(4000, $outLen))) }
+    [void]$sb.AppendLine('--- stderr (head 4000) ---')
+    if ($Inv.err) { [void]$sb.AppendLine($Inv.err.Substring(0, [Math]::Min(4000, $errLen))) }
+    [IO.File]::WriteAllText($p, $sb.ToString(), (New-Object Text.UTF8Encoding $false))
+    Log ("  原始输出已留存：" + (Split-Path $p -Leaf)) 'DarkYellow'
+  } catch { Log ("  原始输出留存失败：" + $_.Exception.Message) 'Yellow' }
+}
+
 function Reset-Session([string]$why) {
   Log "重建 session（原因：$why）" 'Yellow'
   try { & $CLI session abort --session $script:sid 2>&1 | Out-Null } catch { }
@@ -681,24 +742,29 @@ foreach ($plan in $healPlans) {
   Set-Content -Path $argsFile -Value $payload -Encoding UTF8
 
   Log ("尝试 [$($plan.tag)] 板框 {0}x{1} mil" -f $plan.w, $plan.h) 'DarkGray'
+  $inv = $null
   try {
-    $raw = (& $CLI invoke --session $sid --ext-uuid eda --code-file (Get-PipelineScript) --args (Get-Content $argsFile -Raw) --timeout $InvokeTimeoutMs 2>&1 | Out-String)
+    $inv = Invoke-PipelineRaw -ArgsFile $argsFile -TimeoutMs $InvokeTimeoutMs -Tag ("$planIdx-$($plan.tag)")
+    $raw = $inv.raw
   } catch {
     Log "invoke 异常：$($_.Exception.Message)" 'Yellow'
     continue
   }
-  try { $res = $raw | ConvertFrom-Json } catch {
+  try { $res = $inv.res; if ($null -eq $res) { throw [string]$inv.parseErr } } catch {
     # 非 JSON 只有两类原因，且都必须先换 session 再重试，否则重试必然同样失败
     $why = if ($raw -match 'REQUEST_TIMEOUT') { 'REQUEST_TIMEOUT 幽灵调用仍在 render 里跑' }
            elseif ($raw -match 'SESSION_CLOSED') { 'SESSION_CLOSED session 已被 abort' }
            elseif ($raw -match 'SESSION_NOT_FOUND|does not exist') { 'SESSION_NOT_FOUND session 已失效' }
            else { 'NON_JSON 未知输出' }
     Log "输出不是 JSON（$why）" 'Yellow'
+    Save-InvokeFailure -Inv $inv -Tag ("$planIdx-$($plan.tag)-$($why.Split(' ')[0])") -OutDir $OutDir
     ($raw -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 2) | ForEach-Object { Log "    $($_.Trim())" 'DarkYellow' }
     if (-not (Reset-Session $why)) { continue }
     try {
-      $raw = (& $CLI invoke --session $sid --ext-uuid eda --code-file (Get-PipelineScript) --args (Get-Content $argsFile -Raw) --timeout $InvokeTimeoutMs 2>&1 | Out-String)
-      $res = $raw | ConvertFrom-Json
+      $inv = Invoke-PipelineRaw -ArgsFile $argsFile -TimeoutMs $InvokeTimeoutMs -Tag ("$planIdx-$($plan.tag)-r1")
+      $raw = $inv.raw
+      $res = $inv.res
+      if ($null -eq $res) { throw [string]$inv.parseErr }
     } catch { Log "重建后重试仍失败：$($_.Exception.Message)" 'Yellow'; continue }
   }
   if ($res -and -not $res.ok) {
@@ -708,8 +774,10 @@ foreach ($plan in $healPlans) {
       Remove-Item $SessionFile -Force -ErrorAction SilentlyContinue
       try { $sid = Ensure-Session } catch { Log "重建会话失败：$($_.Exception.Message)" 'Red'; continue }
       try {
-        $raw = (& $CLI invoke --session $sid --ext-uuid eda --code-file (Get-PipelineScript) --args (Get-Content $argsFile -Raw) --timeout $InvokeTimeoutMs 2>&1 | Out-String)
-        $res = $raw | ConvertFrom-Json
+        $inv = Invoke-PipelineRaw -ArgsFile $argsFile -TimeoutMs $InvokeTimeoutMs -Tag ("$planIdx-$($plan.tag)-r2")
+        $raw = $inv.raw
+        $res = $inv.res
+        if ($null -eq $res) { throw [string]$inv.parseErr }
       } catch { Log "重建后重试仍失败：$($_.Exception.Message)" 'Yellow'; continue }
     }
     if ($res -and -not $res.ok) { Log ("信封错误：" + ($res.error | ConvertTo-Json -Compress)) 'Yellow'; continue }
@@ -940,7 +1008,8 @@ foreach ($plan in $healPlans) {
       Set-Content -Path $argsFile -Value $payload2 -Encoding UTF8
       $raw2 = $null
       try {
-        $raw2 = (& $CLI invoke --session $sid --ext-uuid eda --code-file (Get-PipelineScript) --args (Get-Content $argsFile -Raw) --timeout $InvokeTimeoutMs 2>&1 | Out-String)
+        $inv2 = Invoke-PipelineRaw -ArgsFile $argsFile -TimeoutMs $InvokeTimeoutMs -Tag 'compact'
+        $raw2 = $inv2.raw
       } catch { Log "紧凑板框 invoke 异常：$($_.Exception.Message)" 'Yellow' }
       if ($raw2) {
         $res2 = $null
