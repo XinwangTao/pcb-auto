@@ -2779,7 +2779,7 @@ const slotPadGeometry = async () => {
   } catch (e) { log('slotGeoErr', String(e && e.message).slice(0, 90)); }
   slotPadCache = out;
   return out;
-};const universalGeo = async (id, violX, violY) => {
+};const universalGeo = async (id, violX, violY, needDist) => {
   const P = eda.pcb_Primitive;
   if (!P || typeof P.getPrimitivesBBox !== 'function') {
     log('uniGeoUnavailable', { hasPrim: !!P });
@@ -2800,12 +2800,30 @@ const slotPadGeometry = async () => {
     log('uniGeoBadBox', { id: String(id), box: [x0, y0, x1, y1] });
     return null;
   }
-  const tol = 4;
-  const contains = violX >= x0 - tol && violX <= x1 + tol && violY >= y0 - tol && violY <= y1 + tol;
+  // 【为什么不能写死 tol】净距违规点到障碍物边缘的距离**按定义就等于要求的净距**：
+  // 铜离障碍物 11.81mil 才合规，那违规点就必然在盒子外 ≤11.81mil 处。
+  // 实测 2026-11-26T19:21（v4 第 4 次尝试）：U4（MEMS 硅麦 DMM-4026）封装里那个
+  // 16.83×16.83mil 的声孔区域，违规点 x=637 而盒子 x0=641.587 —— 只差 0.587mil，
+  // 写死的 tol=4 判 contains:false ⇒ 几何当成"拿不到" ⇒ clearanceSkipNoGeo 拒绝绕线。
+  // 3 条违规里 2 条栽在这 0.587mil 上（uniGeo contains:false ×2 / true ×1）。
+  // 换成"违规点到盒子的真实距离 ≤ needDist + 2"——有物理含义，不是放宽常数：
+  //   dist > needDist ⇒ 这盒子解释不了这条违规，仍拒绝（防 d12/d13 那种假盒）
+  //   量不到 needDist ⇒ 退回 4mil，与打补丁前逐字节相同
+  const distToBox = (px, py) => {
+    const dx = px < x0 ? x0 - px : (px > x1 ? px - x1 : 0);
+    const dy = py < y0 ? y0 - py : (py > y1 ? py - y1 : 0);
+    return Math.hypot(dx, dy);
+  };
+  const violToBox = distToBox(violX, violY);
+  const tol = (Number.isFinite(needDist) && needDist > 0) ? needDist + 2 : 4;
+  const contains = violToBox <= tol;
   log('uniGeo', { id: String(id), type: type === undefined ? null : String(type),
     box: [Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1)],
     wh: [Math.round(x1 - x0), Math.round(y1 - y0)],
-    viol: [Math.round(violX), Math.round(violY)], contains });
+    viol: [Math.round(violX), Math.round(violY)],
+    distToBox: Math.round(violToBox * 100) / 100,
+    need: Number.isFinite(needDist) ? Math.round(needDist * 100) / 100 : null,
+    tol: Math.round(tol * 100) / 100, contains });
   if (!contains) return null;
   const w = x1 - x0, h = y1 - y0;
   // 退化盒（宽或高为 0）当线段处理没意义，也说明读到的不是面积型障碍物
@@ -2878,7 +2896,7 @@ const slotPadGeometry = async () => {
     pts: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]],
   };
 };
-const resolveObstacle = async (obType, obId, violX, violY) => {
+const resolveObstacle = async (obType, obId, violX, violY, needDist) => {
   const id = obId ? String(obId) : '';
   if (!id) return null;
   const idx = await ensureGeoIdx();
@@ -3006,7 +3024,7 @@ const resolveObstacle = async (obType, obId, violX, violY) => {
   }
   // 按类都取不到 → 让 API 自己回答这个 id 是什么、bbox 在哪（见 universalGeo 注释）。
   // 只有这一条能覆盖"不属于任何已索引类"的图元，Slot Region 就是这一类。
-  return await universalGeo(id, violX, violY);
+  return await universalGeo(id, violX, violY, needDist);
 };
 
 for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
@@ -3544,7 +3562,7 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
       // 这里不再重复声明：同一份逻辑写两遍就是两个缺陷点，改一处漏一处。
       // ★ 按障碍物**真实类型**取几何：Track 线段（两端点+线宽）/ Via 圆（外径/2）/
       //   Hole 圆（孔径/2）/ Slot Region 轮廓 / Pad 外接矩形。取不到就是 null。
-      const obs = await resolveObstacle(obstacleType, obstacleId, violX, violY);
+      const obs = await resolveObstacle(obstacleType, obstacleId, violX, violY, needDist);
       const obsBox = geoBBox(obs);
       // ★ 两种"几何不完整"必须**分开判**（曾被合并成一条，结果挡掉了一条真能通过的路径）。
       //
