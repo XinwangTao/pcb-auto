@@ -10,7 +10,12 @@
 """
 import io, os, re, glob, json, html, hashlib, subprocess, sys
 
-ROOT = r"D:\Users\陶鑫旺\Documents\deepseek-harness\default-workspace\pcb-auto"
+# 仓库根：优先环境变量，否则从本文件位置推（out/_probe/<script>.py 的上两级）。
+# **不要写死绝对路径。** 写死会让这个量具在被别人克隆后去量另一个目录，
+# 而且不报错 —— 它会给出一份看起来正常的、属于别人的数字。
+ROOT = os.environ.get("PCB_AUTO_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.abspath(ROOT)
 OUT = os.path.join(ROOT, "out")
 PY = sys.executable
 

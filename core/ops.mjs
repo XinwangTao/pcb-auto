@@ -122,6 +122,19 @@ function readJson(p) {
 }
 
 /**
+ * 文件 mtime（毫秒 epoch），读不到返回 null。
+ *
+ * 存在的唯一理由是回答「这份报告是刚刚算出来的，还是本来就躺在那儿」。
+ * 量具跑完之后 mtime 没变 ⇒ 它没写文件 ⇒ 读到的是旧数据。
+ *
+ * @param {string} p
+ * @returns {number|null}
+ */
+function fileMtime(p) {
+  try { return statSync(p).mtimeMs } catch { return null }
+}
+
+/**
  * 找某个设计名最新的一次产物目录。
  * @param {string} root
  * @param {string} designName
@@ -284,30 +297,70 @@ export async function fabcheck(args, opt = {}) {
  */
 export async function census(args = {}, opt = {}) {
   const root = opt.root || ROOT
-  const argv = [join(root, 'out', '_probe', 'fab-census.py'), '--quiet']
+  const script = join(root, 'out', '_probe', 'fab-census.py')
+  const reportPath = join(root, 'out', '_probe', 'fab-census.json')
+
+  if (!existsSync(script)) {
+    return {
+      ok: false, exitCode: 2, at: now(),
+      dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
+      raw: `找不到量具：${script}\n（out/_probe/ 是随仓库发布的，若缺失说明克隆不完整）`,
+      reportPath: '',
+    }
+  }
+
+  // 记下跑之前的 mtime。跑完如果它没变，说明脚本**没有写出新结果**，
+  // 那么读到的就是上一次（甚至是从仓库里带出来的）报告。
+  // 不做这个判断，就会把一份旧数据盖上「现在」的时间戳 —— 那是最难发现的一类错。
+  const mtimeBefore = fileMtime(reportPath)
+
+  const argv = [script, '--quiet']
   if (args.settle) argv.push('--settle', String(args.settle))
   const r = await run(pythonBin(), argv, { cwd: root, signal: opt.signal, timeoutMs: 15 * 60 * 1000 })
 
-  const reportPath = join(root, 'out', '_probe', 'fab-census.json')
-  const j = readJson(reportPath)
-  if (!j || !j.all) {
-    return {
-      ok: false, exitCode: typeof r.code === 'number' ? r.code : 2, at: now(),
-      dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
-      raw: tail((r.out + r.err).trim(), 1500), reportPath: '',
-    }
+  const failed = {
+    ok: false,
+    exitCode: typeof r.code === 'number' && r.code !== 0 ? r.code : 2,
+    at: now(),
+    dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
+    raw: tail((r.out + r.err).trim(), 1500),
+    reportPath: '',
   }
+
+  // 退出码非 0 ⇒ **不要**去读报告文件。磁盘上可能躺着一份旧的，
+  // 读它就是「量具读不到输入时保持沉默，还把上次的答案拿出来」。
+  if (r.code !== 0) return failed
+
+  const mtimeAfter = fileMtime(reportPath)
+  const refreshed = mtimeAfter !== null && mtimeAfter !== mtimeBefore
+
+  const j = readJson(reportPath)
+  if (!j || !j.all) return failed
+
   const st = j.self_ok_true || {}
   const ids = j.blocker_ids || {}
   return {
     ok: true,
     exitCode: 0,
-    at: now(),
+    // at 是**这份数据什么时候测的**，不是「我什么时候读的」。两者不是一回事。
+    at: mtimeAfter ? new Date(mtimeAfter).toISOString() : now(),
+    // live = 刚刚真扫了一遍；snapshot = 脚本没写新文件，读到的是随仓库发布的旧报告。
+    // 消费者必须能分辨 —— 否则「53/56 可下单」会被当成此刻的事实。
+    source: refreshed ? 'live' : 'snapshot',
+    ...(refreshed ? {} : {
+      sourceNote: '量具没有写出新报告，这份数据来自已有的 out/_probe/fab-census.json（可能是随仓库发布的快照）。要一次真实测量，请在有产物目录的仓库里跑。',
+    }),
+    // 0 个目录不是「全部通过」。不加这一句，`dirs:0 / blocked:0 / ok:true`
+    // 会被读成一份完美的成绩单 —— 而它其实一分数据都没有。
+    ...((j.all.n || 0) === 0 ? {
+      emptyNote: '没有可测量的产物目录（out/ 下没有带 _run.json 的目录）。这不是「全部可下单」，是没有样本。',
+    } : {}),
     dirs: j.all.n || 0,
     fabOk: j.all.fab_ok || 0,
     blocked: j.all.fab_blocked || 0,
     parseErrors: j.all.fab_error || 0,
     inFlight: Array.isArray(j.in_flight) ? j.in_flight.length : 0,
+    settle: typeof j.settle_s === 'number' ? j.settle_s : null,
     selfOkTrue: st.n || 0,
     selfOkTrueOk: st.fab_ok || 0,
     blockerIds: Object.entries(ids).map(([k, v]) => `${k}×${v}`).join(', ').slice(0, 400),

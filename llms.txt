@@ -68,6 +68,19 @@ The denominator is not stable by construction: with settle 0 / 180 / live scan y
 different, all-legitimate counts. **A count without its settle window and timestamp is not a
 measurement.** This project states that rule in `docs/WHY.md` and enforces it in `verify-delivery.ps1`.
 
+`census` output carries a `source` field, and you should read it before quoting any number:
+
+- `source: "live"` — the measuring script actually rewrote its report just now.
+- `source: "snapshot"` — it did not, so you are reading a report that was already on disk
+  (likely one published with the repository). The `at` field is that file's mtime, not "now",
+  and a `sourceNote` explains it. Do not present a snapshot as a current measurement.
+- `dirs: 0` means **no samples**, not "everything passed". Such output carries an `emptyNote`.
+
+This distinction exists because it was once wrong: on a fresh clone with no product directories,
+`census` reported "56 directories, 53 orderable" by reading a stale committed report and stamping
+it with the current time. The cause was a hardcoded absolute path in the measuring script plus a
+missing exit-code check. Both are fixed and pinned by tests in `test/smoke.mjs` group 8.
+
 Caveat on "board name": it is derived from the product directory name, **not** from a primary key.
 Two source designs can share one product name, so 44 is a name count, not a unique-design count.
 

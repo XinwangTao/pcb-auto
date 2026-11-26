@@ -13,7 +13,8 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -372,6 +373,129 @@ check('每个平台都能 --print 出非空片段', () => {
     assert(p.stdout.trim().length > 40, `${id}: 输出太短`)
   }
   return `${ids.length} 个全部可打印`
+})
+
+console.log('\n\x1b[1m8 · 量具不许编造\x1b[0m')
+
+/**
+ * 这一组的由来：把仓库推到 GitHub 之后，在全新克隆里跑 `census`，
+ * 它报出「56 个目录 / 53 可下单」，而那个克隆里一个产物目录都没有。
+ *
+ * 两个原因同时存在：
+ *   1. fab-census.py 把开发者绝对路径写死在 ROOT 里 → 它去量了另一台目录；
+ *   2. ops.mjs 不看退出码就读磁盘上的旧报告，还把 at 写成「现在」。
+ *
+ * 「读不到输入时保持沉默，并且把上次的答案拿出来」是最危险的一类错：
+ * 它不报错，它给一个看起来完全正常的数字。所以钉在这里。
+ */
+const PROBE = join(ROOT, 'out', '_probe')
+
+for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'artifact-consistency.py']) {
+  check(`量具 ${rel} 不硬编码开发者路径`, () => {
+    const p = join(PROBE, rel)
+    if (!existsSync(p)) return '不存在（跳过）'
+    const src = read(p)
+    assert(!/^\s*ROOT\s*=\s*r?"[A-Za-z]:\\/m.test(src), '仍然把 ROOT 写成绝对路径常量')
+    assert(!/陶鑫旺/.test(src), '仍然含开发者用户名')
+    assert(!/^\s*NODE\s*=\s*r?"[A-Za-z]:\\/m.test(src), '仍然把 NODE 写成绝对路径常量')
+    assert(/PCB_AUTO_ROOT/.test(src) || /__file__/.test(src), '没有可移植的根定位')
+  })
+}
+
+check('census 输出带 source 字段，能分辨 live / snapshot', () => {
+  const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'census'], { timeout: 300_000 })
+  assert(r.stdout.trim(), `没有输出；stderr=${r.stderr.slice(0, 300)}`)
+  let j
+  try { j = JSON.parse(r.stdout.trim()) } catch { throw new Error(`不是 JSON：${r.stdout.slice(0, 200)}`) }
+
+  assert(j.source === 'live' || j.source === 'snapshot', `source 取值非法：${j.source}`)
+  // 这是核心：如果它没真扫一遍，就不能把时间戳写成「刚刚」。
+  if (j.source === 'snapshot') {
+    assert(typeof j.sourceNote === 'string' && j.sourceNote.length > 10, 'snapshot 却没解释为什么')
+  }
+  // 0 个目录不是「全部通过」。
+  if (j.dirs === 0) {
+    assert(typeof j.emptyNote === 'string', 'dirs=0 却没给 emptyNote —— 会被读成 0/0 全过')
+    assert(j.fabOk === 0, `dirs=0 却报 fabOk=${j.fabOk}`)
+  }
+  // at 必须是「测于何时」，所以得是可解析的时间，且不能在未来。
+  const t = Date.parse(j.at)
+  assert(Number.isFinite(t), `at 不是时间：${j.at}`)
+  assert(t <= Date.now() + 60_000, `at 在未来：${j.at}`)
+  return `source=${j.source} dirs=${j.dirs} fabOk=${j.fabOk}`
+})
+
+check('census 退出码与 ok 一致（ok=true ⇔ exitCode=0）', () => {
+  const r = run([join(ROOT, 'cli', 'pcb.mjs'), 'census'], { timeout: 300_000 })
+  const j = JSON.parse(r.stdout.trim())
+  assert((j.ok === true) === (j.exitCode === 0), `ok=${j.ok} 但 exitCode=${j.exitCode}`)
+  assert(r.code === (j.ok ? 0 : j.exitCode), `进程退出码 ${r.code} 与输出里的 ${j.exitCode} 不一致`)
+})
+
+/** 造一个最小仓库结构：只有 out/_probe/，可以把任意量具脚本塞进去。 */
+const fakeRoot = (scriptBody, staleReport) => {
+  const tmp = mkdtempSync(join(tmpdir(), 'pcb-auto-probe-'))
+  mkdirSync(join(tmp, 'out', '_probe'), { recursive: true })
+  if (scriptBody !== null) {
+    writeFileSync(join(tmp, 'out', '_probe', 'fab-census.py'), scriptBody, 'utf8')
+  }
+  if (staleReport !== undefined) {
+    writeFileSync(join(tmp, 'out', '_probe', 'fab-census.json'), JSON.stringify(staleReport), 'utf8')
+  }
+  return tmp
+}
+
+const STALE = {
+  all: { n: 999, fab_ok: 999, fab_blocked: 0, fab_error: 0 },
+  settle_s: 0, blocker_ids: {}, self_ok_true: { n: 999, fab_ok: 999 },
+}
+
+/** 在假仓库上跑 core 的 census，返回它的输出对象。 */
+const censusAt = (root) => {
+  const r = run(['-e', `
+    const { census } = await import(${JSON.stringify(pathToFileURL(join(ROOT, 'core', 'ops.mjs')).href)})
+    console.log(JSON.stringify(await census({}, { root: ${JSON.stringify(root)} })))
+  `], { timeout: 90_000 })
+  assert(r.code === 0, `node exit ${r.code}: ${r.stderr.slice(0, 300)}`)
+  return JSON.parse(r.stdout.trim().split('\n').pop())
+}
+
+check('量具不存在 → census 明确失败，不去读旧报告', () => {
+  const tmp = fakeRoot(null, STALE)
+  try {
+    const j = censusAt(tmp)
+    assert(j.ok === false, `返回 ok=true（dirs=${j.dirs}）—— 读了不该读的旧报告`)
+    assert(j.dirs === 0, `报出 ${j.dirs} 个目录`)
+    assert(j.exitCode !== 0, `exitCode=${j.exitCode}，期望非 0`)
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
+})
+
+// 这条才是原来那个真实 bug 的形状：量具在、但它跑失败了，而磁盘上躺着一份旧报告。
+// 如果实现不看退出码就去读报告文件，它会把 999 当成这次的结果报出来。
+check('量具跑失败 + 磁盘有旧报告 → 不许拿旧报告当结果', () => {
+  const tmp = fakeRoot('import sys\nsys.exit(1)\n', STALE)
+  try {
+    const j = censusAt(tmp)
+    assert(j.ok === false, `量具失败了却返回 ok=true —— 它读了旧报告（dirs=${j.dirs}）`)
+    assert(j.dirs !== 999, '把旧报告里的 999 当成这次的结果报了出来')
+    assert(j.exitCode !== 0, `exitCode=${j.exitCode}，期望非 0`)
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
+})
+
+// 量具成功但**没有写出新报告**：这时读到的必然是旧的，必须标成 snapshot 而不是 live，
+// 也不能把时间戳写成「现在」。
+check('量具没写出新报告 → 标 snapshot，不冒充本次测量', () => {
+  const tmp = fakeRoot('import sys\nsys.exit(0)\n', STALE)
+  try {
+    const before = statSync(join(tmp, 'out', '_probe', 'fab-census.json')).mtimeMs
+    const j = censusAt(tmp)
+    const after = statSync(join(tmp, 'out', '_probe', 'fab-census.json')).mtimeMs
+    assert(before === after, '文件竟然被改了，这个用例前提不成立')
+    assert(j.source === 'snapshot', `source=${j.source}，期望 snapshot`)
+    assert(j.sourceNote && j.sourceNote.length > 10, 'snapshot 却没解释原因')
+    // at 必须是那份文件的 mtime，不能是现在。
+    assert(Math.abs(Date.parse(j.at) - before) < 5000, `at=${j.at} 不是报告文件的时间`)
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
 })
 
 console.log('\n────────────────────────────────────────────────────────────')

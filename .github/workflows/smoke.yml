@@ -1,0 +1,96 @@
+name: smoke
+
+# 这个仓库的核心主张是「可复算」。所以 CI 只做一件事：
+# 在一台**干净的机器**上，从零复算那 53 条契约。
+# 不在本机开发者目录下跑 —— 那样验的是「我这台机器还行」，不是「别人拿到能用」。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: 契约测试 · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 两个平台都跑，是因为「跨平台」这个说法需要证据。
+        # Windows 是本项目唯一有完整流水线的平台；Linux/macOS 上能跑的是
+        # CLI 骨架、MCP 协议、插件薄壳、安装器 —— 这些恰好是「接入层」，
+        # 而接入层正是这个仓库要证明自己通用的部分。
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 补充说明 —— 这个仓库零依赖
+        shell: bash
+        run: |
+          echo "没有 npm install 这一步，是有意的。"
+          echo "core / cli / mcp / plugin / install 全部只用 node: 内置模块，"
+          echo "这样任何 Agent 平台都能直接调用，不需要先装一套包。"
+
+      - name: 契约测试（53 项）
+        run: node test/smoke.mjs
+
+      - name: 列出支持的平台
+        run: node install/install.mjs --list
+
+  census:
+    # 「能不能下单」这件事我给了可复算的命令。这个 job 让命令真的被执行一次，
+    # 并且验一个更要紧的性质：**在没有任何产物的仓库上，它不许编造一份成绩单。**
+    #
+    # 曾经的实现会读磁盘上躺着的旧报告，然后盖上当前时间戳 —— 于是在一个
+    # 空仓库里报出「56 个目录，53 可下单」。这个 job 就是防止那种事再发生。
+    name: census 在空仓库上不许编造 · ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: census 必须如实报「0 个目录」，且不给出通过率
+        shell: bash
+        run: |
+          set +e
+          node cli/pcb.mjs census > /tmp/census.json 2> /tmp/census.err
+          code=$?
+          set -e
+          echo "--- 退出码 $code ---"
+          echo "--- stdout ---"; cat /tmp/census.json
+          echo "--- stderr ---"; cat /tmp/census.err
+
+          node -e '
+            const fs = require("fs");
+            let j;
+            try { j = JSON.parse(fs.readFileSync("/tmp/census.json", "utf8")) } catch (e) {
+              console.log("::error::stdout 不是 JSON：" + e.message);
+              process.exit(1);
+            }
+            const bad = [];
+            if (j.source !== "live")
+              bad.push(`source=${j.source}，期望 live —— 读到的是磁盘上的旧快照，不是本次测量`);
+            if (j.dirs !== 0)
+              bad.push(`dirs=${j.dirs}，期望 0 —— 这个仓库没有 out/ 产物`);
+            if (!j.emptyNote)
+              bad.push("dirs=0 却没给 emptyNote —— 0/0 会被读成「全部通过」");
+            if (j.fabOk > 0)
+              bad.push(`fabOk=${j.fabOk} —— 空仓库上不可能有可下单的板`);
+            if (bad.length) { bad.forEach(b => console.log("::error::" + b)); process.exit(1) }
+            console.log("OK：如实报 0 个目录、source=live，并明确说明这不是全部通过");
+          '

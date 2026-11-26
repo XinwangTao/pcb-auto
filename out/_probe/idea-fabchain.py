@@ -17,10 +17,16 @@ import re
 import json
 import subprocess
 
-ROOT = r"D:\Users\陶鑫旺\Documents\deepseek-harness\default-workspace\pcb-auto"
+# 仓库根：优先环境变量，否则从本文件位置推（out/_probe/<script>.py 的上两级）。
+# **不要写死绝对路径。** 写死会让这个量具在被别人克隆后去量另一个目录，
+# 而且不报错 —— 它会给出一份看起来正常的、属于别人的数字。
+ROOT = os.environ.get("PCB_AUTO_ROOT") or os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.abspath(ROOT)
 DES = os.path.join(ROOT, "designs")
 OUT = os.path.join(ROOT, "out")
-NODE = r"E:\APP\nodejs24\node.exe"
+# node：优先 $PCB_AUTO_NODE，其次 PATH，最后退回命令名让系统去解析。
+NODE = os.environ.get("PCB_AUTO_NODE") or shutil.which("node") or "node"
 FAB = os.path.join(ROOT, "scripts", "fabcheck.js")
 ATT = re.compile(r"^_run-(\d+)-[A-Za-z][\w.-]*\.json$")
 
