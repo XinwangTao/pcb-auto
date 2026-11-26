@@ -35,8 +35,10 @@
 | 23 | 真 | `patchDrc` 两轮两败（33→56、62→84，均整轮撤回），`patchTotal` 恒 0 | `scripts/pipeline3.js` 的 `patchVerify` / `patchReverted` |
 | 24 | 真 | `doc-refs` 只判被引用那一行非空，不判内容还对不对 —— 插 70 行后它继续亮绿灯 | `test/doc-refs.mjs` |
 | 25 | 真 | 遥测改名只在成功路径上，失败那一轮的 `_run.json` / `_log.json` 被下一轮直接覆盖 | `run-all.ps1` 的 `_run-<idx>-<tag>` 改名块 |
+| 26 | 真 | 器件坐标被 `_placement` 钉死时，扩板重试是可证明的 no-op：面积 +56%，DRC 直方图逐位相同 | `designs/mic-esp32s3-v3.json` 的 `_placement`；`scripts/pipeline3.js` 的 `outlineFit.explicitFixed` |
+| 27 | 真 | `ensureGeoIdx` 漏了 pour / poured：`resolveByOwner` 里那个 `owner === 'pour'` 分支永远不可达 | `scripts/pipeline3.js` 的 `ensureGeoIdx` / `resolveByOwner` |
 
-**统计口径。** 25 条：**20 真 / 3 部分真 / 2 假 / 0 未证实**。第 21-25 条测于 2026-11-26（ISO 8601 见各条正文），分母都是**当次单次运行**，不是整个 `out\` 语料 —— 因此它们不受清理窗口影响；凡引用语料级数字的地方（第 9、16、17 条）时点与分母写在正文或 `out\_probe\fab-census.json` 的 `measured_at`。
+**统计口径。** 27 条：**22 真 / 3 部分真 / 2 假 / 0 未证实**。第 21-25 条测于 2026-11-26（ISO 8601 见各条正文），分母都是**当次单次运行**，不是整个 `out\` 语料 —— 因此它们不受清理窗口影响；凡引用语料级数字的地方（第 9、16、17 条）时点与分母写在正文或 `out\_probe\fab-census.json` 的 `measured_at`。
 
 语料规模：`out\` 下 **56 个含 `_run.json` 的目录**，其中 **53 个可下单**、3 个有阻断、0 个解析失败。来源是快照 `out\_probe\fab-census.json`，**测于该文件的 `measured_at` 字段**（引用时直接读它，不要读 mtime —— 理由见下一段。这里故意不写「第 N 行」：那种引用会在任何一次插入后指错地方）。
 
@@ -905,3 +907,87 @@ iter5 强轮  105 -> 20   tracksAdded   1   delta -85
 
 **该怎么修。** 改名（以及任何"留存本轮遥测"的动作）放进 `finally`，
 而不是放在成功分支里。名字里已经带了轮次和 tag，所以同名覆盖本来就不该发生。
+
+
+## 七、2026-11-26 傍晚新测出来的两条（重试阶梯与几何索引）
+
+### 26. 器件坐标被钉死时，扩板重试是可证明的 no-op
+
+**现象。** `run-all.ps1` 的重试阶梯第二级是 `expand-1.25x`：把板框从 `W×H` 放大到
+`W×1.25 × H×1.25`，期望「地方大了，布线和间距都会好转」。在 `mic-esp32s3-v3` 上，
+**放大 56% 面积换来的 DRC 直方图与上一级逐位相同**：
+
+| 尝试 | 板框 | 面积（mil²） | DRC 叶子 | 直方图 |
+|---|---|---|---|---|
+| `smart-fit` | 1300×3700 | 4 810 000 | **32** | 见下 |
+| `expand-1.25x` | 1625×4625 | 7 515 625 | **32** | **逐位相同** |
+
+两份直方图（`_log-1-smart-fit.json` 与 `_log-2-expand-1.25x.json` 的 `drcLeaves.byType`）：
+
+```
+Track to Track 4 · SMD Pad to Track 7 · SMD Pad to Via 1 · Slot Region to Track 9
+Hole to Hole 3 · Connection Error | Track 2 · Connection Error | SMD Pad 6
+```
+
+七类、三十二项、一项不差。
+
+**根因。** 这个设计的每一个器件坐标都写在 `_placement` 里（`U1.y = -3316`、`USB1 = (234,-2560,90)` …），
+`outlineFit` 走的是 `explicitFixed` 分支，只把**板框**放大，**器件一个都不动**。
+而 32 条违规全部由器件的相对几何产生（见下表的四簇），板框变大不改变任何一条。
+
+**这 32 条落在哪里（按违规点最近的器件聚类）。**
+
+| 簇 | 违规点范围 | 条数 | 最近器件 | 特征 |
+|---|---|---|---|---|
+| A | x 133–187，y −2389…−2730 | 8 | `USB1` | USB-C 壳体长圆孔（4 条 GND 槽，`d=31.496`、`len=59.055/47.244`） |
+| B | x 380–399，y −1647…−1710 | 9 | `U5` | 走线与焊盘**全部 `cur=0`** —— 这是真短路，不是「差一点」 |
+| C | x 634–650，y −228…−231 | 6 | `U4` | 全部挂在同一个 17×17 mil 对象上（见第 27 条） |
+| D | x 328，y −1529 | 1 | `U3` | Hole to Hole，`cur=0` |
+
+**为什么这条重要。** 第 11、16、17、22 条已经分别从「收缩转移」「变体覆盖」「作业自报 state」
+「强轮上限」四个角度证明重试阶梯不划算；这一条补上的是**第五个、也是最强的一个角度**：
+当布局被固定时，扩大板框在**几何上**不可能改变任何一条违规，所以那 380 秒是纯损耗。
+「再试一次会更好」在这里不是经验判断，是**可证伪且已被证伪**的。
+
+**怎么复现。** 同一个 `OutDir` 下比 `_run-1-smart-fit.json` 与 `_run-2-expand-1.25x.json` 的
+`gates.drcLeafCount`，再比两份 `_log-*.json` 里 `drcLeaves.byType` 的键与值。
+
+### 27. `ensureGeoIdx` 漏了 pour / poured，`resolveByOwner` 的 pour 分支永远不可达
+
+**现象。** 几何索引一次运行后自报的规模是：
+
+```json
+{"pad":159,"line":455,"via":93,"region":1,"polyline":1,"fill":0}
+```
+
+而同一轮 `_run.json` 里 `pouredCount = 2`（`pcb_PrimitivePoured.getAllPrimitiveId()` 真返回 2 条）。
+**板上有 2 块实铜，几何索引里一块都没有。**
+
+**根因。** `resolveByOwner` 的条件里**已经**写着 `owner === 'pour'`，三元链也**已经**把它
+映射到 `eda.pcb_PrimitivePour`。缺的只是 `ensureGeoIdx` 的 `sets` 里从来没有 `pour` 这个集合，
+也从来没有 `await load('pour', eda.pcb_PrimitivePour)`。于是「一个写好的分支」配「一个永远为空的集合」，
+等于**一行死代码 —— 而它读起来是对的**。这类缺陷比写错难发现得多：代码审查时会略过，
+因为那个分支看起来处理过了。
+
+同一个错误假设还造成了第二处死机制：`slotKeepout`（建槽孔禁布区那段）查的是
+`pcb_PrimitiveFill.getAllPrimitiveId(12)`，而 **Fill 与 Pour 不是同一个东西** ——
+实测 `fillCensus` 在 `L∈{1,2,12,15,16,17}` 上**全部为 0**。
+所以那段代码的 `found` 永远等于 0，它报的 `found:0` 从来不是「板上没槽」，
+而是「查错了类」。四处真实存在的 GND 长圆槽（`holeTypes: {ROUND: 8, SLOT: 4}`）
+是在**后面那段按焊盘普查**的代码里才被找到的。
+
+**后果。** 32 条 DRC 叶子里有 6 条（上表 C 簇）挂在同一个 17×17 mil 的对象上：
+`bbox [642,-240,658,-223]`、中心 `(650,-231)`，`parentOwners` 恒为 `[]`。
+它既不是 pad、不是 line、不是 via、不是 region、不是 polyline、也不是 fill，
+于是走「无主」的合成盒分支，用 100×99 的**假盒子**去算绕行位置 ——
+而它的真实形状既不是那个盒子、也不是 17×17。绕行位置自然不对，那 6 条也就绕着它转圈。
+
+**代码位置。** `scripts/pipeline3.js` 的 `ensureGeoIdx`（`sets` 与 `load` 这两处）
+与 `resolveByOwner`（条件与三元链）。
+
+**怎么复现。** `_log-1-smart-fit.json` 里 `slotGeoCmp[].idxSizes` 没有 `pour` 键；
+同文件 `pouredCount` 为 2。
+
+**该怎么修。** 索引里同时放进 `pour` 与 `poured`，并把 `poured` 也接进 `resolveByOwner`
+的三元链 —— 只补 `pour` 会留下另一半。补完之后 `parentOwners` 才能区分
+「不在任何索引里」和「在索引里但取不到几何」这两种完全不同的情况。
