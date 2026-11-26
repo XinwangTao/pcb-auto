@@ -20,6 +20,28 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# ── 编码：先把自己和子进程的语言对齐成 UTF-8 ─────────────────────────────────
+#
+# 这个脚本会调 node / python 子进程并把它们的 stdout 当 JSON 解析。PowerShell 解码
+# **native 命令输出**用的是 [Console]::OutputEncoding，而它的默认值来自系统代码页：
+# 中文 Windows 上是 cp936（GBK），而这个仓库里所有子进程都按 UTF-8 写字。
+#
+# 于是：有控制台时（终端里手敲）一切正常；一旦 stdout 被重定向（管道 / 文件 /
+# 被 Agent 用 spawn 抓走）就有一批判据悄悄降级 —— 不是报错，是
+# `ConvertFrom-Json` 拿到一串 GBK 乱码后失败，判据被记成「输出解析失败」，
+# 或者干脆整条不出现。
+#
+# 实测（同一份语料、同一台机器、只改调用方式）：
+#   在终端里跑        PASS 20 / INFO 12 / WARN 2
+#   被 spawn 抓走     PASS 20 / INFO  9 / WARN 1   ← 少了 3 条 INFO + 1 条 WARN
+# 少掉的正是依赖 fabcheck / idea-fabchain 的 JSON 输出那几条。
+# 这跟「量具读不到输入就沉默」是同一个病：**输出没坏，坏的是解码**。
+#
+# 所以显式钉住：读子进程输出用 UTF-8，写自己的输出也用 UTF-8。
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
+try { [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Push-Location $Root
 

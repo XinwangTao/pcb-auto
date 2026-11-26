@@ -777,6 +777,45 @@ check('本机有产物但量具没写新报告 → 标 snapshot，at 用文件�
   } finally { rmSync(tmp, { recursive: true, force: true }) }
 })
 
+console.log('\n\x1b[1m9 · PowerShell 外壳的编码契约\x1b[0m')
+
+// 需要 pwsh。没有它就不是「这条测试失败」，而是「这台机器测不了」。
+const hasPwsh = (() => {
+  const r = spawnSync('pwsh', ['-NoProfile', '-NonInteractive', '-Command', 'exit 0'],
+    { encoding: 'utf8', timeout: 30_000, windowsHide: true })
+  return !r.error && r.status === 0
+})()
+
+check('verify 被抓进管道时中文不乱码、判据不整条消失', () => {
+  if (!hasPwsh) return 'SKIP 本机没有 pwsh，这条没测（CI 的 windows / ubuntu 两个 job 上有）'
+  // 为什么要专门测「被抓进管道」这一种跑法：
+  // 有控制台时 PowerShell 一切正常。stdout 一旦被重定向（管道 / 文件 / Agent 的 spawn），
+  // 它解码 **native 命令输出** 用的是 [Console]::OutputEncoding，而那个默认值来自系统
+  // 代码页 —— 中文 Windows 上是 cp936。仓库里所有子进程都按 UTF-8 写字。
+  // 于是 ConvertFrom-Json 拿到一串 GBK 乱码后失败，判据被记成「输出解析失败」，
+  // 或者干脆整条不出现。而 Agent 读的正是这条路。
+  //
+  // 实测（同一份语料、同一台机器、只改调用方式）：
+  //   有控制台   PASS 20 / INFO 12 / WARN 2
+  //   被抓进管道 PASS 20 / INFO  9 / WARN 1   ← 少 3 条 INFO + 1 条 WARN，中文全成 U+FFFD
+  // 所以断言不是「数字对」，而是「中文原样 + 判据名还在」—— 这两条与语料无关。
+  const r = spawnSync('pwsh', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+    '-File', join(ROOT, 'verify-delivery.ps1'), '-SkipCensus'],
+  { cwd: ROOT, encoding: 'utf8', timeout: 300_000, windowsHide: true, env: { ...process.env, NO_COLOR: '1' } })
+  const out = r.stdout ?? ''
+  const err = (r.stderr ?? '').slice(-400)
+  assert(r.status === 0, `verify 退出码 ${r.status}，期望 0${err ? '\n' + err : ''}`)
+  const bad = (out.match(/\uFFFD/g) || []).length
+  assert(bad === 0, `输出里有 ${bad} 个 U+FFFD —— PowerShell 按系统代码页写中文，读到的人看到乱码`)
+  // 两条与语料无关的中文：节标题 + `-SkipCensus` 那条判据。它们必然出现。
+  assert(out.includes('离线 DFM 普查'), '节标题「离线 DFM 普查」没原样出现 —— 中文被转码了')
+  assert(out.includes('按 -SkipCensus 跳过'), '`-SkipCensus` 那条判据没原样出现 —— 中文被转码了，判据名也跟着坏')
+  const summary = /PASS\s+(\d+)\s+INFO\s+(\d+)\s+WARN\s+(\d+)\s+FAIL\s+(\d+)\s+ERROR\s+(\d+)/.exec(out)
+  assert(summary, '没有汇总行 PASS n INFO n WARN n FAIL n ERROR n')
+  assert(Number(summary[5]) === 0, `ERROR=${summary[5]}，期望 0（判据自己崩了）`)
+  return `${summary[0].replace(/\s+/g, ' ')} · 0 个 U+FFFD`
+})
+
 console.log('\n────────────────────────────────────────────────────────────')
 if (failures.length === 0) {
   console.log(`  \x1b[32mSMOKE=PASS\x1b[0m   ${pass} 项全过`)

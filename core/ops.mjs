@@ -41,8 +41,11 @@ function run(cmd, args, opts = {}) {
     if (opts.timeoutMs) signals.push(AbortSignal.timeout(opts.timeoutMs))
     const signal = signals.length ? AbortSignal.any(signals) : undefined
 
-    let out = ''
-    let err = ''
+    // 收字节，最后再解码 —— 见 decodeText 的注释。中途按字符串拼会让「是不是合法
+    // UTF-8」这个判断失去机会，因为 toString('utf8') 已经把坏字节变成 U+FFFD 了。
+    const chunks = { out: [], err: [] }
+    const sizes = { out: 0, err: 0 }
+    let spawnErr = ''
     let timedOut = false
     let aborted = false
     let done = false
@@ -64,18 +67,31 @@ function run(cmd, args, opts = {}) {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
 
-    const push = (buf, add) => (buf.length < CAP ? buf + add : buf)
-    child.stdout.on('data', (d) => { out = push(out, d.toString('utf8')) })
-    child.stderr.on('data', (d) => { err = push(err, d.toString('utf8')) })
+    const collect = (k) => (d) => {
+      if (sizes[k] >= CAP) return
+      chunks[k].push(d)
+      sizes[k] += d.length
+    }
+    child.stdout.on('data', collect('out'))
+    child.stderr.on('data', collect('err'))
 
-    const finish = (code) => { if (!done) { done = true; settle({ code, out, err, timedOut, aborted }) } }
+    const finish = (code) => {
+      if (done) return
+      done = true
+      settle({
+        code,
+        out: decodeText(Buffer.concat(chunks.out)),
+        err: decodeText(Buffer.concat(chunks.err)) + spawnErr,
+        timedOut, aborted,
+      })
+    }
 
     child.on('error', (e) => {
       if (e && e.name === 'AbortError') {
         if (opts.timeoutMs && signal && signal.aborted && opts.signal && !opts.signal.aborted) timedOut = true
         else aborted = true
       } else {
-        err = push(err, String(e && e.message ? e.message : e))
+        spawnErr = String(e && e.message ? e.message : e)
       }
       finish(null)
     })
@@ -83,8 +99,70 @@ function run(cmd, args, opts = {}) {
   })
 }
 
+/**
+ * 把子进程吐的字节解成文本。
+ *
+ * 为什么不能直接 `buf.toString('utf8')`：PowerShell 把中文写到**被重定向的 stdout**
+ * 时用的是系统代码页（中文 Windows 上是 cp936/GBK），不是 UTF-8。直接按 UTF-8 解
+ * 得到的是一串 U+FFFD —— 而且**不报错**，只是它说的那句人话没了。实测：
+ * `pcb build` 的 detail 里，中文用户名下的绝对路径
+ * `D:\Users\<中文名>\…` 变成 `D:\Users\������\…`。
+ *
+ * 所以先按 UTF-8 解，只有在出现替换字符时才换 GBK 重解一次。
+ * 合法 UTF-8 永远不含 U+FFFD，所以这个回退不会破坏任何一种正确输入 —— 它只会
+ * 把「本来就读错了」的那部分读对。两种解都脏时保留 UTF-8 的结果：宁可原样可见，
+ * 也不猜。
+ *
+ * @param {Buffer} buf
+ * @returns {string}
+ */
+export function decodeText(buf) {
+  if (!buf || buf.length === 0) return ''
+  const utf8 = buf.toString('utf8')
+  if (!utf8.includes('\uFFFD')) return utf8
+  try {
+    const gbk = new TextDecoder('gbk').decode(buf)
+    if (!gbk.includes('\uFFFD')) return gbk
+  } catch {
+    // 这个 Node 没带 GBK 解码表（--without-intl）。那就只能用 UTF-8 的结果。
+  }
+  return utf8
+}
+
 /** @param {string} s @param {number} n */
 export const tail = (s, n) => (s.length <= n ? s : '…(已截断 ' + (s.length - n) + ' 字符)\n' + s.slice(-n))
+
+/**
+ * 子进程**根本没起来**时，把 `spawn pwsh ENOENT` 换成一句能照做的话。
+ *
+ * `spawn pwsh ENOENT` 是事实，但它不是说明书：读者既不知道该装什么，
+ * 也不知道这算不算「我的板子有问题」。而这正是最容易被误读的一种失败 ——
+ * 命令退 2（没能运行），但只要读者把 2 记成「失败」，结论就反了。
+ *
+ * 返回 '' 表示不是这一类错误，调用方沿用原始输出。
+ *
+ * @param {{code: number|null, out: string, err: string}} r
+ * @param {string} bin 期望的可执行文件名
+ * @param {string} envVar 可以指定位置的环变量名
+ * @returns {string}
+ */
+function explainNotStarted(r, bin, envVar) {
+  if (r.code !== null) return ''
+  const all = (r.out || '') + '\n' + (r.err || '')
+  if (!/\bENOENT\b/.test(all)) return ''
+  return [
+    `找不到 ${bin}，所以这条操作一次都没开始跑（退出码 2 = 没能运行，不是判据没过）。`,
+    '',
+    '这不是设计文件或产物的问题 —— 是这台机器缺依赖：',
+    `  · build / verify 需要 PowerShell 7（命令名 ${bin}），装好后重试；`,
+    `  · 已经装了但不在 PATH 上时，指一下即可：${envVar}=<可执行文件路径>。`,
+    '',
+    '不需要它的操作（只靠 Node，任何系统都能跑）：',
+    '  node cli/pcb.mjs list',
+    '  node cli/pcb.mjs idea-to-design "做一个 SHT30 温湿度采集板" --dry',
+    '  node cli/pcb.mjs fabcheck examples/d1',
+  ].join('\n')
+}
 
 /** Node 解释器：默认就是跑本文件的这个。 */
 export const nodeBin = () => process.env.PCB_AUTO_NODE || process.execPath
@@ -264,6 +342,7 @@ export async function build(args, opt = {}) {
 
   const j = runDir ? readJson(join(runDir, '_run.json')) : null
   const gates = (j && j.gates) || {}
+  const notStarted = explainNotStarted(r, 'pwsh', 'PCB_AUTO_PWSH')
   return {
     ok: Boolean(j && j.ok),
     exitCode: typeof r.code === 'number' ? r.code : 2,
@@ -278,7 +357,7 @@ export async function build(args, opt = {}) {
     artifacts: Number(gates.artifacts || 0),
     elapsedSec: j && j.elapsedMs ? Math.round(j.elapsedMs / 100) / 10 : null,
     lockSeen: lock ? lock.design : null,
-    detail: tail(all.trim(), 2000),
+    detail: notStarted || tail(all.trim(), 2000),
     logPath: runDir ? join(runDir, '_run.json') : '',
   }
 }
@@ -491,7 +570,8 @@ export async function verify(args = {}, opt = {}) {
     // 而在一个还没有产物的克隆里，真相是「一条判据都没跑成」。
     nosample: (all.match(/NOSAMPLE\s+(\d+)/) || [])[1] ? Number((all.match(/NOSAMPLE\s+(\d+)/) || [])[1]) : 0,
     failures: (all.match(/\[(?:FAIL|ERROR)\][^\n]*/g) || []).slice(0, 12).join('\n'),
-    raw: line ? '' : tail(all.trim(), 1500),
+    // 同 build：`spawn pwsh ENOENT` 是事实，不是说明书。
+    raw: line ? '' : (explainNotStarted(r, 'pwsh', 'PCB_AUTO_PWSH') || tail(all.trim(), 1500)),
   }
 }
 
