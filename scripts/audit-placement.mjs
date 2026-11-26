@@ -1,0 +1,432 @@
+#!/usr/bin/env node
+// 摆放合规审计：把「元器件怎么摆」从审美问题变成可判定的量。
+//
+// 用法：
+//   node scripts/audit-placement.mjs <design.json> [--sizes <measured.json>]
+//
+// 退出码：0 全部通过 / 1 有判据不通过 / 2 有判据无法判定（缺尺寸等）
+//
+// ── 为什么要有这个文件 ────────────────────────────────────────────────
+// 用户的批评原话是「你只是选择了一块板子，然后在上面铺满元器件。你并没有
+// 合规的去摆放这些元器件，比如说根据基板的形状来决定元器件怎么摆放，就是
+// 你要综合考量各种影响来画板子」。
+//
+// 「综合考量」如果不能变成「哪条判据、阈多少、为什么是这个数」，就永远只能
+// 靠人看着顺眼不顺眼。而这个仓库被同一个坑咬过好几次：闸门只验「非空」、
+// 有 47/72 份只记录计数不记录原因、0/0 被读成 100%。所以这里每条判据都必须
+// 带三样东西：**依据**、**实测值**、**能不能由 PCB 保证**。
+//
+// ── 最关键的一条设计约束：区分「PCB 能保证」与「只能靠结构协同」 ─────────
+// 这个仓库已经踩过一次：Espressif 要求天线两侧各 15mm 净空，而本板宽只有
+// 33mm —— 这个要求**在这块板上无法表达**，只能由非金属壳体保证。
+// 那次教训的结论是「几何上无法满足的判据不是判据」。
+//
+// 所以本文件的判据分两类：
+//   [PCB]   —— 由铜箔/器件位置的几何决定，PCB 摆对了就成立。不通过 = 真缺陷。
+//   [机构]  —— 声学隔离、手指可达、传感器标定这类，PCB 只能降低风险，
+//              最终要靠结构件。不通过 = **警告**，不是判决。把它报成 FAIL
+//              会让一块其实没救的板子和一块改个壳体就行的板子长得一样。
+//
+// 两类都在报告里，但只有 [PCB] 类能让退出码变 1。
+'use strict';
+
+import fs from 'node:fs';
+import path from 'node:path';
+
+// ── 元件实测尺寸（mil，自然朝向 rot=0，宽×高）──────────────────────────
+// 来源：`scripts/_probe-sizes.js` 在 2026-11-26 于本板上实测
+// （`eda.pcb_Primitive.getPrimitivesBBox([id])` 逐器件读包围盒）。
+// **不是按封装名猜的**：0603 电阻与 0603 电容实测就不一样（115×58 vs 119×66），
+// 0805 电阻和 0805 电容同理。按包名套表会得到系统性偏差。
+// 换料后必须重跑探针更新这里；表里没有的料号一律判「无法判定」并退 2，
+// 绝不退回按包名估的数 —— 那会静默改变判据。
+const SIZES = {
+  C2913199: { w: 748, h: 1030, note: 'ESP32-S3-WROOM-1（含天线段）' },
+  C165948:  { w: 388, h: 329,  note: 'Type-C 16P' },
+  C25905:   { w: 80,  h: 45,   note: '电阻 0402' },
+  C6186:    { w: 362, h: 268,  note: 'AMS1117 SOT-223' },
+  C440198:  { w: 161, h: 77,   note: '电容 0805' },
+  C14663:   { w: 119, h: 66,   note: '电容 0603' },
+  C3850164: { w: 119, h: 66,   note: '电容 0603 (2.2nF C0G)' },
+  C2912107: { w: 189, h: 205,  note: 'MPU-6050 QFN-24' },
+  C910544:  { w: 142, h: 151,  note: 'MAX98357A TQFN-16' },
+  C49023793:{ w: 305, h: 284,  note: '排针 2P P=2.54' },
+  C2832146: { w: 217, h: 128,  note: '轻触开关 3×4mm' },
+  C11702:   { w: 80,  h: 45,   note: '电阻 0402 1k' },
+  C25804:   { w: 115, h: 58,   note: '电阻 0603 10k' },
+  C2297:    { w: 176, h: 91,   note: 'LED 0805' },
+  C2875567: { w: 143, h: 167,  note: 'MEMS 麦克风' },
+};
+
+// ESP32-S3-WROOM-1 的内部结构（实测，见 docs/FAILURES.md 与 _v3Reason）：
+// 包围盒 748×1030 = 焊盘区 748×748 圆心 + 天线段 282 向一端延伸。
+// 封装原点 = 焊盘区中心，所以天线伸出方向随 rot 变：
+//   rot 0 → +Y，rot 180 → −Y，rot 90 → −X，rot 270 → +X
+const ANT_LEN = 282;
+const PAD_HALF = 374;
+const ANT_ROT_DIR = { 0: [0, 1], 180: [0, -1], 90: [-1, 0], 270: [1, 0] };
+
+function geom(des, p, lcsc) {
+  const s = SIZES[lcsc];
+  if (!s) return null;
+  const rot = ((Math.round(Number(p.rot) || 0) % 360) + 360) % 360;
+  // U1 的天线段让包围盒不再对称，必须按 rot 定向展开，不能简单换宽高。
+  if (lcsc === 'C2913199') {
+    const d = ANT_ROT_DIR[rot];
+    if (!d) return null;
+    // 沿天线方向的半跨度是 PAD_HALF+ANT_LEN，反向（焊盘侧）是 PAD_HALF
+    const ex = d[0] !== 0 ? (PAD_HALF + ANT_LEN) : PAD_HALF;
+    const ey = d[1] !== 0 ? (PAD_HALF + ANT_LEN) : PAD_HALF;
+    return {
+      des, lcsc, x: p.x, y: p.y, rot, w: s.w, h: s.h,
+      x0: p.x - (d[0] < 0 ? ex : PAD_HALF),
+      x1: p.x + (d[0] > 0 ? ex : PAD_HALF),
+      y0: p.y - (d[1] < 0 ? ey : PAD_HALF),
+      y1: p.y + (d[1] > 0 ? ey : PAD_HALF),
+      padBottom: p.y - (d[1] < 0 ? PAD_HALF : -PAD_HALF),
+      antTip: d[1] < 0 ? p.y - PAD_HALF - ANT_LEN
+           : d[1] > 0 ? p.y + PAD_HALF + ANT_LEN
+           : null,
+    };
+  }
+  const swap = rot % 180 === 90;
+  const w = swap ? s.h : s.w;
+  const h = swap ? s.w : s.h;
+  return {
+    des, lcsc, x: p.x, y: p.y, rot, w, h,
+    x0: p.x - w / 2, x1: p.x + w / 2,
+    y0: p.y - h / 2, y1: p.y + h / 2,
+  };
+}
+
+const overlap = (a, b, shrink) => {
+  const x0 = Math.max(a.x0, b.x0) + shrink, x1 = Math.min(a.x1, b.x1) - shrink;
+  const y0 = Math.max(a.y0, b.y0) + shrink, y1 = Math.min(a.y1, b.y1) - shrink;
+  return x1 > x0 && y1 > y0 ? (x1 - x0) * (y1 - y0) : 0;
+};
+const inside = (b, x0, y0, x1, y1) =>
+  b.x0 >= x0 - 0.5 && b.x1 <= x1 + 0.5 && b.y0 >= y0 - 0.5 && b.y1 <= y1 + 0.5;
+const mm = (mil) => mil / 39.3701;
+
+// ── 判据表 ────────────────────────────────────────────────────────────
+// 每条：id / kind([PCB] 或 [机构]) / basis（为什么是这个判据）/ fn
+const RULES = [
+  {
+    id: 'antenna_band_empty',
+    kind: 'PCB',
+    basis: 'Espressif《ESP32-S3-WROOM-1 硬件设计指南》：天线区域严禁铺铜、走线、摆放元件。'
+         + '天线正上/正下方有铜或器件会直接改变谐振点、拉偏增益。',
+    fn: (d, g) => {
+      const K = d._antennaKeepout;
+      if (!K) return { ok: false, why: '设计文件没有 _antennaKeepout —— 无法判定天线净空' };
+      const allow = new Set(K.allowDesignators || []);
+      const band = { x0: K.x0, x1: K.x1, y0: K.y0, y1: K.y1, des: 'band' };
+      const hits = [];
+      for (const b of g.comps) {
+        if (allow.has(b.des)) continue;
+        const a = overlap(b, band, 0);
+        if (a > 0) hits.push(`${b.des} 侵入 ${Math.round(a)} mil²`);
+      }
+      return hits.length
+        ? { ok: false, why: hits.join(' / '), value: `带子 [${K.y0},${K.y1}]` }
+        : { ok: true, value: `带子 [${K.y0},${K.y1}] 内只有 ${[...allow].join(',') || '空'}` };
+    },
+  },
+  {
+    id: 'antenna_overhang',
+    kind: 'PCB',
+    basis: 'Espressif 强烈推荐天线伸出板边（否则要挖掉天线两侧与下方的基板）。'
+         + '天线贴在介质上会因介电常数偏移而失谐；悬出量越大越接近自由空间。',
+    fn: (d, g) => {
+      const u1 = g.comps.find((c) => c.des === 'U1');
+      if (!u1 || u1.antTip == null) return { why: '找不到 U1 或天线朝向无法判定' };
+      // 分母要写清：这里比的是**设计标称板边** −H。流水线比的是**实测板框**
+      // （`overhangDetail.boardMinY`，本板实测 −3705，比标称低 5 mil）。
+      // 两个分母都成立、数值差 5~11 mil —— 所以结论必须带上是哪一个。
+      const boardMinY = -d.boardHeightMil;
+      const raw = boardMinY - u1.antTip;
+      const note = '（分母=设计标称板边 ' + boardMinY + '；实测板框见流水线 overhangDetail）';
+      return raw > 0
+        ? { ok: true, value: `悬出 ${Math.round(raw)} mil (${mm(raw).toFixed(2)} mm)，天线尖端 ${Math.round(u1.antTip)} / 板边 ${boardMinY} ${note}` }
+        : { ok: false, why: `天线未悬出：尖端 ${Math.round(u1.antTip)} vs 板边 ${boardMinY}（差 ${Math.round(raw)}）${note}` };
+    },
+  },
+  {
+    id: 'band_covers_antenna',
+    kind: 'PCB',
+    basis: '悬出之后，天线**压在板上的那一段**（板边 → 天线内缘）仍必须全层无铜。'
+         + '本仓库真踩过：带子只写到 −3692 而天线内缘在 −3690，留了 2 mil 裸露缝，'
+         + '铺铜可以伸进去。判据用「带子上界 ≥ 焊盘区底」表达，不写死数字 —— '
+         + 'placement 一动，正确答案跟着动。',
+    fn: (d, g) => {
+      const K = d._antennaKeepout;
+      const u1 = g.comps.find((c) => c.des === 'U1');
+      if (!K || !u1) return { why: '缺 _antennaKeepout 或 U1' };
+      const boardMinY = -d.boardHeightMil;
+      // 天线内缘 = 焊盘区底（天线段紧接焊盘区）
+      const inner = u1.padBottom;
+      const gap = inner - K.y1;       // >0 表示有裸露缝
+      const cover = K.y0 - boardMinY; // >0 表示带子没到板边
+      const bad = [];
+      if (gap > 0.5) bad.push(`上界 ${K.y1} 比天线内缘 ${inner} 少 ${Math.round(gap)} mil（裸露缝）`);
+      if (cover > 0.5) bad.push(`下界 ${K.y0} 比板边 ${boardMinY} 高 ${Math.round(cover)} mil（板边外侧未罩）`);
+      return bad.length
+        ? { ok: false, why: bad.join('；') }
+        : { ok: true, value: `带子 [${K.y0},${K.y1}] 覆盖 板边 ${boardMinY} → 天线内缘 ${inner}（${Math.round(inner - boardMinY)} mil）` };
+    },
+  },
+  {
+    id: 'all_inside_board',
+    kind: 'PCB',
+    basis: '器件焊盘在板外 = 该焊盘不可焊。本仓库真踩过：U1.y=-3467 把 122 mil 模组焊盘'
+         + '放到板外，7 份布线引擎配置全部零走线。天线段按设计允许悬出，单独放行。',
+    fn: (d, g) => {
+      const bad = [];
+      for (const b of g.comps) {
+        // 天线段按设计允许悬出板边：把它**夹进**板内（Math.max 向上取到板边）
+        // 再判，否则「悬出」会被自己这条判据判成「出界」—— 两者是完全不同的缺陷。
+        // （第一版写的是 Math.min，于是 U1 恒报出界。这类错误只有真跑一遍才看得见。）
+        const allowAnt = b.lcsc === 'C2913199';
+        const y0 = allowAnt ? Math.max(b.y0, -d.boardHeightMil) : b.y0;
+        if (!inside({ ...b, y0 }, 0, -d.boardHeightMil, d.boardWidthMil, 0)) {
+          bad.push(`${b.des} bbox [${Math.round(b.x0)},${Math.round(b.y0)},${Math.round(b.x1)},${Math.round(b.y1)}]`);
+        }
+      }
+      return bad.length ? { ok: false, why: bad.join(' / ') } : { ok: true, value: `${g.comps.length} 个器件全部在板内（U1 天线段按设计悬出，已排除）` };
+    },
+  },
+  {
+    id: 'no_bbox_overlap',
+    kind: 'PCB',
+    basis: '两个器件的实体包围盒相交在物理上不可能同时贴装。'
+         + '用 2 mil 收缩容忍尺寸表的舍入，避免把「刚好相切」误判成重叠。',
+    fn: (d, g) => {
+      const bad = [];
+      for (let i = 0; i < g.comps.length; i++) {
+        for (let j = i + 1; j < g.comps.length; j++) {
+          const a = overlap(g.comps[i], g.comps[j], 2);
+          if (a > 0) bad.push(`${g.comps[i].des}×${g.comps[j].des} ${Math.round(a)} mil²`);
+        }
+      }
+      return bad.length ? { ok: false, why: bad.join(' / ') } : { ok: true, value: `两两不重叠（${(g.comps.length * (g.comps.length - 1)) / 2} 对）` };
+    },
+  },
+  {
+    id: 'connector_at_edge',
+    kind: 'PCB',
+    basis: '插头要从板外伸进来，**对外插接件**的对口面必须在板边。'
+         + '离边超过 100 mil（2.5 mm）时插头会被壳体/板体挡住，属于不可插。'
+         + '只判对外插接件（USB）：2.54mm 排针是内部线头，线可以在壳体内自由走，'
+         + '把它也要求贴边是无意义的判据 —— 第一版误判过，已在实测里发现。',
+    fn: (d, g) => {
+      const EDGE_REACH = 100;
+      const b = g.comps.find((c) => c.des === 'USB1');
+      if (!b) return { why: 'USB1 不在设计里 —— 无法判定对外插接件是否可插' };
+      // 到四条板边的距离。第一版写成 `-H - b.y0`，对 y0<0 恒为负，
+      // 于是**任何器件都通过**（负数必然 ≤ 阈值）。正确的下方距边是 b.y0 - (-H)。
+      const dists = {
+        左: b.x0, 右: d.boardWidthMil - b.x1,
+        下: b.y0 - -d.boardHeightMil, 上: 0 - b.y1,
+      };
+      const [side, dist] = Object.entries(dists).sort((a, b2) => a[1] - b2[1])[0];
+      const h1 = g.comps.find((c) => c.des === 'H1');
+      const h1Note = h1
+        ? `；H1 排针离边 ${Math.round(Math.min(h1.x0, d.boardWidthMil - h1.x1, h1.y0 + d.boardHeightMil, -h1.y1))} mil（内部线头，不判）`
+        : '';
+      return dist <= EDGE_REACH
+        ? { ok: true, value: `USB1 对口面离${side}边 ${Math.round(dist)} mil ≤ ${EDGE_REACH}${h1Note}` }
+        : { ok: false, why: `USB1 离最近板边（${side}）${Math.round(dist)} mil > ${EDGE_REACH} —— 插头进不来${h1Note}` };
+    },
+  },
+  {
+    id: 'usb_at_end',
+    kind: '机构',
+    basis: '人机工程：棒状手持设备的数据/充电口应在一端。装在长边中段时线缆从手心'
+         + '侧向伸出，握持与放置都别扭，且插拔力直接作用在握持点上。'
+         + 'PCB 只能把口挪到端部，最终是否好用还取决于壳体开口位置。',
+    fn: (d, g) => {
+      const b = g.comps.find((c) => c.des === 'USB1');
+      if (!b) return { why: 'USB1 不在设计里' };
+      const H = d.boardHeightMil;
+      const frac = -b.y / H;               // 0=顶端 1=底端
+      const END = 0.25;
+      const atEnd = frac <= END || frac >= 1 - END;
+      return atEnd
+        ? { ok: true, value: `USB1 在 ${(frac * 100).toFixed(0)}%（端部 ${END * 100}% 内）` }
+        : { ok: false, why: `USB1 位于长度 ${(frac * 100).toFixed(0)}% 处，在长边中段（端部判定线 ${END * 100}%）` };
+    },
+  },
+  {
+    id: 'imu_near_centerline',
+    kind: '机构',
+    basis: '六轴 IMU 偏离握持旋转轴时，绕板长轴的转动会同时激励两个轴，'
+         + '「往哪边歪」需要靠耦合矩阵解耦，标定成本与误差都上升。'
+         + '判据取板宽 10% —— 这是工程目标而非行业硬标准，故意标得保守。',
+    fn: (d, g) => {
+      const b = g.comps.find((c) => c.des === 'U5');
+      if (!b) return { why: 'U5 不在设计里' };
+      const mid = d.boardWidthMil / 2;
+      const off = Math.abs(b.x - mid);
+      const tol = d.boardWidthMil * 0.1;
+      return off <= tol
+        ? { ok: true, value: `偏轴 ${Math.round(off)} mil (${mm(off).toFixed(2)} mm) ≤ 容差 ${Math.round(tol)}` }
+        : { ok: false, why: `U5 偏轴 ${Math.round(off)} mil (${mm(off).toFixed(2)} mm) > 容差 ${Math.round(tol)} mil（中心线 x=${mid}）` };
+    },
+  },
+  {
+    id: 'mic_speaker_apart',
+    kind: '机构',
+    basis: '麦克风与扬声器同处一个腔体时存在声反馈（啸叫）。'
+         + '但本设计的扬声器是**外接**的（H1 只是 2.54mm 排针），'
+         + '声学路径由壳体与喇叭安装位置决定 —— **PCB 无法保证**这项。'
+         + '所以只做警告，并把距离报出来供结构设计参考。'
+         + '把它报成 FAIL 会让「改个壳体就能救」和「布局必须重做」看起来一样。',
+    fn: (d, g) => {
+      const m = g.comps.find((c) => c.des === 'U4');
+      const s = g.comps.find((c) => c.des === 'H1');
+      if (!m || !s) return { why: '找不到 U4(麦克风) 或 H1(扬声器口)' };
+      const dist = Math.hypot(m.x - s.x, m.y - s.y);
+      const MIN = 1969;    // 50 mm
+      return dist >= MIN
+        ? { ok: true, value: `麦克风↔扬声器口 ${Math.round(dist)} mil (${mm(dist).toFixed(1)} mm) ≥ ${mm(MIN).toFixed(0)} mm` }
+        : { ok: false, why: `麦克风↔扬声器口仅 ${Math.round(dist)} mil (${mm(dist).toFixed(1)} mm) < ${mm(MIN).toFixed(0)} mm —— 同腔体易啸叫，需结构隔离` };
+    },
+  },
+  {
+    id: 'buttons_centered',
+    kind: '机构',
+    basis: '三个用户按键（PTT/BTN2/BTN3）应关于板中线对称，拇指才能不加区别地够到。'
+         + '倾向某侧会让「按 PTT」变成一个需要低头找的动作。',
+    fn: (d, g) => {
+      const des = ['SW1', 'SW2', 'SW3'];
+      const bs = des.map((x) => g.comps.find((c) => c.des === x));
+      if (bs.some((b) => !b)) return { why: `缺按键：${des.filter((x, i) => !bs[i]).join(',')}` };
+      const mid = d.boardWidthMil / 2;
+      const xs = bs.map((b) => b.x);
+      const mean = xs.reduce((a, b) => a + b, 0) / xs.length;
+      const spread = Math.max(...xs) - Math.min(...xs);
+      const off = Math.abs(mean - mid);
+      const tol = d.boardWidthMil * 0.10;
+      return off <= tol
+        ? { ok: true, value: `三键均位 ${Math.round(mean)} vs 中线 ${mid}，跨距 ${Math.round(spread)} mil` }
+        : { ok: false, why: `三键均位 ${Math.round(mean)} 偏离中线 ${mid} 达 ${Math.round(off)} mil > 容差 ${Math.round(tol)}` };
+    },
+  },
+];
+
+// ── 主流程 ────────────────────────────────────────────────────────────
+const args = process.argv.slice(2);
+const TO_JSON = args.includes('--json');
+// 显式解析而不是 find(!startsWith('--'))：`--sizes <path>` 的值不以 `--` 开头，
+// 会被那个写法当成位置参数。第一版就踩了，且在没有 --sizes 时把设计路径也排除掉
+// （indexOf 返回 -1，-1+1 = 0 正好跳过了 args[0]）。
+let designPath = null;
+let sizesPath = null;
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--sizes') { sizesPath = args[++i] ?? null; continue; }
+  if (args[i].startsWith('--')) continue;
+  if (!designPath) designPath = args[i];
+}
+
+// 人类可读输出在 --json 模式下全部改走 stderr，stdout 只留一个 JSON ——
+// 否则调用方 `JSON.parse(stdout)` 会被表头那行「摆放合规审计」噎死。
+const say = TO_JSON ? (...a) => console.error(...a) : (...a) => console.log(...a);
+
+if (!designPath) {
+  console.error('用法: node scripts/audit-placement.mjs <design.json> [--sizes <json>] [--json]');
+  process.exit(2);
+}
+let design;
+try {
+  design = JSON.parse(fs.readFileSync(designPath, 'utf8'));
+} catch (e) {
+  console.error(`读不到设计文件 ${designPath}: ${e.message}`);
+  process.exit(2);
+}
+
+// --sizes 覆盖表（换料/重测后用）：{ "<lcsc>": { w, h } }
+const si = args.indexOf('--sizes');
+if (si >= 0 && args[si + 1]) {
+  try {
+    const extra = JSON.parse(fs.readFileSync(args[si + 1], 'utf8'));
+    let n = 0;
+    for (const [k, v] of Object.entries(extra)) {
+      if (typeof v?.w === 'number' && typeof v?.h === 'number') { SIZES[k] = { w: v.w, h: v.h, note: 'override' }; n++; }
+    }
+    say(`  尺寸覆盖表载入 ${n} 条：${args[si + 1]}`);
+  } catch (e) {
+    console.error(`读不到尺寸覆盖表: ${e.message}`);
+    process.exit(2);
+  }
+}
+
+const W = Number(design.boardWidthMil), H = Number(design.boardHeightMil);
+if (!(W > 0 && H > 0)) { console.error('设计文件缺 boardWidthMil / boardHeightMil'); process.exit(2); }
+if (!design._placement || typeof design._placement !== 'object') {
+  console.error('设计文件缺 _placement —— 没有摆放可审计');
+  process.exit(2);
+}
+
+const comps = [];
+const unknown = [];
+for (const [des, p] of Object.entries(design._placement)) {
+  const c = (design.components || []).find((x) => x.des === des);
+  const lcsc = c?.lcsc || '';
+  const gg = geom(des, p, lcsc);
+  if (!gg) unknown.push(`${des}(${lcsc || '无料号'})`);
+  else comps.push(gg);
+}
+
+say('');
+say(`  摆放合规审计  ${path.basename(designPath)}`);
+say(`  板 ${W} × ${H} mil = ${mm(W).toFixed(1)} × ${mm(H).toFixed(1)} mm`);
+say(`  已定几何 ${comps.length} 个器件 / 尺寸未知 ${unknown.length} 个`);
+if (unknown.length) say(`  ⚠ 尺寸未知（不猜，直接判无法判定）：${unknown.join(', ')}`);
+say('');
+say(`  ${'判据'.padEnd(24)} ${'类'.padEnd(6)} ${'结果'.padEnd(6)} 实测 / 原因`);
+say('  ' + '─'.repeat(104));
+
+const results = [];
+let nPass = 0, nFail = 0, nSkip = 0, hardFail = 0;
+for (const r of RULES) {
+  let res;
+  try { res = r.fn(design, { comps }); } catch (e) { res = { why: `判据自己抛异常: ${e.message}` }; }
+  let tag, verdict, line;
+  if (res.ok === true) { tag = '通过'; verdict = 'pass'; nPass++; line = res.value || ''; }
+  else if (res.ok === false) {
+    tag = '不通过'; verdict = 'fail'; nFail++; if (r.kind === 'PCB') hardFail++; line = res.why || '';
+  } else { tag = '无法判定'; verdict = 'unknown'; nSkip++; line = res.why || ''; }
+  results.push({ id: r.id, kind: r.kind, verdict, detail: line });
+  const kindTag = `[${r.kind}]`;
+  say(`  ${r.id.padEnd(24)} ${kindTag.padEnd(6)} ${tag.padEnd(6)} ${line}`);
+  if (tag !== '通过') say(`  ${''.padEnd(24)} ${''.padEnd(6)}        └ 依据：${r.basis}`);
+}
+say('  ' + '─'.repeat(104));
+const total = RULES.length;
+say(`  合计 ${total} 条：通过 ${nPass} / 不通过 ${nFail}（其中 [PCB] 类 ${hardFail}）/ 无法判定 ${nSkip}`);
+say(`  器件 ${comps.length} 个参与几何判定；尺寸未知 ${unknown.length} 个未参与（不计入「通过」分子，也不计入「不通过」分子）`);
+
+let code, banner;
+if (nFail > 0 && hardFail > 0) {
+  code = 1; banner = `PLACEMENT=FAIL  ${hardFail} 条 [PCB] 类判据不通过 —— 这些是 PCB 摆位就能修的真缺陷`;
+} else if (nSkip > 0 || unknown.length > 0) {
+  code = 2; banner = `PLACEMENT=NOSAMPLE  有 ${nSkip + unknown.length} 项无法判定（缺尺寸或判据输入不足）—— 不能当作通过`;
+} else if (nFail > 0) {
+  code = 0; banner = `PLACEMENT=WARN  [PCB] 类全过，${nFail} 条 [机构] 类不通过 —— 需结构件协同，不是 PCB 缺陷`;
+} else {
+  code = 0; banner = 'PLACEMENT=PASS  全部判据通过';
+}
+
+if (TO_JSON) {
+  process.stdout.write(JSON.stringify({
+    design: path.basename(designPath),
+    board: { w: W, h: H, mmW: +mm(W).toFixed(2), mmH: +mm(H).toFixed(2) },
+    rules: results,
+    summary: { total, pass: nPass, fail: nFail, failPcb: hardFail, unknown: nSkip,
+               sizedComps: comps.length, unsizedComps: unknown.length },
+    exitCode: code, banner,
+  }) + '\n');
+} else {
+  say('\n  ' + banner);
+}
+process.exit(code);
