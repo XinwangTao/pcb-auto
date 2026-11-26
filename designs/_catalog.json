@@ -190,8 +190,8 @@
       "class": "Basic Part",
       "trusted": true,
       "designator": "C",
-      "role": "电容 10uF",
-      "package": "0603",
+      "role": "电容 10uF（0805）",
+      "package": "0805",
       "tags": [
         "capacitor",
         "cap",
@@ -681,24 +681,25 @@
       "netHints": "常用作 EN/BOOT 上拉与按键上拉"
     },
     {
-      "lcsc": "C1651",
-      "name": "0603CG2R2C500NT",
+      "lcsc": "C3850164",
+      "name": "C0603H222J1GACT500",
       "class": "Extended Part",
       "trusted": true,
       "designator": "C",
-      "role": "电容 2.2nF（0603）",
+      "role": "电容 2.2nF（0603 C0G）",
       "package": "0603",
       "tags": [
         "capacitor",
         "2.2nf",
         "电容",
-        "cpout"
+        "cpout",
+        "c0g"
       ],
       "pins": {
         "1": "1",
         "2": "2"
       },
-      "netHints": "MPU6050 的 CPOUT 电荷泵电容"
+      "netHints": "MPU6050 的 CPOUT 电荷泵电容；必须 2.2nF，C0G 无直流偏压系数、无老化"
     },
     {
       "lcsc": "C49023793",
