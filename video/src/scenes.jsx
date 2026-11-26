@@ -811,7 +811,16 @@ export const Quality = () => {
             textAlign: 'center',
           }}
         >
-          DRC 全部通过 · {data.copperPours} 块铜皮灌注
+          {/* 【这一句曾经是硬编码的「DRC 全部通过」】
+              它不由 data.json 驱动，所以哪怕钉住的 run 里 drc.passed=false、
+              drcLeafCount=33，画面上照样写着「DRC 全部通过」。
+              视频是发布物，这句话就是一句可被逐帧截图取证的假话 ——
+              而它比一个 bug 更糟：bug 顶多让人修，假话会被人拿去当结论。
+              现在按 drc.passed 分流，未通过时直接写违规数。 */}
+          {data.drc.passed
+            ? 'DRC 全部通过'
+            : `DRC 未通过 · ${data.drc.violations} 处违规待修`}{' '}
+          · {data.copperPours} 块铜皮灌注
           <br />
           {data.snappedLines} 条走线端点吸附 · {data.drc.schWarns} 条原理图告警
         </div>

@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-11-24T21:34:04.640Z",
-  "outName": "RP2040_Minimal-20261125-052918",
-  "outDirRel": "out/RP2040_Minimal-20261125-052918",
-  "designId": "d6-rp2040-minimal",
-  "designName": "RP2040_Minimal",
-  "designFriendly": "AI_RP2040_MIN",
-  "idea": "RP2040 最小系统板：3.3V LDO 供电、去耦电容阵列、BOOT 按键、USB 引出、SWD 调试口、状态 LED",
+  "generatedAt": "2026-11-26T09:30:53.582Z",
+  "outName": "ESP32S3_Wireless_Mic_V3-20261126-163653",
+  "outDirRel": "out/ESP32S3_Wireless_Mic_V3-20261126-163653",
+  "designId": "mic-esp32s3-v3",
+  "designName": "ESP32S3_Wireless_Mic_V3",
+  "designFriendly": "ESP32-S3 无线麦克风（手持长条板 v3：加宽逃逸通道）",
+  "idea": "ESP32-S3 无线麦克风：I2S 数字麦克风拾音、MAX98357A I2S 功放推扬声器、三颗功能键（PTT 按住说话 + 两个自定义）、MPU6050 六轴姿态可用于「点头/挥手」自定义手势、Type-C 供电与原生 USB 烧录。",
   "components": [
     {
       "des": "C1",
@@ -39,6 +39,11 @@
     },
     {
       "des": "C7",
+      "lcsc": "C1651",
+      "value": "2.2nF"
+    },
+    {
+      "des": "C8",
       "lcsc": "C14663",
       "value": "100nF"
     },
@@ -49,8 +54,8 @@
     },
     {
       "des": "H1",
-      "lcsc": "C9900192758",
-      "value": "2.54-1*8"
+      "lcsc": "C49023793",
+      "value": "SPK-2P"
     },
     {
       "des": "R1",
@@ -59,23 +64,53 @@
     },
     {
       "des": "R2",
-      "lcsc": "C25905",
-      "value": "5.1k"
+      "lcsc": "C25804",
+      "value": "10k"
     },
     {
       "des": "R3",
+      "lcsc": "C25804",
+      "value": "10k"
+    },
+    {
+      "des": "R4",
       "lcsc": "C25905",
       "value": "5.1k"
     },
     {
-      "des": "R4",
-      "lcsc": "C11702",
-      "value": "1k"
+      "des": "R5",
+      "lcsc": "C25905",
+      "value": "5.1k"
+    },
+    {
+      "des": "SW1",
+      "lcsc": "C2832146",
+      "value": "PTT"
+    },
+    {
+      "des": "SW2",
+      "lcsc": "C2832146",
+      "value": "BTN2"
+    },
+    {
+      "des": "SW3",
+      "lcsc": "C2832146",
+      "value": "BTN3"
+    },
+    {
+      "des": "SW4",
+      "lcsc": "C2832146",
+      "value": "BOOT"
+    },
+    {
+      "des": "SW5",
+      "lcsc": "C2832146",
+      "value": "RST"
     },
     {
       "des": "U1",
-      "lcsc": "C2040",
-      "value": "RP2040"
+      "lcsc": "C2913199",
+      "value": "ESP32-S3-WROOM-1-N16"
     },
     {
       "des": "U2",
@@ -84,46 +119,72 @@
     },
     {
       "des": "U3",
-      "lcsc": "C131025",
-      "value": "W25Q16JVSSIQ"
+      "lcsc": "C910544",
+      "value": "MAX98357AETE+T"
+    },
+    {
+      "des": "U4",
+      "lcsc": "C2875567",
+      "value": "DMM-4026-B-I2S-R"
+    },
+    {
+      "des": "U5",
+      "lcsc": "C2912107",
+      "value": "MPU6050"
+    },
+    {
+      "des": "USB1",
+      "lcsc": "C165948",
+      "value": "TYPE-C-31-M-12"
     }
   ],
-  "componentCount": 16,
-  "connectionCount": 68,
+  "componentCount": 26,
+  "connectionCount": 111,
   "nets": [
-    "1V1",
     "3V3",
     "5V",
+    "AMP_BCLK",
+    "AMP_DIN",
+    "AMP_LRCLK",
+    "BOOT",
+    "CC1",
+    "CC2",
+    "EN",
     "GND",
+    "I2C_SCL",
+    "I2C_SDA",
+    "IMU_CPOUT",
+    "IMU_INT",
+    "IMU_REGOUT",
     "LED_A",
-    "QSPI_SCLK",
-    "QSPI_SD0",
-    "QSPI_SD1",
-    "QSPI_SD2",
-    "QSPI_SD3",
-    "QSPI_SS",
-    "RUN",
-    "SWCLK",
-    "SWD",
-    "USB_DM",
+    "LED_R",
+    "MIC_SCK",
+    "MIC_SD",
+    "MIC_WS",
+    "SPK_N",
+    "SPK_P",
+    "SW_BTN2",
+    "SW_BTN3",
+    "SW_PTT",
+    "USB_DN",
     "USB_DP"
   ],
-  "netCount": 16,
+  "netCount": 27,
   "board": {
-    "widthMil": 1950,
-    "heightMil": 1488,
+    "widthMil": 1300,
+    "heightMil": 3700,
     "name": "Board1",
     "sch": "Schematic1"
   },
   "drc": {
-    "passed": true,
-    "violations": 0,
+    "passed": false,
+    "violations": 33,
     "schErrors": 0,
-    "schWarns": 26,
+    "schWarns": 58,
     "mismatches": 0
   },
-  "elapsedMs": 82152,
-  "elapsedSec": 82.2,
+  "elapsedMs": 1098701,
+  "elapsedSec": 1098.7,
   "phases": [
     {
       "name": "resolveParts",
@@ -132,137 +193,205 @@
     },
     {
       "name": "createProject",
-      "cum": 93,
-      "dur": 93
+      "cum": 141,
+      "dur": 141
     },
     {
       "name": "createBoard",
-      "cum": 3114,
-      "dur": 3021
+      "cum": 3428,
+      "dur": 3287
     },
     {
       "name": "placeParts",
-      "cum": 7533,
-      "dur": 4419
+      "cum": 5646,
+      "dur": 2218
     },
     {
       "name": "connect",
-      "cum": 11580,
-      "dur": 4047
+      "cum": 17462,
+      "dur": 11816
     },
     {
       "name": "netlistCheck",
-      "cum": 14404,
-      "dur": 2824
+      "cum": 23442,
+      "dur": 5980
     },
     {
       "name": "pcbImport",
-      "cum": 17702,
-      "dur": 3298
+      "cum": 26216,
+      "dur": 2774
     },
     {
       "name": "autoLayout",
-      "cum": 27181,
-      "dur": 9479
+      "cum": 38841,
+      "dur": 12625
     },
     {
       "name": "preVia",
-      "cum": 33595,
-      "dur": 6414
+      "cum": 41131,
+      "dur": 2290
     },
     {
       "name": "copperPour",
-      "cum": 34447,
-      "dur": 852
+      "cum": 42038,
+      "dur": 907
     },
     {
       "name": "autoRouting",
-      "cum": 37501,
-      "dur": 3054
+      "cum": 47916,
+      "dur": 5878
     },
     {
       "name": "snapEnds",
-      "cum": 63426,
-      "dur": 25925
+      "cum": 978059,
+      "dur": 930143
+    },
+    {
+      "name": "stitchGaps",
+      "cum": 986426,
+      "dur": 8367
     },
     {
       "name": "fixClearance",
-      "cum": 67884,
-      "dur": 4458
+      "cum": 1010851,
+      "dur": 24425
+    },
+    {
+      "name": "restitchEp",
+      "cum": 1029743,
+      "dur": 18892
     },
     {
       "name": "patchDrc",
-      "cum": 75131,
-      "dur": 7247
+      "cum": 1029748,
+      "dur": 5
     },
     {
       "name": "drc",
-      "cum": 75131,
-      "dur": 0
+      "cum": 1044356,
+      "dur": 14608
     },
     {
       "name": "export",
-      "cum": 79500,
-      "dur": 4369
+      "cum": 1094054,
+      "dur": 49698
     }
   ],
-  "phaseCount": 16,
-  "copperPours": 56,
-  "snappedLines": 0,
-  "clearanceFixes": 0,
+  "phaseCount": 18,
+  "copperPours": 4,
+  "snappedLines": 118,
+  "clearanceFixes": 5,
   "routed": {
     "state": "completed",
-    "ms": 3054
+    "ms": 54451
   },
-  "gerberEntries": 14,
+  "gerberEntries": 15,
   "artifacts": [
     {
       "file": "Gerber.zip",
       "label": "Gerber 制造文件",
       "note": "钻孔 / 丝印 / 钢网",
-      "bytes": 46890,
-      "human": "45.8 KB"
+      "bytes": 114179,
+      "human": "111.5 KB"
     },
     {
       "file": "Board.pdf",
       "label": "PCB 版图 PDF",
       "note": "装配与布线图",
-      "bytes": 515512,
-      "human": "503.4 KB"
+      "bytes": 775293,
+      "human": "757.1 KB"
     },
     {
       "file": "BOM.xlsx",
       "label": "物料清单",
       "note": "LCSC 编号 / 数量",
-      "bytes": 7499,
-      "human": "7.3 KB"
+      "bytes": 8018,
+      "human": "7.8 KB"
     },
     {
       "file": "PnP.csv",
       "label": "贴片坐标",
       "note": "UTF-16LE / TAB",
-      "bytes": 7218,
-      "human": "7.0 KB"
+      "bytes": 11262,
+      "human": "11.0 KB"
     },
     {
       "file": "Netlist.json",
       "label": "网表",
       "note": "连通性快照",
-      "bytes": 43458,
-      "human": "42.4 KB"
+      "bytes": 66338,
+      "human": "64.8 KB"
     },
     {
-      "file": "TestPoints.csv",
+      "file": "TestPoints.xlsx",
       "label": "测试点",
       "note": "飞针测试",
-      "bytes": 8305,
-      "human": "8.1 KB"
+      "bytes": 8505,
+      "human": "8.3 KB"
     }
   ],
   "exportsOk": 6,
   "exportsTotal": 6,
   "_source": {
-    "runDir": "out/RP2040_Minimal-20261125-052918",
-    "designPath": "designs\\d6-rp2040-minimal.json"
+    "runDir": "out/ESP32S3_Wireless_Mic_V3-20261126-163653",
+    "designPath": "designs/mic-esp32s3-v3.json",
+    "designFile": "designs/mic-esp32s3-v3.json",
+    "runJson": "out/ESP32S3_Wireless_Mic_V3-20261126-163653/_run.json",
+    "logJson": "out/ESP32S3_Wireless_Mic_V3-20261126-163653/_log.json",
+    "designSnapshot": "out/ESP32S3_Wireless_Mic_V3-20261126-163653/_design.snapshot.json"
+  },
+  "_provenance": {
+    "schema": "video/src/data.json · v2（本脚本生成）",
+    "script": "video/scripts/collect-data.mjs",
+    "run": {
+      "outName": "ESP32S3_Wireless_Mic_V3-20261126-163653",
+      "runJsonMtime": "2026-11-26T09:09:44.068Z",
+      "logJsonMtime": "2026-11-26T09:09:44.073Z",
+      "designSnapshotMtime": "2026-11-26T08:36:53.913Z",
+      "designSnapshotSha256": "3940d6b6ee0e4917b1065ff6688e046200c5a8fcc018fdb82f642b23bfcb8d37",
+      "designFile": "designs/mic-esp32s3-v3.json",
+      "designFileSha256": "3940d6b6ee0e4917b1065ff6688e046200c5a8fcc018fdb82f642b23bfcb8d37",
+      "logSource": "_log.json#entries",
+      "pinnedBy": "PINNED_RUN",
+      "selection": "out/ 下产物齐全（_run.json + _log.json + Gerber.zip）的 run 中 exportsOk 最高、再取最新"
+    },
+    "fields": {
+      "generatedAt": "本脚本运行时 `new Date().toISOString()`（生成时刻，不是流水线测量值）",
+      "outName": "`out/` 下的目录名",
+      "outDirRel": "`out/<outName>`",
+      "designId": "`designs/` 下设计文件名（去 `.json`）",
+      "designName": "`_run.json#designName`（= 设计快照 `#name`）",
+      "designFriendly": "设计快照 `#friendly`",
+      "idea": "设计快照 `#_idea`（= `_run.json#idea`）",
+      "components[]": "设计快照 `#components[].{des,lcsc,value}`",
+      "componentCount": "设计快照 `#components.length`",
+      "connectionCount": "设计快照 `#connections.length`",
+      "nets[]": "`_log.json#entries[s=netlist].v[].pins` 去重去空后排序",
+      "netCount": "`nets.length`",
+      "board.widthMil": "`_run.json#boardWidthMil`（本次实际生效的板框）",
+      "board.heightMil": "`_run.json#boardHeightMil`",
+      "board.name": "`_log.json#entries[s=board].v.name`",
+      "board.sch": "`_log.json#entries[s=board].v.schName`",
+      "drc.passed": "`_run.json#gates.drcPassed`",
+      "drc.violations": "`_run.json#gates.drcLeafCount`（叶子层违规组数）",
+      "drc.schErrors": "`_run.json#gates.schDrcErrors`",
+      "drc.schWarns": "`_log.json#entries[s=schDrc].v.warns`",
+      "drc.mismatches": "`_run.json#gates.mismatches`",
+      "elapsedMs": "`_run.json#elapsedMs`",
+      "elapsedSec": "`elapsedMs / 1000` 保留 1 位小数",
+      "phases[]": "`_log.json#entries[s=PHASE].v` 的 `{n, ms}`；`ms` 是**累计**毫秒，`dur` 为相邻差分",
+      "phaseCount": "`phases.length`",
+      "copperPours": "`_log.json#entries[s=copperPours].v.count`",
+      "snappedLines": "`_log.json#entries[s=snappedLines].v.snapped`",
+      "clearanceFixes": "`_log.json#entries[s=clearanceFixes].v`（数字）",
+      "routed": "`_log.json#entries[s=route].v` 的 `{state, ms}`",
+      "gerberEntries": "`Gerber.zip` 中央目录记录数（真实解压条目）",
+      "artifacts[].bytes": "`out/<run>/<file>` 的 `statSync().size`（不信 log 里的 size）",
+      "artifacts[].human": "`bytes / 1024` 保留 1 位 + 单位",
+      "exportsOk": "`_run.json#gates.exportsOk`",
+      "exportsTotal": "`_run.json#gates.exportsTotal`",
+      "_source": "同名字段，冗余记录来源目录与设计路径",
+      "_provenance": "本表 + 三个输入文件的 mtime / sha256（机器可读副本）"
+    }
   }
 }

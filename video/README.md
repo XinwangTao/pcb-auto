@@ -76,15 +76,24 @@ public/real/06_final.mp4    收尾
 
 ## 真实数据来源
 
-`scripts/collect-data.mjs` 只读地读取：
+`scripts/collect-data.mjs` 只读地读取**同一个 run 目录**里的四份东西（绝不跨 run 混用）：
 
-- `../out/SHT30_LDO_Module-20261125-010254/` —— 6 个真实产物文件，文件大小直接 `fs.statSync` 读磁盘
-- `../logs/SHT30_LDO_Module-20261125-010254.json` —— `value.log` 里的 16 条 `PHASE` 累计时间戳、`elapsedMs`、`drcPassed`、`schDrcErrors`、`mismatchCount`、`copperPours`、`snappedLines`
-- `../designs/d3-sht30-ldo.json` —— 想法原文、9 个器件、21 条连接
+- `../out/<run>/_run.json` —— 板框（`boardWidthMil`/`boardHeightMil`）、门禁（`gates.drcPassed`/`drcLeafCount`/`drcTotalCount`/`errors`/`mismatches`/`exportsOk`）、`elapsedMs`
+- `../out/<run>/_log.json` —— `entries[]` 里的 18 条 `PHASE` 累计时间戳、`netlist`（器件↔网络）、`schDrc`、`route`、`copperPours`、`snappedLines`
+- `../out/<run>/_design.snapshot.json` —— 想法原文、26 个器件、111 条连接（与 `designs/mic-esp32s3-v3.json` 同 sha256）
+- `../out/<run>/` 下 6 个真实产物 —— 字节数直接 `fs.statSync` 读磁盘；`Gerber.zip` 内文件数走 zip 中央目录
 
-**为什么钉住一个 run**：这台机器上的流水线在持续产出新 run（本次工作期间就多了 3 个），
-glob「最新」会让视频数字在两次渲染之间漂移，不可复现。因此脚本里 `PINNED_RUN` 显式钉住
-一个 DRC 全过、`drcDetailCount=0` 的 run；把它改成 `''` 就回退到「最新」。
+> 旧版只读 `../logs/<run>.json`。流水线现在把日志落在 **run 目录里**（`_log.json`），
+> `logs/` 是历史遗留 —— 只认 `logs/` 的脚本对每个新 run 都读不到输入。
+
+**每个数字的出处**都在 [src/data.PROVENANCE.md](src/data.PROVENANCE.md)（由同一个脚本生成，
+含来源 run、三个输入文件的 mtime/sha256、逐字段的 `_run.json#…` / `_log.json#…` 键路径）。
+
+**为什么钉住一个 run**：这台机器上的流水线在持续产出新 run，glob「最新」会让视频数字在两次
+渲染之间漂移，不可复现。因此脚本里 `PINNED_RUN` 显式钉住一个 run；它被 `cleanup.ps1` 清掉时
+脚本**退 2 并列出还能用的 run**，不会静默换成「最新」。想换 run 用
+`VIDEO_RUN=<目录名> node scripts/collect-data.mjs`；`VIDEO_RUN=`（空）才回退到
+「`exportsOk` 最高 + 最新」。
 
 `PHASE` 记录的是**累计**毫秒，脚本做差分才得到单阶段耗时，所以
 `resolveParts`/`drc` 这类相邻时间戳相同的阶段显示为 `—`（真实为 0 耗时）。
