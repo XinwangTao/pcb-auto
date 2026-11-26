@@ -206,18 +206,50 @@ check('ping 返回空对象', () => {
   assert(Object.keys(r.result).length === 0, `ping 应该返回 {}，得到 ${JSON.stringify(r.result)}`)
 })
 
-check('tools/call pcb_fabcheck 返回退出码 1 且 isError=false', () => {
-  const r = byId[4]
-  assert(r?.result, `没有 result：${JSON.stringify(r).slice(0, 400)}`)
-  // 「不可下单」是一个**结论**，不是错误 —— 这是整个契约的核心。
-  assert(r.result.isError === false, `isError 应该是 false，得到 ${r.result.isError}`)
-  const sc = r.result.structuredContent
-  assert(sc, '缺 structuredContent')
-  assert(sc.exitCode === 1, `期望 exitCode 1，得到 ${sc.exitCode}`)
-  assert(sc.orderable === false, `期望 orderable false，得到 ${sc.orderable}`)
-  assert(Array.isArray(r.result.content) && r.result.content[0]?.type === 'text', '缺 content[0].text')
-  return `exitCode 1 / orderable false / ${sc.blockers?.length ?? '?'} 阻断`
-})
+/**
+ * `out/` 是 gitignore 的（产物几百 MB），所以**新克隆的仓库里没有 `out/d1`**。
+ * 这条测试因此必须自适应：
+ *   - 有 `out/d1`（开发者本机）→ 验证「判定为否」的完整路径
+ *   - 没有（新克隆 / CI）    → 退化成验证「调用错误」路径，并明确标 SKIP 原因
+ *
+ * 不这么做的后果：这条测试在 CI 上必红，然后有人会把它删掉 —— 那才是真正的失败。
+ */
+const D1 = join(ROOT, 'out', 'd1')
+const hasD1 = existsSync(D1)
+
+if (hasD1) {
+  check('tools/call pcb_fabcheck 返回退出码 1 且 isError=false', () => {
+    const r = byId[4]
+    assert(r?.result, `没有 result：${r ? JSON.stringify(r).slice(0, 400) : '未收到回复'}`)
+    // 「不可下单」是一个**结论**，不是错误 —— 这是整个契约的核心。
+    assert(r.result.isError === false, `isError 应该是 false，得到 ${r.result.isError}`)
+    const sc = r.result.structuredContent
+    assert(sc, '缺 structuredContent')
+    assert(sc.exitCode === 1, `期望 exitCode 1，得到 ${sc.exitCode}`)
+    assert(sc.orderable === false, `期望 orderable false，得到 ${sc.orderable}`)
+    assert(Array.isArray(r.result.content) && r.result.content[0]?.type === 'text', '缺 content[0].text')
+    return `exitCode 1 / orderable false / ${sc.blockers?.length ?? '?'} 阻断`
+  })
+} else {
+  console.log('  \x1b[33mSKIP\x1b[0m  tools/call pcb_fabcheck 的「判定为否」路径'
+    + '  \x1b[90m（没有 out/d1 —— 新克隆里 out/ 是 gitignore 的）\x1b[0m')
+  console.log('        \x1b[90m想看完整路径：先跑一次 build 生成产物，或从 Releases 下载样本\x1b[0m')
+
+  check('tools/call 对不存在的目录返回退出码 2 且不崩', () => {
+    const s = mcpSession([
+      { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'smoke', version: '0' } } },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'pcb_fabcheck', arguments: { dir: '__definitely_not_here__' } } },
+    ])
+    const r = s.replies.find((x) => x.id === 2)
+    assert(r?.result, `没有 result：${r ? JSON.stringify(r).slice(0, 300) : '未收到回复'}`)
+    const sc = r.result.structuredContent
+    assert(sc?.exitCode === 2, `期望 exitCode 2，得到 ${sc?.exitCode}`)
+    // 参数错误才是 isError:true 的唯一合法来源。
+    assert(r.result.isError === true, `参数错误时 isError 应为 true，得到 ${r.result.isError}`)
+    return 'exitCode 2 / isError true'
+  })
+}
 
 check('未知工具 → -32602', () => {
   const e = byId[5]?.error
