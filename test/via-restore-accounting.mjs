@@ -169,9 +169,89 @@ const chk = (cond, label) => { if (cond) pass++; else fails.push(label); };
   chk(r.rb.restored === 1, '恢复成功的 restored 必须是 1');
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// 10. 真实失败形态：create 的第 6 个参数（viaType）必须是**数字**枚举。
+//
+// 桩照抄的不是猜的形状，是 out/ESP32S3_Wireless_Mic_V5-20261126-195631 的真实报错：
+//   viaRestoreDiag {"net":"GND","threw":"Cannot read properties of undefined
+//                    (reading 'primitiveId')","why":"create 抛异常：确实没补回来"}
+// 四个 GND 缝合孔全部落进这个 catch，同期 GND Connection Error 从 4 涨到 8。
+//
+// 根因（README-d11.md §2 的 doc api 实查签名）：
+//   create(net, x, y, holeDiameter, diameter, viaType?, …)
+//   viaType：0=VIA 通孔 / 1=BLIND / 2=SUTURE —— 数字。
+// 而记录侧用 String(getState_ViaType() ?? '') 存成字符串，回滚时原样传回 ⇒
+// EDA 侧枚举查表得 undefined ⇒ 读 .primitiveId ⇒ 抛。
+// 旧代码还有第二处：`m.viaType || undefined` 会把**合法值 0** 变成 undefined。
+//
+// 这一组在旧代码上必须全红、在新代码上必须全绿（已双向实测，见 out/_probe/）。
+function driveStrict(mods) {
+  const calls = [];
+  const eda = {
+    pcb_PrimitiveLine: { delete: async () => true, modify: async () => ({ ok: 1 }) },
+    pcb_PrimitiveVia: {
+      modify: async () => ({ ok: 1 }),
+      create: async (...args) => {
+        calls.push(args);
+        if (args.length > 5) {
+          const vt = args[5];
+          if (typeof vt !== 'number' || !Number.isInteger(vt) || vt < 0 || vt > 2) {
+            // 与真实 EDA 抛出的原文一致
+            throw new Error("Cannot read properties of undefined (reading 'primitiveId')");
+          }
+        }
+        return { getState_PrimitiveId: () => 'nid' + calls.length };
+      },
+    },
+    pcb_PrimitivePour: { rebuildAllCopperRegions: async () => true },
+  };
+  return run(eda, [], mods.map(m => ({ ...m })), new Set(), 23, 4, { length: 12 }, 1, 9, 0,
+    async () => {}, 9).then(r => ({ ...r, calls }));
+}
+
+// 10a 记录侧真实形状：String(getState_ViaType()) ⇒ '2'
+{
+  const r = await driveStrict([via('t1', { viaType: '2' }), via('t2', { viaType: '2' })]);
+  chk(r.clearanceRevertOk === true, "viaType 记成字符串 '2' 时必须能补回来（旧代码在这里抛异常）");
+  chk(r.rb.viaRestored === 2, "字符串 '2' 的 2 个孔都要真的补回来");
+  chk(r.calls.every(c => c.length === 6 && c[5] === 2),
+    "必须把 viaType 以**数字** 2 传给 create，不是字符串 '2'");
+  chk(!r.logLines.some(l => l.s === 'viaRestoreDiag'), '修好之后不该再出现 viaRestoreDiag');
+}
+
+// 10b 合法值 0 被 `||` 吃掉（旧写法 `m.viaType || undefined`）—— 0 是合法枚举
+{
+  const r = await driveStrict([via('z1', { viaType: 0 })]);
+  chk(r.clearanceRevertOk === true, 'viaType=0 是合法枚举，不得被 `||` 变成 undefined 后抛异常');
+  chk(r.calls[0] && r.calls[0][5] === 0, 'viaType=0 必须原样传 0，不能丢');
+  chk(r.rb.viaRestored === 1, 'viaType=0 的孔必须真的补回来');
+}
+
+// 10c 缺失/空串：只传 5 个参数，不要拿 undefined 占位（参数个数本身可能改变桥的行为）
+{
+  const r = await driveStrict([via('e1', { viaType: '' }), via('e2', { viaType: undefined })]);
+  chk(r.clearanceRevertOk === true, 'viaType 缺失/空串时必须退回 5 参数并成功');
+  chk(r.calls.every(c => c.length === 5), 'viaType 缺失时不得传第 6 个参数（哪怕值是 undefined）');
+  chk(r.rb.viaRestored === 2, '两个孔都要补回来');
+}
+
+// 10d 越界值不得被编造：'9' 不是合法枚举 ⇒ 退回 5 参数，而不是猜成 0/1/2
+{
+  const r = await driveStrict([via('o1', { viaType: '9' })]);
+  chk(r.rb.viaRestored === 1, "越界 viaType '9' 必须仍然能把孔补回来（不编造枚举值）");
+  chk(r.calls[0] && r.calls[0].length === 5, "越界 viaType '9' 不得传给 create");
+}
+
+// 10e 阴性对照：本闸门 via() 的默认值 'Through' 是不可解析字符串，也必须不炸
+{
+  const r = await driveStrict([via('d1')]);
+  chk(r.rb.viaRestored === 1, "viaType='Through' 这类不可解析字符串必须退回 5 参数并成功");
+  chk(r.clearanceRevertOk === true, "不可解析 viaType 不得导致撤回被判失败");
+}
+
 if (fails.length) {
   console.log(`  VIA-RESTORE=FAIL  ${fails.length} 条断言失败（共 ${pass + fails.length}）`);
   for (const f of fails) console.log('    ✗ ' + f);
   process.exit(1);
 }
-console.log(`  VIA-RESTORE=PASS  ${pass} 条断言全过（8 个场景：4 类失败 + 4 类阴性对照）`);
+console.log(`  VIA-RESTORE=PASS  ${pass} 条断言全过（14 个场景：5 类失败 + 9 类阴性/回归对照）`);

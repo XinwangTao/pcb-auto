@@ -3108,10 +3108,34 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
           viaUnrestorable.push(m.id);
           continue;
         }
+        // 【第 6 个参数必须是**数字**枚举，不能是字符串】
+        // README-d11.md §2（doc api 实查）的签名：
+        //   create(net, x, y, holeDiameter, diameter,
+        //          viaType?, designRuleBlindViaName?, solderMaskExpansion?, primitiveLock?)
+        //   viaType：0=VIA 通孔 / 1=BLIND 盲埋孔 / 2=SUTURE 缝合孔。
+        // 记录侧（viaDeleted 的 recMod）用 String(getState_ViaType() ?? '') 存成字符串，
+        // 这里原样传回去，于是 EDA 侧按枚举查表得 undefined，读 .primitiveId 直接抛：
+        //   Cannot read properties of undefined (reading 'primitiveId')
+        // 实测 v5（2026-11-26T20:05，out/...195631）：4 条 GND 缝合孔全部走 catch，
+        // 一个都没补回来，同期 GND Connection Error 从 4 涨到 8。
+        // 佐证：全文件另外 8 处 pcb_PrimitiveVia.create 都只传 5 个参数，全部成功——
+        // 差别只在这第 6 个参数。
+        // 现在：能解析成 0/1/2 的数字才传；解析不出来就只传 5 个，
+        // 不要拿 undefined 占位（参数个数本身可能改变桥的行为）。
+        let createArgs = null;
         try {
-          const nv = await eda.pcb_PrimitiveVia.create(
+          const viaTypeNum = (() => {
+            const rawVt = m.viaType;
+            if (rawVt === undefined || rawVt === null || String(rawVt).trim() === '') return null;
+            const n = Number(rawVt);
+            return (Number.isFinite(n) && n >= 0 && n <= 2) ? n : null;
+          })();
+          createArgs = [
             m.net || '', Number(m.x), Number(m.y),
-            Number(b.holeDiameter), Number(b.diameter), m.viaType || undefined);
+            Number(b.holeDiameter), Number(b.diameter),
+          ];
+          if (viaTypeNum !== null) createArgs.push(viaTypeNum);
+          const nv = await eda.pcb_PrimitiveVia.create(...createArgs);
           // 【判定成功靠什么】旧写法只看 `nv?.getState_PrimitiveId?.()` 是否为真，
           // 而 create 真失败时返回 undefined、成功时可能返回一个读不到 id 的对象
           // （本版本大量 getState_* / getPrimitive*ById 接口是 @alpha，实测返回 null）。
@@ -3122,13 +3146,15 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
           if (!nv) {
             viaRestoreFail.push(m.id);
             log('viaRestoreDiag', { id: m.id, at: [Math.round(Number(m.x)), Math.round(Number(m.y))],
-              net: m.net || '', ret: String(nv), why: 'create 返回空值：确实没补回来' });
+              net: m.net || '', args: createArgs, viaTypeRaw: m.viaType === undefined ? null : String(m.viaType),
+              ret: String(nv), why: 'create 返回空值：确实没补回来' });
           } else {
             const nid = nv?.getState_PrimitiveId?.();
             if (!nid) {
               viaRestoreUnverified.push(m.id);
               log('viaRestoreDiag', { id: m.id, at: [Math.round(Number(m.x)), Math.round(Number(m.y))],
-                net: m.net || '', ret: 'object', hasGetId: typeof nv?.getState_PrimitiveId,
+                net: m.net || '', args: createArgs, viaTypeRaw: m.viaType === undefined ? null : String(m.viaType),
+                ret: 'object', hasGetId: typeof nv?.getState_PrimitiveId,
                 keys: (() => { try { return Object.keys(nv).slice(0, 8); } catch (e) { return null; } })(),
                 why: 'create 回了对象但读不到 id：孔可能在板上，无法证实' });
             } else {
@@ -3138,7 +3164,9 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
         } catch (e) {
           viaRestoreFail.push(m.id);
           log('viaRestoreDiag', { id: m.id, at: [Math.round(Number(m.x)), Math.round(Number(m.y))],
-            net: m.net || '', threw: String(e && e.message).slice(0, 200),
+            net: m.net || '', args: createArgs,
+            viaTypeRaw: m.viaType === undefined ? null : String(m.viaType),
+            threw: String(e && e.message).slice(0, 200),
             why: 'create 抛异常：确实没补回来' });
         }
         continue;
