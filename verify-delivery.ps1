@@ -27,8 +27,16 @@ Push-Location $Root
 # 而这里的量具一直跑在 DSH 自带的那个 python 上 —— 所以 tool-paths.ps1
 # 把 $env:USERPROFILE\.dsh\dsh-runtimes\*\...\python.exe 排在 PATH 之前。
 . (Join-Path $PSScriptRoot 'scripts\tool-paths.ps1')
-$Python = Resolve-Python
-$Node   = Resolve-Node
+# 解析失败要能活下来。CI 上（ubuntu）没有 python，`Resolve-Python` 返回 $null，
+# 下游 `Test-Path $null` 在参数绑定阶段抛错，而 `$ErrorActionPreference = 'Stop'`
+# 让它变成未捕获的终止性错误 —— PowerShell 以 **1** 退出，也就是「有判据没过」。
+# 一台没装 Python 的机器给出的应是「没能测量」（2），不是「交付不一致」（1）。
+$Python = $null
+$Node = $null
+try { $Python = Resolve-Python } catch { }
+try { $Node = Resolve-Node } catch { }
+$HasPython = [bool]$Python -and (Test-Path -LiteralPath $Python)
+$HasNode = [bool]$Node -and (Test-Path -LiteralPath $Node)
 
 $Results = [System.Collections.Generic.List[object]]::new()
 
@@ -41,6 +49,12 @@ function Add-Result {
 
 function Invoke-Step {
     param([string]$Name, [string]$Exe, [string[]]$Arguments, [string]$Expect)
+    # 一处守卫覆盖全部调用点：要的解释器不在这台机器上，就是「没测成」。
+    # 不在这里拦，每个调用点都会各自再犯一次「把 $null 传下去」的错。
+    if (-not $Exe -or -not (Test-Path -LiteralPath $Exe)) {
+        Add-Result $Name 'NOSAMPLE' '这台机器上没有需要的解释器，这一步没跑成（不是判据没过）'
+        return $null
+    }
     $sw = [Diagnostics.Stopwatch]::StartNew()
     try {
         $out = & $Exe @Arguments 2>&1
@@ -79,8 +93,10 @@ Write-Host '  ══════════════════════
 # ---------- 0. 环境 ----------
 Write-Host ''
 Write-Host '  0) 环境'
-Add-Result 'python' $(if (Test-Path $Python) { 'PASS' } else { 'FAIL' }) $Python
-Add-Result 'node'   $(if (Test-Path $Node)   { 'PASS' } else { 'FAIL' }) $Node
+Add-Result 'python' $(if ($HasPython) { 'PASS' } else { 'NOSAMPLE' }) `
+    $(if ($HasPython) { $Python } else { '找不到 python：Python 量具都跑不了 —— 这不是判据没过，是这台机器没法测' })
+Add-Result 'node' $(if ($HasNode) { 'PASS' } else { 'NOSAMPLE' }) `
+    $(if ($HasNode) { $Node } else { '找不到 node：Node 侧判据都跑不了 —— 同上' })
 $ff = Get-Command ffmpeg -ErrorAction SilentlyContinue
 if ($ff) {
     Add-Result 'ffmpeg' 'PASS' $ff.Source
