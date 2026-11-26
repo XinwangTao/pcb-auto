@@ -34,12 +34,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
-# 出片器（curate-v7.mjs）要用 node 跑，判据4 会调它。路径写死不如留一个明确失败。
-$node = 'E:\APP\nodejs24\node.exe'
-if (-not (Test-Path $node)) {
-  $c = Get-Command node -ErrorAction SilentlyContinue
-  if ($c) { $node = $c.Source } else { throw "找不到 node（判据4 需要跑 curate-v7.mjs）：$node" }
-}
+# 出片器（curate-v7.mjs）要用 node 跑，判据4 会调它。找不到时由 Resolve-Node 明确报错。
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$node = Resolve-Node
 if (-not (Test-Path (Join-Path $Root 'run-all.ps1'))) { throw "推不出 pcb-auto 根目录：$Root" }
 
 function Say($m, $c = 'Cyan') { Write-Host "[take] $m" -ForegroundColor $c }

@@ -61,7 +61,8 @@ node scripts/gen-font-css.mjs
 ## 复现
 
 ```powershell
-$env:Path = "E:\APP\nodejs24;" + $env:Path
+# 先把 node 放进 PATH（node --version 能跑就说明已经有了）
+$env:Path = "C:\Program Files\nodejs;" + $env:Path
 
 # 1) 重新抽取真实数据 -> src/data.json
 node scripts/collect-data.mjs
@@ -72,11 +73,11 @@ node node_modules\@remotion\cli\remotion-cli.js render src\entry.js PcbAuto out\
   --codec=h264 --browser-executable="C:\Users\UserX\AppData\Local\Google\Chrome\Application\chrome.exe" *> out\render.log
 
 # 3) 去掉 Remotion 默认塞进来的空 AAC 音轨（可选，纯视觉视频不需要）
-C:\ffmpeg\bin\ffmpeg.exe -y -i out\ai-pcb-demo.mp4 -c:v copy -an out\_tmp.mp4; Move-Item out\_tmp.mp4 out\ai-pcb-demo.mp4 -Force
+ffmpeg -y -i out\ai-pcb-demo.mp4 -c:v copy -an out\_tmp.mp4; Move-Item out\_tmp.mp4 out\ai-pcb-demo.mp4 -Force
 
 # 4) 抽封面 + 验收帧
-C:\ffmpeg\bin\ffmpeg.exe -y -i out\ai-pcb-demo.mp4 -ss 1.6 -frames:v 1 out\cover.png
-C:\ffmpeg\bin\ffmpeg.exe -y -i out\ai-pcb-demo.mp4 -vf "fps=1/5" -frames:v 4 out\acc-%02d.png
+ffmpeg -y -i out\ai-pcb-demo.mp4 -ss 1.6 -frames:v 1 out\cover.png
+ffmpeg -y -i out\ai-pcb-demo.mp4 -vf "fps=1/5" -frames:v 4 out\acc-%02d.png
 ```
 
 ## 竖屏安全区

@@ -14,9 +14,23 @@ param(
 $ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
-$ffmpeg = 'C:\ffmpeg\bin\ffmpeg.exe'
-$ffprobe = 'C:\ffmpeg\bin\ffprobe.exe'
-$cli = 'E:\APP\lceda-pro\lceda-pro.exe'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+
+# ffmpeg / ffprobe：不再写死某个开发者本机的安装目录。
+# 先看环境变量，再看 PATH；都不中就给一条能照做的错。
+$ffmpeg = $env:PCB_AUTO_FFMPEG
+if (-not $ffmpeg) {
+  $c = Get-Command ffmpeg -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($c) { $ffmpeg = $c.Source }
+}
+if (-not $ffmpeg) { throw "找不到 ffmpeg（只有录制/合成视频时才需要）。装好后确保它在 PATH 上，或设置 `$env:PCB_AUTO_FFMPEG 指向 ffmpeg.exe。" }
+$ffprobe = $env:PCB_AUTO_FFPROBE
+if (-not $ffprobe) {
+  $c = Get-Command ffprobe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($c) { $ffprobe = $c.Source }
+}
+if (-not $ffprobe) { throw "找不到 ffprobe（与 ffmpeg 装在同一目录）。装好后确保它在 PATH 上，或设置 `$env:PCB_AUTO_FFPROBE 指向 ffprobe.exe。" }
+$cli = Resolve-LcedaCli
 $sid = (Get-Content .session-gui -Raw).Trim()
 
 # 1) 环境准备

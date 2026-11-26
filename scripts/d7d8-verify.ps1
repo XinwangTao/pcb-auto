@@ -76,7 +76,8 @@ if (-not $codeInfo.exists) {
 }
 Write-Host ("  被测代码: " + $codeInfo.sha12 + "  " + $codeInfo.lines + " 行  现版: " + $codeInfo.liveSha12 + "  " + $codeInfo.liveLines + " 行") -ForegroundColor DarkGray
 if (-not $codeInfo.isLive -and $codeInfo.note) { Write-Host ("  " + $codeInfo.note) -ForegroundColor Yellow }
-$CLI = 'E:\APP\lceda-pro\lceda-pro.exe'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$CLI = Resolve-LcedaCli
 $LogDir = Join-Path $Root 'logs'
 $OutRoot = Join-Path $Root 'diag-out'
 $Code = [IO.Path]::GetFullPath((Join-Path $Root $CodeFile))

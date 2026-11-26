@@ -7,7 +7,8 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 $Work = Join-Path $PSScriptRoot '.patchwork'
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
-$Node = 'E:\APP\nodejs24\node.exe'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$Node = Resolve-Node
 $Git = (Get-Command git).Source
 
 function Patch([string]$src, [string]$dst, [object[]]$edits) {

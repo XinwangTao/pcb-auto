@@ -1,7 +1,8 @@
 # lceda-pro eda API 全量知识库（含方法详细签名）
 $ErrorActionPreference = 'Continue'
-$cli = 'E:\APP\lceda-pro\lceda-pro.exe'
-$root = 'D:\Users\陶鑫旺\Documents\deepseek-harness\default-workspace\pcb-auto\api'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$cli = Resolve-LcedaCli
+$root = Join-Path (Split-Path -Parent $PSScriptRoot) 'api'
 New-Item -ItemType Directory -Force -Path $root | Out-Null
 $classDir = Join-Path $root 'classes'
 $methodDir = Join-Path $root 'methods'

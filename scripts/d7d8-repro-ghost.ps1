@@ -19,7 +19,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
-$CLI = 'E:\APP\lceda-pro\lceda-pro.exe'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$CLI = Resolve-LcedaCli
 $LogDir = Join-Path $Root 'logs'
 $OutRoot = Join-Path $Root 'diag-out'
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null

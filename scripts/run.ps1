@@ -5,8 +5,9 @@ param(
 )
 # 通用 lceda-pro invoke 封装：跑脚本 + 打印 JSON
 $ErrorActionPreference = 'Stop'
-$cli = 'E:\APP\lceda-pro\lceda-pro.exe'
-$sidFile = 'D:\Users\陶鑫旺\Documents\deepseek-harness\default-workspace\pcb-auto\.session'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$cli = Resolve-LcedaCli
+$sidFile = Join-Path (Split-Path -Parent $PSScriptRoot) '.session'
 if (-not (Test-Path $sidFile)) { throw "no session file; run ensure-session first" }
 $sid = (Get-Content $sidFile -Raw).Trim()
 

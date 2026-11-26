@@ -37,8 +37,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
-$NodeExe = 'E:\APP\nodejs24\node.exe'
-if (-not (Test-Path $NodeExe)) { $NodeExe = 'node' }
+. (Join-Path $PSScriptRoot 'scripts\tool-paths.ps1')
+$NodeExe = Resolve-Node
 
 if (-not $Idea -and -not $Design -and -not $VerifyOnly) { throw '必须给 -Idea 或 -Design（或 -VerifyOnly + -OutDir）' }
 if ($VerifyOnly -and -not $OutDir) { throw '-VerifyOnly 必须同时给 -OutDir' }

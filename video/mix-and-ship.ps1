@@ -127,8 +127,18 @@ $ErrorActionPreference = 'Stop'
 
 # ---------------------------------------------------------------- 常量
 
-$Ffmpeg = 'C:\ffmpeg\bin\ffmpeg.exe'
-$Ffprobe = 'C:\ffmpeg\bin\ffprobe.exe'
+# ffmpeg / ffprobe：不再写死某个开发者本机的安装目录。
+# 先看环境变量，再看 PATH；都不中就在下面的「前置条件」里 Stop-With 2 明确报错。
+$Ffmpeg = $env:PCB_AUTO_FFMPEG
+if (-not $Ffmpeg) {
+  $c = Get-Command ffmpeg -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($c) { $Ffmpeg = $c.Source }
+}
+$Ffprobe = $env:PCB_AUTO_FFPROBE
+if (-not $Ffprobe) {
+  $c = Get-Command ffprobe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($c) { $Ffprobe = $c.Source }
+}
 $Inv = [System.Globalization.CultureInfo]::InvariantCulture
 
 # V6 滤镜链：每一段都必须是单引号字面量，绝不能让它被 PowerShell 展开。
@@ -219,9 +229,9 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
   Stop-With 2 "必须用 pwsh 7 运行（当前 Windows PowerShell $($PSVersionTable.PSVersion)）。5.1 会因中文编码把参数传坏。请用 pwsh -File 调用。"
 }
 
-foreach ($tool in @($Ffmpeg, $Ffprobe)) {
-  if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
-    Stop-With 2 "找不到工具：$tool（要求 ffmpeg/ffprobe 在 C:\ffmpeg\bin）"
+foreach ($tool in @(@{ name = 'ffmpeg'; path = $Ffmpeg }, @{ name = 'ffprobe'; path = $Ffprobe })) {
+  if (-not $tool.path -or -not (Test-Path -LiteralPath $tool.path -PathType Leaf)) {
+    Stop-With 2 "找不到 $($tool.name)。装好 ffmpeg 套件并确保它在 PATH 上，或设置 `$env:PCB_AUTO_FFMPEG / `$env:PCB_AUTO_FFPROBE 指向对应的 exe。"
   }
 }
 
@@ -474,7 +484,7 @@ if ($outBytes -gt $limitBytes) {
     ''
     '压缩建议（任选）：'
     '  1) 降码率重出（画质损失可控）：'
-    '     C:\ffmpeg\bin\ffmpeg.exe -y -i "' + $OutFile + '" -c:v libx264 -crf 26 -preset medium -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -ar 48000 -ac 2 out-small.mp4'
+    '     ffmpeg -y -i "' + $OutFile + '" -c:v libx264 -crf 26 -preset medium -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -ar 48000 -ac 2 out-small.mp4'
     '  2) 缩分辨率到 720x1280： -vf "scale=720:-2:flags=lanczos"'
     '  3) 砍时长（单条 ≤ 45s 最稳），或拆成两段发'
     '  4) 走飞书云文档/网盘分享链接，不用 im/v1/files'

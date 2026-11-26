@@ -14,7 +14,8 @@ param(
   [string]$Session = ''
 )
 $ErrorActionPreference = 'Stop'
-$CLI = 'E:\APP\lceda-pro\lceda-pro.exe'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$CLI = Resolve-LcedaCli
 $Root = Split-Path $PSScriptRoot -Parent
 $SessionFile = Join-Path $PSScriptRoot '.audit-session'
 $CodeFile = Join-Path $PSScriptRoot 'audit-drc.js'

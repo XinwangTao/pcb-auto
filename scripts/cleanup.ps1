@@ -77,7 +77,9 @@ if (Test-Path $logRoot) {
 # ---------- 3. EDA 工程目录 ----------
 # 只清理本流水线创建的（名字含 AI_），且保留最近 10 个，避免误删用户自己的工程
 if (-not $SkipProjects) {
-  $pd = 'D:\Users\陶鑫旺\Documents\LCEDA-Pro\projects'
+  # EDA 工程默认建在「我的文档\LCEDA-Pro\projects」—— 不写死某个开发者账户名，
+  # 取系统的 Documents 目录再拼，换台机器/换个账户都成立。
+  $pd = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'LCEDA-Pro\projects'
   if (Test-Path $pd) {
     $projs = Get-ChildItem $pd -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
     $mine = @($projs | Where-Object { $_.Name -like 'AI_*' })

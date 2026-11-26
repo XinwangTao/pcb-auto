@@ -12,8 +12,23 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
-$ffmpeg = 'C:\ffmpeg\bin\ffmpeg.exe'
-$cli = 'E:\APP\lceda-pro\lceda-pro.exe'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+
+# ffmpeg / ffprobe：不再写死某个开发者本机的安装目录。
+# 先看环境变量，再看 PATH；都不中就给一条能照做的错。
+$ffmpeg = $env:PCB_AUTO_FFMPEG
+if (-not $ffmpeg) {
+  $c = Get-Command ffmpeg -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($c) { $ffmpeg = $c.Source }
+}
+if (-not $ffmpeg) { throw "找不到 ffmpeg（只有录制/合成视频时才需要）。装好后确保它在 PATH 上，或设置 `$env:PCB_AUTO_FFMPEG 指向 ffmpeg.exe。" }
+$ffprobe = $env:PCB_AUTO_FFPROBE
+if (-not $ffprobe) {
+  $c = Get-Command ffprobe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($c) { $ffprobe = $c.Source }
+}
+if (-not $ffprobe) { throw "找不到 ffprobe（与 ffmpeg 装在同一目录）。装好后确保它在 PATH 上，或设置 `$env:PCB_AUTO_FFPROBE 指向 ffprobe.exe。" }
+$cli = Resolve-LcedaCli
 
 # 1. 摆窗
 $pos = pwsh -NoProfile -File scripts\position-editor.ps1 -X 0 -Y 0 -W $W -H $H 2>&1 | Out-String
@@ -71,7 +86,7 @@ if (-not $ff.HasExited) { $ff.Kill() }
 if (Test-Path $OutFile) {
   $sz = (Get-Item $OutFile).Length
   Write-Output "录制完成: $OutFile ($([math]::Round($sz/1MB,2)) MB)"
-  & 'C:\ffmpeg\bin\ffprobe.exe' -v error -show_entries format=duration -show_entries stream=width,height,r_frame_rate -of default=noprint_wrappers=1 $OutFile 2>&1 | Out-String | Write-Output
+  & $ffprobe -v error -show_entries format=duration -show_entries stream=width,height,r_frame_rate -of default=noprint_wrappers=1 $OutFile 2>&1 | Out-String | Write-Output
 } else {
   Write-Output '录制失败: 无输出文件'
   exit 1

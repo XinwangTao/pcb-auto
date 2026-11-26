@@ -18,7 +18,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$Node = 'E:\APP\nodejs24\node.exe'
+. (Join-Path $PSScriptRoot 'tool-paths.ps1')
+$Node = Resolve-Node
 $Root = Split-Path -Parent $PSScriptRoot
 # 路径归一化必须用 [IO.Path]::IsPathRooted，不能写 StartsWith('\\')：
 # 后者只认 UNC（\\server\share），把 F:\cache\x.js 这种盘符绝对路径当成相对路径，

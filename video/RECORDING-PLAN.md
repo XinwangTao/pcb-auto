@@ -90,7 +90,7 @@ async function pulse(tag, gapMs = 1100) {
 ## Remotion 校验（已实跑，未渲染）
 
 ```
-cd pcb-auto\video;  $env:Path='E:\APP\nodejs24;'+$env:Path
+cd pcb-auto\video
 npx remotion compositions src\entry.js
 The following compositions are available:
 PcbAuto      60      1080x1920      3480 (58.00 sec)

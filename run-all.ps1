@@ -17,7 +17,15 @@ param(
   [switch]$Record
 )
 $ErrorActionPreference = 'Stop'
-$CLI = 'E:\APP\lceda-pro\lceda-pro.exe'
+
+# 外部程序位置统一由 scripts\tool-paths.ps1 解析：
+#   环境变量 > 常见安装位置 > PATH 上的命令，都不中就抛一条能照做的错。
+# 以前这里是写死的 lceda-pro.exe 绝对路径 —— 作者机器上能跑，
+# 别人的机器上 README 的第一条命令就直接失败，而且报错指向「找不到路径」，
+# 看不出真正的原因是「没装 EDA」。
+# 本机 lceda-pro 与 node 都在 PATH 上，所以解析结果与改造前完全一致。
+. (Join-Path $PSScriptRoot 'scripts\tool-paths.ps1')
+$CLI = Resolve-LcedaCli
 $Root = $PSScriptRoot
 # 【哨兵文件开录】通宵循环起 run-all 时不传 -Record（它只在启动时读一次，改它要重启循环，
 # 而中途重启会留下孤儿 lceda owner + 陈旧锁）。但 **run-all 每个设计都新起一个进程**，
@@ -46,7 +54,7 @@ function Log($msg, $color = 'Cyan') { Write-Host "[pcb-auto] $msg" -ForegroundCo
 # 绝不把半成品文件送进 EDA。
 $ScriptFile   = Join-Path $Root 'scripts\pipeline3.js'
 $ScriptBackup = Join-Path $Root 'scripts\pipeline3.js.lastgood'
-$NodeExe      = 'E:\APP\nodejs24\node.exe'
+$NodeExe      = Resolve-Node
 
 function Test-PipelineSyntax([string]$path) {
   if (-not (Test-Path $path)) { return $false }
@@ -242,9 +250,9 @@ function Get-LcedaMainProcesses {
   if (-not $procs) { return @() }
   # 【判据必须用 --owner】lceda-pro.exe 同时扮演三个角色，靠"有没有 --type=" 区分
   # 不出来，会把正常状态误判成泄漏：
-  #   E:\APP\lceda-pro\lceda-pro.exe --owner --userData=...        <- 服务端（唯一）
-  #   "E:\APP\lceda-pro\lceda-pro.exe" invoke --session ... --code-file ...  <- CLI 客户端（调用期间才在）
-  #   ... --type=renderer/gpu/utility/crashpad                     <- 服务端子进程
+  #   <lceda-pro.exe> --owner --userData=...                        <- 服务端（唯一）
+  #   "<lceda-pro.exe>" invoke --session ... --code-file ...        <- CLI 客户端（调用期间才在）
+  #   ... --type=renderer/gpu/utility/crashpad                      <- 服务端子进程
   # 实测（2026-11-25 22:44）一次正常运行中恰好有 2 个"无 --type="的进程：1 个 --owner
   # 服务端 + 1 个正在飞的 invoke 客户端。旧判据把它们算成 2 个"主进程"，
   # 于是 Ensure-Session 里"主进程 > 1 就全清"会**在 invoke 在飞时把活会话杀掉**。
@@ -377,7 +385,7 @@ function Ensure-Session {
 # -Idea 模式：先用 idea2design.js 把自然语言编译成 design JSON，再走同一条流水线。
 if ($Idea) {
   Log "编译想法 → design JSON"
-  $nodeExe = 'E:\APP\nodejs24\node.exe'
+  $nodeExe = $NodeExe
   if (-not (Test-Path $nodeExe)) { $nodeExe = 'node' }
   $slug = ($Idea -replace '[^\w\u4e00-\u9fa5]+', '-')
   if ($slug.Length -gt 30) { $slug = $slug.Substring(0, 30) }
@@ -442,10 +450,11 @@ if ($Record) {
 # d8 的 5V 只连到 9 个电阻却没有任何供电接口，两条设计在回归里都是 PASS。
 # 这类错误跑完 90~300 秒流水线也查不出来，必须在开跑前拦住。
 if (-not $SkipAudit) {
-  # 注意：$nodeVerify 在后面第 ~195 行才定义，这里必须自己解析，
-  # 否则 & 后面是 $null → "管道元素中 '&' 后面的表达式生成了无效对象"，
+  # 注意：不能用 $nodeVerify —— 它在后面第 ~195 行才定义，这里会是 $null，
+  # 于是 & 后面是 $null → "管道元素中 '&' 后面的表达式生成了无效对象"，
   # 每个设计 0.7 秒就失败（2026-11-25 无人值守循环就是这么全线崩的）。
-  $nodeAudit = 'E:\APP\nodejs24\node.exe'
+  # $NodeExe 定义在脚本开头，所以在这一点上已经可用。
+  $nodeAudit = $NodeExe
   if (-not (Test-Path $nodeAudit)) { $nodeAudit = 'node' }
   $auditOut = (& $nodeAudit (Join-Path $Root 'scripts\audit-design.js') $verifyDesignPath 2>&1 | Out-String)
   $auditCode = $LASTEXITCODE
@@ -582,7 +591,7 @@ $bestDrcReOk = $null; $bestFabReOk = $null; $bestFmtBad = $null
 $raw = $null; $res = $null; $v = $null; $usedPlan = $null
 $lastGoodRaw = $null
 $verifyFails = @()
-$nodeVerify = 'E:\APP\nodejs24\node.exe'
+$nodeVerify = $NodeExe
 if (-not (Test-Path $nodeVerify)) { $nodeVerify = 'node' }
 
 # 两道独立闸门的判决先置 $false —— 「未知」永远不能当成「通过」。
@@ -1082,22 +1091,19 @@ $docsWhy = '未尝试（产物校验未通过，不给废板配文档）'
 $docsNames = @('打样检查清单.md', '装配说明.md', '成本估算.md')
 if ($verifyOk -eq $true) {
   $mk = Join-Path $Root 'scripts\make-deliverables.py'
-  # 依次探测解释器，取第一个真实存在的；全找不到也要说清"找不到"，不能静默。
-  $pyCand = New-Object System.Collections.ArrayList
-  [void]$pyCand.Add('C:\Users\UserX\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe')
-  [void]$pyCand.Add('F:\ANACONDA\1\python.exe')
-  foreach ($cmdName in @('python', 'python3', 'py')) {
-    $c = Get-Command $cmdName -ErrorAction SilentlyContinue
-    if ($c -and $c.Source) { [void]$pyCand.Add($c.Source) }
-  }
+  # 解释器同样靠解析，不写死。Resolve-Python 的探测顺序是
+  #   环境变量 → 常见安装位置 → DSH 自带运行时 → PATH 上的 python
+  # 与这里原先手写的顺序一致（DSH 那个排在 PATH 的 Anaconda 之前，
+  # 所以本机解析结果与改造前相同），只是不再带只有本机才成立的绝对路径。
+  # 找不到不抛 —— 这里必须落成 docsOk=$false + 一句原因，而不是把整个设计判成崩掉。
   $py = $null
-  foreach ($cand in $pyCand) { if (Test-Path -LiteralPath $cand) { $py = $cand; break } }
+  try { $py = Resolve-Python } catch { $py = $null }
   if (-not (Test-Path -LiteralPath $mk)) {
     $docsOk = $false
     $docsWhy = "交付文档脚本不存在：$mk"
   } elseif (-not $py) {
     $docsOk = $false
-    $docsWhy = '找不到可用的 python 解释器（已探测 DSH 运行时 / Anaconda / PATH）'
+    $docsWhy = '找不到可用的 python 解释器（已探测 PCB_AUTO_PYTHON / 常见安装位置 / DSH 自带运行时 / PATH）'
   } elseif (-not $OutDir) {
     # 逻辑上不可达（校验通过必然有运行目录），但 Join-Path 传 null 会抛；
     # 抛出会跳过 $finalOk 赋值直接进 finally，把"文档没生成"变成"终判没算出来"。

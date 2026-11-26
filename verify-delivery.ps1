@@ -23,8 +23,12 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Push-Location $Root
 
-$Python = 'C:\Users\UserX\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe'
-$Node   = 'E:\APP\nodejs24\node.exe'
+# 两个解释器都靠解析，不写死：本机 PATH 上的 python 是 Anaconda，
+# 而这里的量具一直跑在 DSH 自带的那个 python 上 —— 所以 tool-paths.ps1
+# 把 $env:USERPROFILE\.dsh\dsh-runtimes\*\...\python.exe 排在 PATH 之前。
+. (Join-Path $PSScriptRoot 'scripts\tool-paths.ps1')
+$Python = Resolve-Python
+$Node   = Resolve-Node
 
 $Results = [System.Collections.Generic.List[object]]::new()
 

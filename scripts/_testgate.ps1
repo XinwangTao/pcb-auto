@@ -1,4 +1,4 @@
-$Root = 'D:\Users\陶鑫旺\Documents\deepseek-harness\default-workspace\pcb-auto'
+$Root = Split-Path -Parent $PSScriptRoot
 function Log($m, $c = 'Cyan') { Write-Host "    [log] $m" }
 
 # 从 run-all.ps1 逐字提取闸门代码，确保测的是真代码而不是副本

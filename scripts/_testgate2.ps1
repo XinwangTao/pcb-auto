@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Continue'
-$Root = 'D:\Users\陶鑫旺\Documents\deepseek-harness\default-workspace\pcb-auto'
+$Root = Split-Path -Parent $PSScriptRoot
 $script:logs = New-Object System.Collections.ArrayList
 function Log($m, $c = 'Cyan') { [void]$script:logs.Add([string]$m) }
 

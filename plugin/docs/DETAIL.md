@@ -34,7 +34,7 @@ PowerShell/Node/Python 脚本加上类型化的工具接口。重写会漂移出
   config:
     root: 'D:/path/to/pcb-auto'   # 必填：插件不知道仓库在哪
     # pwsh: 'pwsh'
-    # node: 'E:/APP/nodejs24/node.exe'
+    # node: 'C:/Program Files/nodejs/node.exe'
     # python: 'C:/.../python.exe'
     # timeoutMs: 2700000
 ```

@@ -21,7 +21,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const CLI = 'E:\\APP\\lceda-pro\\lceda-pro.exe';
+const CLI = process.env.PCB_AUTO_LCEDA || process.env.LCEDA;
+if (!CLI) {
+  console.error('找不到 lceda-pro.exe。设置 PCB_AUTO_LCEDA 指向它（本项目只支持 4.1.111）。');
+  process.exit(2);
+}
 const dirName = process.argv[2];
 const session = process.argv[3];
 if (!dirName) { console.error('用法: node try-stitch.js <out目录名> [sessionId]'); process.exit(2); }

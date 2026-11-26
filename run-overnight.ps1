@@ -24,8 +24,8 @@ param(
 
 $Root = $PSScriptRoot
 $LockFile = Join-Path $Root '.pipeline.lock'
-$node = 'E:\APP\nodejs24\node.exe'
-if (-not (Test-Path $node)) { $node = 'node' }
+. (Join-Path $PSScriptRoot 'scripts\tool-paths.ps1')
+$node = Resolve-Node
 
 function Log2($msg, $color = 'Cyan') {
   $line = "[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $msg
