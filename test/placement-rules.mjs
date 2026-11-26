@@ -145,6 +145,37 @@ const CASES = [
     mutate: (d) => { d._placement.H1.y = -3400; },
     control: (d) => { d._placement.H1.y = -1255; },    // 轻推 5 mil，仍 < 50 mm
   },
+  // ── 下面四条对应 2026-11-26 修掉的四个真缺陷。每条都先用旧版复现过：
+  //    旧版这四个样本全部 exit 0 / 打通过，修完才变红（PROVE=PASS 14/14）。
+  {
+    rule: 'antenna_band_empty', want: 'fail',
+    why: '【倒置盒】净空带 y 上下写反（y0=-3690, y1=-3700）。overlap() 对退化盒恒返回 0，'
+       + '于是「侵入 0 个」被读成「净空干净」—— 一个倒置的盒子能静默通过。',
+    mutate: (d) => { d._antennaKeepout.y0 = -3690; d._antennaKeepout.y1 = -3700; },
+    control: (d) => { d._antennaKeepout.y1 = -3691; },  // 合法的窄带，仍为空
+  },
+  {
+    rule: 'band_covers_antenna', want: 'fail',
+    why: '【x 方向覆盖不足】带子只罩 748 mil 中的 100 mil。原实现只比 y 两端，x 完全不查。',
+    mutate: (d) => { d._antennaKeepout.x1 = 376; },
+    control: (d) => { d._antennaKeepout.x1 = 1025; },   // 多罩 1 mil
+  },
+  {
+    rule: 'all_inside_board', want: 'fail',
+    why: '【焊盘区越板】U1.y=-3500 ⇒ 焊盘区底 -3874，比板边低 174 mil。原实现用 '
+       + 'Math.max(b.y0,-H) 把下界夹进板内，把「天线段悬出」（允许）与「焊盘出板」'
+       + '（不可焊）合并成同一件事，于是焊盘越界被一起放过。',
+    mutate: (d) => { d._placement.U1.y = -3500; },
+    control: (d) => { d._placement.U1.y = -3320; },     // 焊盘区底 -3694，仍在板内
+  },
+  {
+    rule: 'antenna_overhang', want: 'fail',
+    why: '【旋转 90 的天线】U1 rot=90（天线朝 −X）放在 x=700 ⇒ 尖端 44，落在板内没悬出。'
+       + '原实现只给 rot 0/180 算 antTip，旋转 90/270 时恒为 null ⇒ 这条判据对它们'
+       + '判「无法判定」而静默退出，从没量过「天线朝左右」这种合法布局。',
+    mutate: (d) => { d._placement.U1.x = 700; d._placement.U1.rot = 90; },
+    control: (d) => { d._placement.U1.x = 600; d._placement.U1.rot = 90; }, // 尖端 -56，悬出 56
+  },
 ];
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'place-rules-'));

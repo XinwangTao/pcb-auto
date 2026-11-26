@@ -77,16 +77,27 @@ function geom(des, p, lcsc) {
     // 沿天线方向的半跨度是 PAD_HALF+ANT_LEN，反向（焊盘侧）是 PAD_HALF
     const ex = d[0] !== 0 ? (PAD_HALF + ANT_LEN) : PAD_HALF;
     const ey = d[1] !== 0 ? (PAD_HALF + ANT_LEN) : PAD_HALF;
+    // 天线可以朝 4 个方向悬出。原先只给 rot 0/180 算 antTip，旋转 90/270 时
+    // 恒为 null ⇒ `antenna_overhang` 判「无法判定」而**静默退出**，
+    // 也就是「天线朝左/右」这个合法布局在审计里从没被量过。必须四向都算。
+    // 悬出量一律相对**它朝的那条板边**，不能让调用方各自猜。
+    const antAxis = d[0] !== 0 ? 'x' : 'y';
+    const antDir = d[0] !== 0 ? (d[0] < 0 ? -1 : 1) : (d[1] < 0 ? -1 : 1);
+    const antTip = antAxis === 'y'
+      ? p.y + antDir * (PAD_HALF + ANT_LEN)
+      : p.x + antDir * (PAD_HALF + ANT_LEN);
+    // 焊盘区是按 origin 对称的 PAD_HALF 方框，与朝向无关。放行「天线段悬出」
+    // 时只能放行这一圈之外的部分，焊盘区本身绝不许出板。
     return {
       des, lcsc, x: p.x, y: p.y, rot, w: s.w, h: s.h,
       x0: p.x - (d[0] < 0 ? ex : PAD_HALF),
       x1: p.x + (d[0] > 0 ? ex : PAD_HALF),
       y0: p.y - (d[1] < 0 ? ey : PAD_HALF),
       y1: p.y + (d[1] > 0 ? ey : PAD_HALF),
-      padBottom: p.y - (d[1] < 0 ? PAD_HALF : -PAD_HALF),
-      antTip: d[1] < 0 ? p.y - PAD_HALF - ANT_LEN
-           : d[1] > 0 ? p.y + PAD_HALF + ANT_LEN
-           : null,
+      padX0: p.x - PAD_HALF, padX1: p.x + PAD_HALF,
+      padY0: p.y - PAD_HALF, padY1: p.y + PAD_HALF,
+      padBottom: p.y - PAD_HALF,
+      antAxis, antDir, antTip,
     };
   }
   const swap = rot % 180 === 90;
@@ -119,6 +130,19 @@ const RULES = [
     fn: (d, g) => {
       const K = d._antennaKeepout;
       if (!K) return { ok: false, why: '设计文件没有 _antennaKeepout —— 无法判定天线净空' };
+      // 先把盒子本身验一遍。`overlap()` 对退化盒（x1<=x0 或 y1<=y0）恒返回 0，
+      // 于是「侵入 0 个」会被读成「净空干净」—— 一个倒置的盒子能静默通过。
+      // 实测过：`y0=-3690, y1=-3700`（上下写反）→ 本判据打 pass、exitCode=0。
+      // 这不是保守不保守的问题，是**分母为空却给出「全清」结论**。
+      const boxBad = [];
+      for (const k of ['x0', 'x1', 'y0', 'y1']) {
+        if (!Number.isFinite(K[k])) boxBad.push(`${k}=${JSON.stringify(K[k])} 不是有限数`);
+      }
+      if (!(K.x1 > K.x0)) boxBad.push(`x 方向倒置或退化：x0=${K.x0} ≥ x1=${K.x1}`);
+      if (!(K.y1 > K.y0)) boxBad.push(`y 方向倒置或退化：y0=${K.y0} ≥ y1=${K.y1}`);
+      if (boxBad.length) {
+        return { ok: false, why: '净空带盒子无效，任何「侵入 0 个」的结论都不可信：' + boxBad.join('；') };
+      }
       const allow = new Set(K.allowDesignators || []);
       const band = { x0: K.x0, x1: K.x1, y0: K.y0, y1: K.y1, des: 'band' };
       const hits = [];
@@ -140,15 +164,20 @@ const RULES = [
     fn: (d, g) => {
       const u1 = g.comps.find((c) => c.des === 'U1');
       if (!u1 || u1.antTip == null) return { why: '找不到 U1 或天线朝向无法判定' };
-      // 分母要写清：这里比的是**设计标称板边** −H。流水线比的是**实测板框**
+      // 悬出量必须相对**天线朝向的那条板边**：朝 −Y 比下边(−H)，朝 +Y 比上边(0)，
+      // 朝 −X 比左边(0)，朝 +X 比右边(W)。原先只写了下边，旋转 90/270 时
+      // antTip 恒为 null，这条判据对它们从未执行过。
+      // 分母要写清：这里比的是**设计标称板边**。流水线比的是**实测板框**
       // （`overhangDetail.boardMinY`，本板实测 −3705，比标称低 5 mil）。
       // 两个分母都成立、数值差 5~11 mil —— 所以结论必须带上是哪一个。
-      const boardMinY = -d.boardHeightMil;
-      const raw = boardMinY - u1.antTip;
-      const note = '（分母=设计标称板边 ' + boardMinY + '；实测板框见流水线 overhangDetail）';
+      const edge = u1.antAxis === 'y'
+        ? (u1.antDir < 0 ? -d.boardHeightMil : 0)
+        : (u1.antDir < 0 ? 0 : d.boardWidthMil);
+      const raw = u1.antDir < 0 ? edge - u1.antTip : u1.antTip - edge;
+      const note = `（分母=设计标称板边 ${u1.antAxis}=${edge}；实测板框见流水线 overhangDetail）`;
       return raw > 0
-        ? { ok: true, value: `悬出 ${Math.round(raw)} mil (${mm(raw).toFixed(2)} mm)，天线尖端 ${Math.round(u1.antTip)} / 板边 ${boardMinY} ${note}` }
-        : { ok: false, why: `天线未悬出：尖端 ${Math.round(u1.antTip)} vs 板边 ${boardMinY}（差 ${Math.round(raw)}）${note}` };
+        ? { ok: true, value: `悬出 ${Math.round(raw)} mil (${mm(raw).toFixed(2)} mm)，天线尖端 ${Math.round(u1.antTip)} / 板边 ${edge} ${note}` }
+        : { ok: false, why: `天线未悬出：尖端 ${Math.round(u1.antTip)} vs 板边 ${edge}（差 ${Math.round(raw)}）${note}` };
     },
   },
   {
@@ -162,17 +191,59 @@ const RULES = [
       const K = d._antennaKeepout;
       const u1 = g.comps.find((c) => c.des === 'U1');
       if (!K || !u1) return { why: '缺 _antennaKeepout 或 U1' };
-      const boardMinY = -d.boardHeightMil;
-      // 天线内缘 = 焊盘区底（天线段紧接焊盘区）
-      const inner = u1.padBottom;
-      const gap = inner - K.y1;       // >0 表示有裸露缝
-      const cover = K.y0 - boardMinY; // >0 表示带子没到板边
       const bad = [];
-      if (gap > 0.5) bad.push(`上界 ${K.y1} 比天线内缘 ${inner} 少 ${Math.round(gap)} mil（裸露缝）`);
-      if (cover > 0.5) bad.push(`下界 ${K.y0} 比板边 ${boardMinY} 高 ${Math.round(cover)} mil（板边外侧未罩）`);
+      // ① 盒子必须有效。倒置/退化的盒子会让「gap 为负 / cover 为负」双双成立，
+      //    于是这条判据在**什么都没罩住**的时候打通过。
+      for (const k of ['x0', 'x1', 'y0', 'y1']) {
+        if (!Number.isFinite(K[k])) bad.push(`${k}=${JSON.stringify(K[k])} 不是有限数`);
+      }
+      if (!(K.x1 > K.x0)) bad.push(`x 方向倒置或退化：x0=${K.x0} ≥ x1=${K.x1}`);
+      if (!(K.y1 > K.y0)) bad.push(`y 方向倒置或退化：y0=${K.y0} ≥ y1=${K.y1}`);
+      if (bad.length) return { ok: false, why: '净空带盒子无效，覆盖结论不可信：' + bad.join('；') };
+      // ② 按天线朝向取口径。沿天线轴：带子要从**板边**一路盖到**天线内缘**；
+      //    垂直天线轴：带子要罩住天线焊盘区的整个宽度。
+      //    原实现把口径写死成「板边 −H → 焊盘区底」，于是只对「天线朝 −Y」成立，
+      //    天线朝上/左/右的板子会拿 −H 去比一个完全无关的面。
+      //    注意：这里**不能**再单独写一条「x 覆盖」—— 垂直轴随朝向变，
+      //    写死 x 会在天线朝左右时把合法带子判红（自己踩过）。
+      const H = d.boardHeightMil, W = d.boardWidthMil;
+      const along = u1.antAxis;
+      const edge = along === 'y'
+        ? (u1.antDir < 0 ? -H : 0)
+        : (u1.antDir < 0 ? 0 : W);
+      const inner = along === 'y'
+        ? (u1.antDir < 0 ? u1.padY0 : u1.padY1)
+        : (u1.antDir < 0 ? u1.padX0 : u1.padX1);
+      // 带子沿天线轴的两个端点，统一成「靠近板边的一端」lo 与「靠近器件的一端」hi
+      const kLo = along === 'y' ? (u1.antDir < 0 ? K.y0 : K.y1) : (u1.antDir < 0 ? K.x0 : K.x1);
+      const kHi = along === 'y' ? (u1.antDir < 0 ? K.y1 : K.y0) : (u1.antDir < 0 ? K.x1 : K.x0);
+      // 垂直轴的覆盖范围（带子 vs 焊盘区）
+      const pLo = along === 'y' ? u1.padX0 : u1.padY0;
+      const pHi = along === 'y' ? u1.padX1 : u1.padY1;
+      const kPLo = along === 'y' ? K.x0 : K.y0;
+      const kPHi = along === 'y' ? K.x1 : K.y1;
+      if (kPLo > pLo + 0.5 || kPHi < pHi - 0.5) {
+        bad.push(`垂直天线轴（${along === 'y' ? 'x' : 'y'}）覆盖不足：带子 [${kPLo},${kPHi}] 没罩住焊盘区 [${Math.round(pLo)},${Math.round(pHi)}]`);
+      }
+      // 板边一侧：带子必须伸到板边（kLo 要比 edge 更外）
+      if (u1.antDir < 0 ? kLo > edge + 0.5 : kLo < edge - 0.5) {
+        bad.push(`板边一侧未罩：带子端点 ${Math.round(kLo)} 没到板边 ${edge}（差 ${Math.round(Math.abs(kLo - edge))} mil）`);
+      }
+      // 器件一侧：带子要盖到天线内缘（kHi 要比 inner 更靠外）
+      if (u1.antDir < 0 ? kHi < inner - 0.5 : kHi > inner + 0.5) {
+        bad.push(`器件一侧未盖到天线内缘：带子端点 ${Math.round(kHi)} vs 天线内缘 ${Math.round(inner)}（差 ${Math.round(Math.abs(kHi - inner))} mil，会留裸露缝）`);
+      }
+      const span = Math.abs(inner - edge);
+      // ④ 负跨度守卫：U1 焊盘区越过板边时 inner 跑到 edge 之外，
+      //    上面两条「有没有盖到」会同时被满足。实测过：U1.y=−3500 ⇒
+      //    焊盘区底 −3874，比板边低 174 mil，本判据却打通过。
+      const outside = u1.antDir < 0 ? inner < edge : inner > edge;
+      if (outside) {
+        bad.push(`焊盘区已越板：天线内缘 ${Math.round(inner)} 在板边 ${edge} 之外（${Math.round(Math.abs(inner - edge))} mil）—— 这不是净空问题，先修摆放`);
+      }
       return bad.length
         ? { ok: false, why: bad.join('；') }
-        : { ok: true, value: `带子 [${K.y0},${K.y1}] 覆盖 板边 ${boardMinY} → 天线内缘 ${inner}（${Math.round(inner - boardMinY)} mil）` };
+        : { ok: true, value: `带子 [${K.y0},${K.y1}] × [${K.x0},${K.x1}] 沿 ${along} 覆盖 板边 ${edge} → 天线内缘 ${Math.round(inner)}（${Math.round(span)} mil）` };
     },
   },
   {
@@ -182,17 +253,30 @@ const RULES = [
          + '放到板外，7 份布线引擎配置全部零走线。天线段按设计允许悬出，单独放行。',
     fn: (d, g) => {
       const bad = [];
+      const H = d.boardHeightMil;
+      const W = d.boardWidthMil;
       for (const b of g.comps) {
-        // 天线段按设计允许悬出板边：把它**夹进**板内（Math.max 向上取到板边）
-        // 再判，否则「悬出」会被自己这条判据判成「出界」—— 两者是完全不同的缺陷。
-        // （第一版写的是 Math.min，于是 U1 恒报出界。这类错误只有真跑一遍才看得见。）
-        const allowAnt = b.lcsc === 'C2913199';
-        const y0 = allowAnt ? Math.max(b.y0, -d.boardHeightMil) : b.y0;
-        if (!inside({ ...b, y0 }, 0, -d.boardHeightMil, d.boardWidthMil, 0)) {
+        // 天线段按设计允许悬出板边。但**只放行天线段**：原实现用
+        // `Math.max(b.y0, -H)` 把整个包围盒的下界夹进板内，于是天线段之外的
+        // 其余部分（尤其**焊盘区**）越界也会被一起放过。实测过：U1.y=−3500 时
+        // 焊盘区底 −3874，有 174 mil 焊盘挂在板外，本判据仍打 pass。
+        // 焊盘在板外 = 不可焊，这与「悬出」是完全不同的缺陷，不能合并处理。
+        if (b.lcsc === 'C2913199' && b.padX0 != null) {
+          const oob = [];
+          if (b.padX0 < -0.5) oob.push(`左 ${Math.round(-b.padX0)}`);
+          if (b.padX1 > W + 0.5) oob.push(`右 ${Math.round(b.padX1 - W)}`);
+          if (b.padY0 < -H - 0.5) oob.push(`下 ${Math.round(-H - b.padY0)}`);
+          if (b.padY1 > 0.5) oob.push(`上 ${Math.round(b.padY1)}`);
+          if (oob.length) {
+            bad.push(`${b.des} 焊盘区 [${Math.round(b.padX0)},${Math.round(b.padY0)},${Math.round(b.padX1)},${Math.round(b.padY1)}] 越界 ${oob.join('/')} mil（天线段悬出允许，焊盘区不许）`);
+          }
+          continue;
+        }
+        if (!inside(b, 0, -H, W, 0)) {
           bad.push(`${b.des} bbox [${Math.round(b.x0)},${Math.round(b.y0)},${Math.round(b.x1)},${Math.round(b.y1)}]`);
         }
       }
-      return bad.length ? { ok: false, why: bad.join(' / ') } : { ok: true, value: `${g.comps.length} 个器件全部在板内（U1 天线段按设计悬出，已排除）` };
+      return bad.length ? { ok: false, why: bad.join(' / ') } : { ok: true, value: `${g.comps.length} 个器件全部在板内（U1 仅天线段按设计悬出，焊盘区已逐一验证在板内）` };
     },
   },
   {
