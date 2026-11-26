@@ -180,7 +180,7 @@ const full = mcpSession([
   { jsonrpc: '2.0', method: 'notifications/initialized' },
   { jsonrpc: '2.0', id: 2, method: 'tools/list' },
   { jsonrpc: '2.0', id: 3, method: 'ping' },
-  { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'pcb_fabcheck', arguments: { dir: 'out/d1' } } },
+  { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'pcb_fabcheck', arguments: { dir: 'examples/d1' } } },
   { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: '__nope__', arguments: {} } },
   { jsonrpc: '2.0', id: 6, method: '__nope_method__' },
 ])
@@ -217,49 +217,63 @@ check('ping 返回空对象', () => {
 })
 
 /**
- * `out/` 是 gitignore 的（产物几百 MB），所以**新克隆的仓库里没有 `out/d1`**。
- * 这条测试因此必须自适应：
- *   - 有 `out/d1`（开发者本机）→ 验证「判定为否」的完整路径
- *   - 没有（新克隆 / CI）    → 退化成验证「调用错误」路径，并明确标 SKIP 原因
+ * 「判定为否」这条路径以前在 CI 上是**测不到的**。
  *
- * 不这么做的后果：这条测试在 CI 上必红，然后有人会把它删掉 —— 那才是真正的失败。
+ * `out/` 是 gitignore 的（产物几百 MB），新克隆里没有 `out/d1`，所以这条测试
+ * 只能退化成 SKIP，外加再测一遍「调用错误」路径。结果是：CI 永远绿，
+ * 而 MCP 适配层最核心的那条契约 —— 「不可下单是一个结论，不是错误
+ * （exitCode 1 + isError false）」——**从来没有在 CI 上被验证过**。
+ *
+ * 修法不是把测试改成自适应，是把样本放进仓库：`examples/d1/` 是一份真实的
+ * 6 文件产物，`fabcheck` 对它给出 exit 1 + 恰好一条已知误判的阻断。
+ * 于是这条断言无条件成立，CI 上也会真的跑。
+ *
+ * 顺带的好处：任何人在不装 EDA 的机器上，`node cli/pcb.mjs fabcheck examples/d1`
+ * 就能自己确认这个判据不是恒真的。
  */
-const D1 = join(ROOT, 'out', 'd1')
-const hasD1 = existsSync(D1)
+const D1 = join(ROOT, 'examples', 'd1')
 
-if (hasD1) {
-  check('tools/call pcb_fabcheck 返回退出码 1 且 isError=false', () => {
-    const r = byId[4]
-    assert(r?.result, `没有 result：${r ? JSON.stringify(r).slice(0, 400) : '未收到回复'}`)
-    // 「不可下单」是一个**结论**，不是错误 —— 这是整个契约的核心。
-    assert(r.result.isError === false, `isError 应该是 false，得到 ${r.result.isError}`)
-    const sc = r.result.structuredContent
-    assert(sc, '缺 structuredContent')
-    assert(sc.exitCode === 1, `期望 exitCode 1，得到 ${sc.exitCode}`)
-    assert(sc.orderable === false, `期望 orderable false，得到 ${sc.orderable}`)
-    assert(Array.isArray(r.result.content) && r.result.content[0]?.type === 'text', '缺 content[0].text')
-    return `exitCode 1 / orderable false / ${sc.blockers?.length ?? '?'} 阻断`
-  })
-} else {
-  console.log('  \x1b[33mSKIP\x1b[0m  tools/call pcb_fabcheck 的「判定为否」路径'
-    + '  \x1b[90m（没有 out/d1 —— 新克隆里 out/ 是 gitignore 的）\x1b[0m')
-  console.log('        \x1b[90m想看完整路径：先跑一次 build 生成产物，或从 Releases 下载样本\x1b[0m')
+check('tools/call pcb_fabcheck 返回退出码 1 且 isError=false', () => {
+  assert(existsSync(D1), `样本目录不存在：${D1}。它必须随仓库发布，否则这条断言又会退化成 SKIP。`)
+  const r = byId[4]
+  assert(r?.result, `没有 result：${r ? JSON.stringify(r).slice(0, 400) : '未收到回复'}`)
+  // 「不可下单」是一个**结论**，不是错误 —— 这是整个契约的核心。
+  assert(r.result.isError === false, `isError 应该是 false，得到 ${r.result.isError}`)
+  const sc = r.result.structuredContent
+  assert(sc, '缺 structuredContent')
+  assert(sc.exitCode === 1, `期望 exitCode 1，得到 ${sc.exitCode}`)
+  assert(sc.orderable === false, `期望 orderable false，得到 ${sc.orderable}`)
+  assert(Array.isArray(r.result.content) && r.result.content[0]?.type === 'text', '缺 content[0].text')
+  /*
+   * 注意 `sc.blockers` 是**字符串**（按行拼好给人读的），不是数组。
+   * 曾经在这里写过 `${sc.blockers?.length} 阻断`，打出「37 阻断」——
+   * 那是 37 个**字符**。条数在 `blockerCount` 里。这个错误形状
+   * 和 fabcheck 的 `"id"` 出现在四个数组里被正则数成 19 倍是同一类：
+   * 把一个结构性事实当成一个数量。
+   */
+  assert(sc.blockerCount === 1, `样本 d1 期望恰好 1 条阻断，得到 ${sc.blockerCount}（${sc.blockers}）`)
+  // 锚在稳定的 id 上，不锚散文 —— d1 那条阻断是已知的阈值误判，换了样本或改了阈值就该红。
+  assert(
+    Array.isArray(sc.blockerIds) && sc.blockerIds.includes('gerber.copper.thin'),
+    `期望阻断 id 里含 gerber.copper.thin，得到 ${JSON.stringify(sc.blockerIds)}`,
+  )
+  return `exitCode 1 / orderable false / ${sc.blockerCount} 阻断 ${sc.blockerIds.join(',')}`
+})
 
-  check('tools/call 对不存在的目录返回退出码 2 且不崩', () => {
-    const s = mcpSession([
-      { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'smoke', version: '0' } } },
-      { jsonrpc: '2.0', method: 'notifications/initialized' },
-      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'pcb_fabcheck', arguments: { dir: '__definitely_not_here__' } } },
-    ])
-    const r = s.replies.find((x) => x.id === 2)
-    assert(r?.result, `没有 result：${r ? JSON.stringify(r).slice(0, 300) : '未收到回复'}`)
-    const sc = r.result.structuredContent
-    assert(sc?.exitCode === 2, `期望 exitCode 2，得到 ${sc?.exitCode}`)
-    // 参数错误才是 isError:true 的唯一合法来源。
-    assert(r.result.isError === true, `参数错误时 isError 应为 true，得到 ${r.result.isError}`)
-    return 'exitCode 2 / isError true'
-  })
-}
+check('tools/call 对不存在的目录返回退出码 2 且不崩', () => {
+  const s = mcpSession([
+    { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'smoke', version: '0' } } },
+    { jsonrpc: '2.0', method: 'notifications/initialized' },
+    { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'pcb_fabcheck', arguments: { dir: '__definitely_not_here__' } } },
+  ])
+  const r = s.replies.find((x) => x.id === 2)
+  assert(r?.result, `没有 result：${r ? JSON.stringify(r).slice(0, 300) : '未收到回复'}`)
+  const sc = r.result.structuredContent
+  assert(sc?.exitCode === 2, `期望 exitCode 2，得到 ${sc?.exitCode}`)
+  // 参数错误才是 isError:true 的唯一合法来源。
+  assert(r.result.isError === true, `参数错误时 isError 应为 true，得到 ${r.result.isError}`)
+  return 'exitCode 2 / isError true'
+})
 
 check('未知工具 → -32602', () => {
   const e = byId[5]?.error
@@ -408,6 +422,86 @@ for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'arti
     assert(!/陶鑫旺/.test(src), '仍然含开发者用户名')
     assert(!/^\s*NODE\s*=\s*r?"[A-Za-z]:\\/m.test(src), '仍然把 NODE 写成绝对路径常量')
     assert(/PCB_AUTO_ROOT/.test(src) || /__file__/.test(src), '没有可移植的根定位')
+  })
+}
+
+/*
+ * 上面那 4 条只查 4 个文件名。
+ *
+ * 一次全新克隆的独立审计发现：**65 个文件**带着开发者的绝对路径，
+ * 而这里当时报的是 76/76 全绿。这不是「漏了一部分」，是闸门的形状错了：
+ * 它查的是「我记得被我改过的那几个文件」，不是「全库还有没有」。
+ *
+ * 一个只查 4 个文件的扫描器比没有扫描器更危险 —— 没有扫描器时你至少知道自己没查过；
+ * 有了它，你会以为查过了。
+ *
+ * 所以闸门改成由 `test/dev-path-scan.mjs` 提供，它扫全部被 git 跟踪的文本文件，
+ * 并且是**两级**的：
+ *
+ *   功能级  一个照文档去用的人真的会执行到的文件。这里断言必须为 0。
+ *   历史级  历史补丁记录 / 一次性探针 / 渲染产物。逐条点名豁免，允许存在。
+ *
+ * 下面第二条断言是这套设计的关键：每条豁免都必须在当前仓库里真的命中至少一处。
+ * 豁免因此不会变成「关掉检查」——哪天那些文件被清干净，豁免就命不中，这里会红，
+ * 逼着人把豁免删掉。这样豁免表不会自己腐烂。
+ */
+{
+  let mod = null
+  let scanErr = null
+  try {
+    mod = await import(pathToFileURL(join(HERE, 'dev-path-scan.mjs')).href)
+  } catch (e) {
+    scanErr = e
+  }
+
+  check('全库没有功能级开发者路径', () => {
+    assert(!scanErr, `扫描器本身加载失败：${scanErr && scanErr.message}`)
+    let hits
+    try {
+      hits = mod.scan(ROOT)
+    } catch (e) {
+      // 不是 git 仓库（例如从 tar 包里跑）时无法枚举「被跟踪的文件」。
+      // 这里必须明说，不能静默通过 —— 静默通过正是当初那个假绿闸门的形状。
+      if (/not a git repository|ENOENT.*git/i.test(e.message)) {
+        return 'SKIP 不是 git 仓库，无法枚举被跟踪文件（这条只在 git 检出上有效）'
+      }
+      throw e
+    }
+    const s = mod.summary(hits)
+    if (s.functional > 0) {
+      const top = hits
+        .filter((h) => h.severity === 'functional')
+        .slice(0, 8)
+        .map((h) => `${h.file}:${h.line}  ${h.rule}  ${h.sample}`)
+      throw new Error(
+        `功能级 ${s.functional} 处，分布在 ${s.functionalFiles} 个文件里。`
+        + `\n前几处：\n  ${top.join('\n  ')}`
+        + '\n\n这些文件是「照文档去用的人真的会执行到」的。'
+        + '\n改成 scripts/tool-paths.ps1 的 Resolve-* 解析，别再加硬编码路径。',
+      )
+    }
+    return `功能级 0 处；历史级 ${s.historical} 处 / ${s.historicalFiles} 个文件（已点名豁免）`
+  })
+
+  check('开发者路径豁免表没有失效条目', () => {
+    assert(!scanErr, `扫描器本身加载失败：${scanErr && scanErr.message}`)
+    let hits
+    try {
+      hits = mod.scan(ROOT)
+    } catch (e) {
+      if (/not a git repository|ENOENT.*git/i.test(e.message)) {
+        return 'SKIP 不是 git 仓库'
+      }
+      throw e
+    }
+    const dead = mod.summary(hits).deadExemptions
+    assert(
+      dead.length === 0,
+      `这 ${dead.length} 条豁免已经命不中任何东西了：${dead.join(', ')}`
+      + '\n说明对应文件已经不脏了。豁免留着不是「多一层保险」，是让人觉得还有债。'
+      + '\n去 test/dev-path-scan.mjs 的 EXEMPT 里删掉它们。',
+    )
+    return `${mod.exemptionIds().length} 条豁免全部命中`
   })
 }
 

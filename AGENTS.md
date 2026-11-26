@@ -6,8 +6,9 @@
 ## 三条不许
 
 1. **不许在 `scripts/*.js` 下面加 `import`/`export`。**
-   仓库根的 `package.json` 故意**没有** `"type": "module"`。`scripts/` 下 247 个文件全是
+   仓库根的 `package.json` 故意**没有** `"type": "module"`，所以 `scripts/` 下的 `.js` 全是
    CommonJS。加一行 ESM 语法会让整条流水线同时失效，而且报错信息会指向一个跟根因无关的地方。
+   （文件数别记：它会变。要数就跑 `git ls-files 'scripts/**' | wc -l`。）
    需要 ESM 就用 `.mjs` 扩展名（`core/`、`cli/`、`mcp/`、`plugin/`、`install/` 都是这么做的）。
 
 2. **不许把「能不能下单」判成 `_run.json.ok`。**
@@ -30,7 +31,9 @@
 |---|---|
 | 一个文件只有一个写者 | 两个 agent 并发写同一路径会互相覆盖，而且**不会报错** |
 | 改前记 `sha256_12`，改后打印落地的那一行 | `.lastgood` / `.bak` **不是备份**，是陷阱 |
-| 语法闸门：`.js` 用 `node --check`，`.py` 用 `py_compile` **且** `-W error::SyntaxWarning`，`.ps1` 用解析器 | `py_compile` 单独会放过 `'designs\<'` 这种无效转义 |
+| 语法闸门：跑 `node test/syntax-gate.mjs`（它按每个文件的**真实执行形式**解析）| `.js` 用 `node --check` 是错的：186 个受跟踪 .js 里 94 个是 invoke 函数体，必然假红 —— 详见下一行 |
+| 为什么 `.js` 不能用 `node --check` | 它们不是模块，是 `invoke` 交给 EDA 的**函数体**，本来就以顶层 `await` 开头。`node --check` 按 CommonJS 模块解析，必然报 `await is only valid in async functions`。**92 个文件假红。** 一个一半文件都红的闸门，只会教人忽略它 |
+| 闸门必须能失败 | `test/syntax-gate.mjs` 自己要被证明会红：注入真语法错误 / ESM-in-CJS / 无效转义 / 坏 .ps1 四类，四类都要抓到 |
 | 幂等断言：`count(anchor) == 1` 再替换 | 同一个锚点出现两次时，替换会改错地方而且静默成功 |
 | PowerShell 里 `+` 必须在行尾才能续行 | 行首的 `+` 会报「表达式中缺少右括号」，跟真实错误毫无关系 |
 | 量具要能**失败** | 只在好样本上跑一遍不算验证。故意把生成器改坏，看断言会不会红 |
@@ -58,8 +61,8 @@ cli/pcb.mjs         薄壳：通用 CLI（零依赖）
 mcp/server.mjs      薄壳：MCP stdio 服务器（零依赖）
 plugin/             薄壳：DSH Cordis bundle（运行时 import core）
 install/install.mjs 通用安装器：19 个客户端配置，默认只打印不写盘
-scripts/            流水线本体（CommonJS，247 个文件）
-designs/            设计 JSON（33 个）
+scripts/            流水线本体（CommonJS；条数会变，别记数）
+designs/            设计 JSON（条数会变，别记数）
 out/                产物目录（56 个带 _run.json）+ out/_probe/ 量具
 docs/               SUPPORT.md（平台矩阵）、WHY.md（对比）
 llms.txt            机器可读入口
@@ -109,6 +112,23 @@ Get-CimInstance Win32_Process -Filter "Name='lceda-pro.exe'" |
   在一个**没有任何产物**的全新克隆里报出「56 个目录 / 53 可下单」。
   这类错不报错、只给出一个看起来正常的数字，是最难发现的。`test/smoke.mjs` 第 8 组钉着它。
 - `dirs: 0` 不是「全部通过」，是**没有样本**。`0/0` 读成 100% 是同一类错误的另一种形状。
+- **闸门的退出码只有一个含义，别让它兼职。** `test/` 下三个闸门约定：
+  `0` = 通过，`1` = **发现了失败**，`2` = 环境问题（缺 git / python / pwsh）。
+  这条契约曾经被违反过：三个闸门都直接 `execFileSync('git', ...)`，
+  把 `git` 从 PATH 里去掉之后**全部崩成退出码 1**，打印的还是
+  `node:internal/child_process` 的栈。于是 CI 上看到一个红的闸门，
+  没人分得清「我的代码有语法错误」和「这台 runner 没装 git」——
+  而这两种情况的处置完全相反。
+
+  所以：**任何枚举文件、调外部命令的测试，必须把「跑不起来」归到 2。**
+  统一入口是 `test/_git.mjs` 的 `gitLines()`，别再自己 `execFileSync('git')`。
+  同理，解析器里**不要写 `catch {}` 退回空集合** —— 空集合会让下游报出
+  一份「全都坏了」的结论，而真正的原因是没有输入（`doc-refs.mjs` 踩过）。
+- **别把「没检」写进「通过」的分母。** `syntax-gate` 以前打印
+  「共 N 个文件全部通过」，而 N 里有一多半是 `.md` / `.json` / `.csv` ——
+  它们没有可检语法，不是通过，是没检。现在它分开说：
+  「解析了 M 个有可检语法的文件」+「另 K 个没有可检语法，未解析 —— 不算通过」。
+  任何读数是「全部通过」的地方，都要能回答「这里面有几个是真的被检查过的」。
 
 ## 如果你要加一个平台的支持
 

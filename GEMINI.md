@@ -26,5 +26,5 @@ Non-negotiables:
 - Orderability is `pcb_fabcheck`'s exit code, never `_run.json.ok`.
 - Every number needs a denominator, a settle window, and an as-of time.
 - No board in this repository has been physically manufactured.
-- Do not add ESM syntax to `scripts/*.js` (247 CommonJS files depend on the root package having no
+- Do not add ESM syntax to `scripts/*.js` (every CommonJS file there depends on the root package having no
   `"type": "module"`). New ESM code goes in `.mjs` files.

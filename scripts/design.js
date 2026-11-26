@@ -7,7 +7,13 @@
 //  - 全部 Basic Part，嘉立创免费贴片
 //  - 双层板 0.2/0.2mm 常规工艺，成本最低
 
-export const DESIGN = {
+/*
+ * 【历史文件】早期草稿里的网表定义，已被 `designs/*.json` 取代。
+ * 注意它与 `bom-spec.js` 已经对不上：这里用 `LED_0805_G`，那里只有 `LED_0805_R`。
+ * 这正是「两处手写同一份事实必然漂移」的实例，所以现在设计只从 designs/ 读。
+ * 改回 CommonJS：它曾经在 `scripts\` 下用 `export`，违反 AGENTS.md 第一条禁令。
+ */
+const DESIGN = {
   name: 'USB-C_5V_to_3V3_LDO_LED',
   nets: {
     VBUS:  'USB 5V 输入',
@@ -44,3 +50,5 @@ export const DESIGN = {
     ['R2', '1', 'GND'], ['R3', '1', 'GND'],
   ],
 };
+
+module.exports = { DESIGN };

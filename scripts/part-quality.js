@@ -1,5 +1,7 @@
 // 选料质量判据（关键）
-export function judgePart(p) {
+// 【历史文件】当前流水线不引用它；保留作参考。
+// 改回 CommonJS：它曾经在 `scripts\` 下用 `export`，违反 AGENTS.md 第一条禁令。
+function judgePart(p) {
   // p: ILIB_DeviceSearchItem
   const props = p.otherProperty || {};
   const lcsc = String(props['Supplier Part'] || '');
@@ -31,3 +33,5 @@ export function judgePart(p) {
 
   return { lcsc, mfr, klass, footprint: fp, grade, purchasable, trustworthy, flags };
 }
+
+module.exports = { judgePart };
