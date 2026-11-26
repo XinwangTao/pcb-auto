@@ -4,7 +4,7 @@
 
 ## 按「能否让坏板通过」排序
 
-### 1. `run-all.ps1:451-459` — 独立 DRC 闸门遇到 exit 2 直接放行
+### 1. `run-all.ps1:472-480` — 独立 DRC 闸门遇到 exit 2 直接放行
 `verify-drc.js:156-172` 对「CLI 无输出 / 输出无法解析 / `env.ok === false`」一律 `exit 2`，而被注释为「环境问题」。
 
 由此出错的方式：`--timeout` 超时、幽灵调用、session 死掉时 `env.ok` 为 false，闸门记一句「本闸门跳过」就 `continue`；而 `$finalOk = ($v -and $v.ok -and $verifyOk)`（`run-all.ps1:644`）**从不看 `$drcReOk`**，于是「独立 DRC 复核从未跑成」的板子照样 `exit 0`——而流水线自述的 `drcPassed` 恰是本文件 L436 自己认定双向不可信的量。

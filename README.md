@@ -27,10 +27,28 @@
 | Claude Code 插件 | [`.claude-plugin/`](.claude-plugin/) + [`.mcp.json`](.mcp.json) | Claude Code |
 
 ```bash
+node cli/pcb.mjs idea-to-design "做一个 SHT30 温湿度采集板，I2C 经排针引出" --dry   # 想法 → 设计 JSON
 node cli/pcb.mjs list                    # 5 个操作自描述
-node cli/pcb.mjs fabcheck examples/d1         # 退出码就是答案
+node cli/pcb.mjs fabcheck examples/d1    # 退出码就是答案
 node install/install.mjs --list          # 19 个客户端的接入方式
 ```
+
+**「支持任何平台」说的是接入协议，不是运行依赖 —— 这两件事别混。**
+
+| 操作 | 需要什么 | 哪能跑 |
+|---|---|---|
+| `idea-to-design` | Node ≥ 18 | 任何系统 |
+| `fabcheck` | Node ≥ 18 | 任何系统 |
+| `census` | Node + Python 3 | 任何系统 |
+| `verify` | PowerShell 7（跑全判据还要 Python 3） | 任何装了 pwsh 的系统 |
+| `build` | PowerShell 7 + 嘉立创 EDA Pro 4.1.111 | **Windows** —— 它驱动 `lceda-pro.exe` 做布局布线 |
+
+所以：**把想法编译成设计、检查一块板能不能下单、复算打样率**，在 macOS / Linux / CI 上都做得到
+（CI 就在 `ubuntu-latest` 上跑这几个操作的契约测试）；**从零画出一块板**那一步要 EDA。
+这不是适配问题，是依赖问题。
+
+`build` 在缺 EDA 的机器上退 **2**（「没能运行」）并告诉你去装什么，不会退 1（「跑完了但没全绿」）——
+后者会被读成「这块板有问题」，而真相是「这台机器没有画板的工具」。
 
 **完整平台清单（含验证等级）见 [docs/SUPPORT.md](docs/SUPPORT.md)** —— 覆盖 Claude Code、Cursor、
 Windsurf、VS Code Copilot、Zed、Cline、Codex CLI、Gemini CLI、OpenHands、Goose、DSH、通义灵码、

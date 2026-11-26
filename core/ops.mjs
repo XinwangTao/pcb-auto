@@ -487,6 +487,9 @@ export async function verify(args = {}, opt = {}) {
     warn: line ? Number(line[3]) : 0,
     fail: line ? Number(line[4]) : 0,
     error: line ? Number(line[5]) : 0,
+    // 「没能测量」单独一个数。少了它，`fail: 0` 会被读成「全都过了」——
+    // 而在一个还没有产物的克隆里，真相是「一条判据都没跑成」。
+    nosample: (all.match(/NOSAMPLE\s+(\d+)/) || [])[1] ? Number((all.match(/NOSAMPLE\s+(\d+)/) || [])[1]) : 0,
     failures: (all.match(/\[(?:FAIL|ERROR)\][^\n]*/g) || []).slice(0, 12).join('\n'),
     raw: line ? '' : tail(all.trim(), 1500),
   }

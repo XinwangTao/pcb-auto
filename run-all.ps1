@@ -25,7 +25,28 @@ $ErrorActionPreference = 'Stop'
 # 看不出真正的原因是「没装 EDA」。
 # 本机 lceda-pro 与 node 都在 PATH 上，所以解析结果与改造前完全一致。
 . (Join-Path $PSScriptRoot 'scripts\tool-paths.ps1')
-$CLI = Resolve-LcedaCli
+# 解析不到 EDA 时必须退 2，不能让它抛出去。
+# 实测（PATH 里只留 System32）：`Resolve-LcedaCli` 抛异常，PowerShell 以 **1** 退出，
+# 并打一整屏 `Exception: ... tool-paths.ps1:84`。而 1 在这条流水线的契约里意思是
+# 「跑完了但没全绿」。于是「这台机器没装 EDA」被报成「这块板有问题」——
+# 一个检查工具把自己的环境缺陷报成了对被测对象的判决。
+# 更糟的是给人看的东西：陌生人看到的是异常栈，不是一句「去装 EDA」。
+try {
+    $CLI = Resolve-LcedaCli
+}
+catch {
+    Write-Host ''
+    Write-Host '  这台机器上找不到嘉立创 EDA Pro 的 CLI，流水线没法开始。' -ForegroundColor Yellow
+    Write-Host '  这不是设计文件的问题，也不是代码的问题 —— 是依赖没装。' -ForegroundColor Yellow
+    Write-Host ''
+    Write-Host ($_.Exception.Message -replace "`n", "`n  ") -ForegroundColor DarkGray
+    Write-Host ''
+    Write-Host '  只需要 Node 就能跑的操作（不需要 EDA）：' -ForegroundColor DarkGray
+    Write-Host '    node cli/pcb.mjs idea-to-design "做一个 SHT30 温湿度采集板" --dry' -ForegroundColor DarkGray
+    Write-Host '    node cli/pcb.mjs fabcheck examples/d1' -ForegroundColor DarkGray
+    Write-Host ''
+    exit 2
+}
 $Root = $PSScriptRoot
 # 【哨兵文件开录】通宵循环起 run-all 时不传 -Record（它只在启动时读一次，改它要重启循环，
 # 而中途重启会留下孤儿 lceda owner + 陈旧锁）。但 **run-all 每个设计都新起一个进程**，

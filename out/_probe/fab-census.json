@@ -1,6 +1,6 @@
 {
   "generated_for": "pcb-auto 交付物可打样性普查",
-  "measured_at": "2026-11-26T12:15:47+08:00",
+  "measured_at": "2026-11-26T12:19:47+08:00",
   "corpus_scope": "作者机器上 out\\ 下带 _run.json 的产物目录。这些数字**不是这份代码的属性**，而是一次测量。",
   "not_a_property_of_code": "全新克隆里 out\\ 是空的，跑同一条命令会得到 0 个目录 —— 那是正确答案，不是失败。要复现这些数字，得先跑出产物。",
   "reproduce": "node cli/pcb.mjs census --settle 180",
@@ -119,7 +119,7 @@
       "n_blockers": 8,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T07:40:08",
-      "age_s": 16539.7
+      "age_s": 16779.0
     },
     {
       "dir": "AI_OLED_底板_5p5g6m-20261126-092206",
@@ -163,7 +163,7 @@
       "n_blockers": 8,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T12:12:07",
-      "age_s": 220.7
+      "age_s": 460.0
     },
     {
       "dir": "AI_RP2040_系统-20261125-033939",
@@ -174,7 +174,7 @@
       "n_blockers": 0,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T06:52:56",
-      "age_s": 19371.3
+      "age_s": 19610.6
     },
     {
       "dir": "AI_RP2040_系统_13pefer-20261126-070027",
@@ -185,7 +185,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:06:41",
-      "age_s": 18546.6
+      "age_s": 18785.9
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-045127",
@@ -196,7 +196,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:47",
-      "age_s": 18840.7
+      "age_s": 19080.0
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-045629",
@@ -207,7 +207,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:50",
-      "age_s": 18837.4
+      "age_s": 19076.6
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-075235",
@@ -218,7 +218,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:58:43",
-      "age_s": 15424.9
+      "age_s": 15664.2
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-082505",
@@ -229,7 +229,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:28:49",
-      "age_s": 13618.5
+      "age_s": 13857.7
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-082852",
@@ -240,7 +240,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:32:25",
-      "age_s": 13402.1
+      "age_s": 13641.4
     },
     {
       "dir": "AI_传感器___LDO_10pus72-20261126-080459",
@@ -251,7 +251,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:07:17",
-      "age_s": 14910.5
+      "age_s": 15149.8
     },
     {
       "dir": "AI_传感器___LDO_11p4flb-20261126-083741",
@@ -262,7 +262,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:40:15",
-      "age_s": 12932.6
+      "age_s": 13171.8
     },
     {
       "dir": "AI_传感器___LDO_16p2sh2-20261126-084018",
@@ -273,7 +273,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:43:03",
-      "age_s": 12764.0
+      "age_s": 13003.3
     },
     {
       "dir": "AI_传感器___LDO_9pq32s-20261126-025214",
@@ -284,7 +284,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:00:35",
-      "age_s": 18912.9
+      "age_s": 19152.2
     },
     {
       "dir": "AI_传感器___充电___显示_16pck03-20261125-112943",
@@ -295,7 +295,7 @@
       "n_blockers": 0,
       "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:53:01",
-      "age_s": 19366.7
+      "age_s": 19606.0
     },
     {
       "dir": "AI_传感器___充电___显示_18p4sgg-20261126-083239",
@@ -306,7 +306,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T08:37:38",
-      "age_s": 13089.9
+      "age_s": 13329.2
     },
     {
       "dir": "AI_传感器___充电___显示_19pia69-20261126-025434",
@@ -317,7 +317,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:00:35",
-      "age_s": 18912.0
+      "age_s": 19151.3
     },
     {
       "dir": "AI_传感器___充电___显示_19ptbuz-20261126-055041",
@@ -328,7 +328,7 @@
       "n_blockers": 0,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T07:02:06",
-      "age_s": 18821.3
+      "age_s": 19060.6
     },
     {
       "dir": "AI_传感器___充电___显示_20pvd4t-20261126-080720",
@@ -339,7 +339,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:16:43",
-      "age_s": 14344.3
+      "age_s": 14583.6
     },
     {
       "dir": "AI_传感器模块-20261125-040723",
@@ -350,7 +350,7 @@
       "n_blockers": 0,
       "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:52:57",
-      "age_s": 19370.0
+      "age_s": 19609.2
     },
     {
       "dir": "AI_传感器模块_6peia7-20261126-074817",
@@ -361,7 +361,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:52:29",
-      "age_s": 15798.2
+      "age_s": 16037.5
     },
     {
       "dir": "AI_传感器模块_6psjho-20261125-111305",
@@ -372,7 +372,7 @@
       "n_blockers": 0,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T06:53:00",
-      "age_s": 19367.9
+      "age_s": 19607.2
     },
     {
       "dir": "AI_传感器模块_7pfcbz-20261126-044333",
@@ -383,7 +383,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:41",
-      "age_s": 18846.5
+      "age_s": 19085.7
     },
     {
       "dir": "AI_传感器模块_7pfcbz-20261126-075846",
@@ -394,7 +394,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:02:39",
-      "age_s": 15188.7
+      "age_s": 15428.0
     },
     {
       "dir": "AI_传感器模块_7pfcbz-20261126-081646",
@@ -405,7 +405,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:21:08",
-      "age_s": 14079.8
+      "age_s": 14319.1
     },
     {
       "dir": "AI_稳压板_6pe2os-20261126-074403",
@@ -416,7 +416,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:48:14",
-      "age_s": 16053.8
+      "age_s": 16293.1
     },
     {
       "dir": "AI_稳压板_7pf5gw-20261126-070858",
@@ -427,7 +427,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:13:06",
-      "age_s": 18161.3
+      "age_s": 18400.5
     },
     {
       "dir": "AI_纯分立-20261125-041749",
@@ -438,7 +438,7 @@
       "n_blockers": 0,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T06:52:58",
-      "age_s": 19368.9
+      "age_s": 19608.2
     },
     {
       "dir": "AI_纯分立_17py4dl-20261126-064538",
@@ -466,7 +466,7 @@
       "n_blockers": 4,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T07:02:31",
-      "age_s": 18796.5
+      "age_s": 19035.7
     },
     {
       "dir": "AI_纯分立_19pl4cd-20261126-041030",
@@ -477,7 +477,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:13",
-      "age_s": 18874.1
+      "age_s": 19113.4
     },
     {
       "dir": "AI_纯分立_20p4chz-20261126-041636",
@@ -488,7 +488,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:24",
-      "age_s": 18863.7
+      "age_s": 19102.9
     },
     {
       "dir": "AI_纯分立_3pnlif-20261126-064200",
@@ -499,7 +499,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:23",
-      "age_s": 18804.6
+      "age_s": 19043.8
     },
     {
       "dir": "AI_纯分立_4pm9kw-20261126-074011",
@@ -510,7 +510,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:44:00",
-      "age_s": 16307.4
+      "age_s": 16546.7
     },
     {
       "dir": "AI_纯分立_6p7j98-20261126-044729",
@@ -521,7 +521,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:44",
-      "age_s": 18843.8
+      "age_s": 19083.1
     },
     {
       "dir": "AI_纯分立_6p7j98-20261126-082111",
@@ -532,7 +532,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:25:02",
-      "age_s": 13845.2
+      "age_s": 14084.5
     },
     {
       "dir": "AI_纯分立_9p271i-20261126-070644",
@@ -543,7 +543,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:08:55",
-      "age_s": 18412.3
+      "age_s": 18651.6
     },
     {
       "dir": "AI_锂电池充电板_10prplo-20261126-065757",
@@ -554,7 +554,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:00:24",
-      "age_s": 18923.6
+      "age_s": 19162.9
     },
     {
       "dir": "AI_锂电池充电板_7pbt8q-20261125-123130",
@@ -565,7 +565,7 @@
       "n_blockers": 0,
       "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:53:02",
-      "age_s": 19365.5
+      "age_s": 19604.8
     },
     {
       "dir": "AI_锂电池充电板_7pepkp-20261126-024947",
@@ -576,7 +576,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:00:34",
-      "age_s": 18913.8
+      "age_s": 19153.1
     },
     {
       "dir": "AI_锂电池充电板_8pynvf-20261126-080242",
@@ -587,7 +587,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T08:04:56",
-      "age_s": 15051.4
+      "age_s": 15290.7
     },
     {
       "dir": "Crystal_RTC_Clock-20261126-051342",
@@ -598,7 +598,7 @@
       "n_blockers": 0,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T07:01:59",
-      "age_s": 18828.0
+      "age_s": 19067.3
     },
     {
       "dir": "Crystal_RTC_Clock-20261126-085027",
@@ -609,7 +609,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T09:09:09",
-      "age_s": 11198.9
+      "age_s": 11438.2
     },
     {
       "dir": "ESP32C3_Minimal-20261126-050915",
@@ -620,7 +620,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:01:56",
-      "age_s": 18831.3
+      "age_s": 19070.6
     },
     {
       "dir": "ESP32C3_Minimal-20261126-084735",
@@ -631,7 +631,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:50:24",
-      "age_s": 12323.4
+      "age_s": 12562.6
     },
     {
       "dir": "LED_RGB_Indicator-20261126-063048",
@@ -642,7 +642,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:15",
-      "age_s": 18812.4
+      "age_s": 19051.7
     },
     {
       "dir": "NegTest_TinyBoard-20261125-025440",
@@ -653,7 +653,7 @@
       "n_blockers": 0,
       "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:52:55",
-      "age_s": 19372.6
+      "age_s": 19611.9
     },
     {
       "dir": "RP2040_Minimal-20261126-063249",
@@ -664,7 +664,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:18",
-      "age_s": 18809.8
+      "age_s": 19049.1
     },
     {
       "dir": "RP2040_QSPI_Flash-20261126-063608",
@@ -675,7 +675,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:20",
-      "age_s": 18807.2
+      "age_s": 19046.4
     },
     {
       "dir": "SHT30_Header8-20261126-035337",
@@ -686,7 +686,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:09",
-      "age_s": 18878.0
+      "age_s": 19117.2
     },
     {
       "dir": "SHT30_I2C_TempHumidity-20261126-050157",
@@ -697,7 +697,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:01:53",
-      "age_s": 18834.3
+      "age_s": 19073.6
     },
     {
       "dir": "SHT30_I2C_TempHumidity-20261126-084306",
@@ -708,7 +708,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:47:32",
-      "age_s": 12495.9
+      "age_s": 12735.2
     },
     {
       "dir": "SHT30_LDO_Module-20261126-061250",
@@ -719,7 +719,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:12",
-      "age_s": 18815.2
+      "age_s": 19054.4
     },
     {
       "dir": "SHT30_Module_Full-20261126-060859",
@@ -730,7 +730,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:09",
-      "age_s": 18818.2
+      "age_s": 19057.4
     },
     {
       "dir": "USBC_Power_ESD-20261126-053328",
@@ -741,7 +741,7 @@
       "n_blockers": 0,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T07:02:03",
-      "age_s": 18824.6
+      "age_s": 19063.8
     },
     {
       "dir": "USBC_Power_ESD-20261126-090912",
@@ -752,7 +752,7 @@
       "n_blockers": 0,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T09:21:59",
-      "age_s": 10428.0
+      "age_s": 10667.2
     },
     {
       "dir": "d11-exp",
@@ -763,7 +763,7 @@
       "n_blockers": 0,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T06:56:08",
-      "age_s": 19179.1
+      "age_s": 19418.4
     },
     {
       "dir": "d11-exp-2558",
@@ -774,7 +774,7 @@
       "n_blockers": 0,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T06:56:11",
-      "age_s": 19176.5
+      "age_s": 19415.8
     }
   ]
 }
