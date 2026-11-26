@@ -84,6 +84,7 @@ for (const rel of [
   'plugin/locale/en.json', 'plugin/locale/zh.json', 'plugin/icon.svg',
   'plugin/docs/DETAIL.md', 'package.json', 'LICENSE', 'README.md', 'llms.txt',
   'AGENTS.md', 'docs/SUPPORT.md', 'docs/WHY.md', 'install/install.mjs',
+  'docs/REVERSE-NOTES.md', 'api/_index.json', 'api/classes.csv', 'api/methods.csv',
   '.mcp.json', '.claude-plugin/plugin.json', 'CITATION.cff',
   // 插件契约测试和它的桩：删掉任何一件，DSH 那一侧就没人验了。
   'test/plugin-harness.mjs', 'test/dsh-stubs/resolver.mjs',

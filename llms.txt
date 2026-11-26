@@ -138,6 +138,13 @@ pwsh -NoProfile -File run-all.ps1 -Design designs\<name>.json
   JITX, Flux, Celus, DeepPCB, and plain "LLM + KiCad" experiments. States what was verified, when,
   and what could not be verified.
 - [docs/SUPPORT.md](docs/SUPPORT.md) — the platform matrix and its verification levels.
+- [docs/REVERSE-NOTES.md](docs/REVERSE-NOTES.md) — how the LCEDA Pro 4.1.111 CLI was reverse
+  engineered into something a program can drive: silent failures, ordering dependencies, the
+  canvas-unit = mil/10 trap, the SVG-vs-Cartesian coordinate flip, and **the method names that do
+  not exist** (so you do not burn an hour on `getBBox` before finding out it lives on `SYS_Math`).
+  Includes the exact `grep` commands to check every claim against the committed `api/` dump.
+- [api/](api/) — the committed offline API reference: 584 types, 108 callable classes, 793 methods.
+  Offline on purpose: no service, no screenshots, no support ticket.
 - [plugin/docs/DETAIL.md](plugin/docs/DETAIL.md) — the DSH plugin contract.
 - [交付-README.md](交付-README.md) — the Chinese delivery record, including the disclosed errors.
 
