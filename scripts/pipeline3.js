@@ -1480,11 +1480,27 @@ const countTracks = async () => {
     return Array.isArray(ids) ? ids.length : -1;
   } catch (e) { return -1; }
 };
-for (let iter = 0; iter < 4; iter++) {
-  const isStrong = (iter === 3);
+// 【上限从 4 提到 6：原来的 4 会在最有效的那一轮之后立刻收手】
+// 实测 2026-11-26T16:20（out/ESP32S3_Wireless_Mic_V3-20261126-162010，1300x3700）：
+//   iter0 FAST  122 ->  81  tracksAdded 431    29.0s
+//   iter1 FAST   81 ->  81  tracksAdded  12     3.6s
+//   iter2 FAST   81 ->  81  tracksAdded   4     3.9s
+//   iter3 强轮   81 ->  27  tracksAdded 155   318.8s
+// 单轮降幅最大的是强轮（-54），而 `iter < 4` + `isStrong = (iter === 3)`
+// 意味着**整轮运行只允许一次强轮**，跑完剩 27 个断连就被上限截断。
+// 下方 L1521 的旧注释自己就写着"每一次成功都是 iter 3 把 stillUnconnected 打到 0"——
+// 既然成功的唯一路径是强轮，只给它一次机会没有依据。
+// 预算方向不放松：LEFT 闸 / capRaw 闸 / 零新增闸 / 清零闸四道都还在（见下方）。
+const MAX_ROUTE_ITERS = 6;
+let prevUnconnected = null;
+for (let iter = 0; iter < MAX_ROUTE_ITERS; iter++) {
+  // iter 3 起都是 COMPLETION 强轮。多轮强轮各自仍受 capRaw 约束，
+  // 且 capRaw = left() - 180000 随时间收缩，晚到的强轮自然被压短。
+  const isStrong = (iter >= 3);
   if (isStrong) {
-    // 只有在前面所有 FAST 轮次都没能清零断连时才走到这里
-    log('routeEscalate', { reason: 'FAST 3 轮后仍有断连，升级 COMPLETION 兜底' });
+    // 只有在前面所有 FAST 轮次都没能清零断连时才走到这里。
+    // 带 iter：否则三轮强轮会打出三条一模一样的日志，读的人分不清跑到第几次。
+    log('routeEscalate', { iter, reason: 'FAST 轮后仍有断连，升级 COMPLETION 兜底' });
   }
   let tracksAddedThisIter = 0;
   // 连续「超时且零新增走线」的次数。见下方 TIMEOUT 分支里的长注释。
@@ -1666,7 +1682,13 @@ for (let iter = 0; iter < 4; iter++) {
     errors.push('iterDrc: ' + String(e && e.message).slice(0, 120));
     // 查不出断点数 → 视为仍有断连，继续下一轮（不要 break）
   }
-  log('routeIter', { iter, stillUnconnected, tracksAdded: tracksAddedThisIter });
+  // delta 让"多跑一轮到底有没有用"成为一条可读证据。
+  // 只记 absolute 值的话，判断趋势要靠把若干条 routeIter 摆在一起心算 ——
+  // 而 prevUnconnected 的初值必须是 null 而不是 0，否则 iter0 会被算成 +122。
+  const delta = (prevUnconnected == null) ? null : (stillUnconnected - prevUnconnected);
+  log('routeIter', { iter, stillUnconnected, tracksAdded: tracksAddedThisIter,
+    prevUnconnected, delta, isStrong });
+  prevUnconnected = stillUnconnected;
   // 一整轮 7 份引擎配置合计一条走线都没画出来 —— 再换轮次只会重复同一件事。
   // 不判这条的话，4 轮 x 7 变体 x ~8 秒 ≈ 224 秒纯空转，把收尾预算吃掉。
   if (tracksAddedThisIter === 0) {
