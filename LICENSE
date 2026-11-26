@@ -19,17 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Note on scope / 关于范围的说明
-
-This license covers the source code and documentation in this repository.
-It does NOT cover third-party trademarks, vendor CAD libraries, or the
-output of the EDA toolchain (Gerber / BOM / PnP files), whose terms are set
-by the respective manufacturers and EDA vendors.
-
-Board designs under `designs/` and fabrication output under `out/` are
-provided as-is for reproduction and research. **No board produced by this
-project has been physically manufactured or electrically validated.**
-Do not order a board without an independent review.

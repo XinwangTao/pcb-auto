@@ -132,4 +132,7 @@ real design defects:
 See [AGENTS.md](AGENTS.md) for the machine-facing operating contract,
 [llms.txt](llms.txt) for the LLM entry point, and [docs/WHY.md](docs/WHY.md) for the comparison.
 
-License: [MIT](LICENSE). **No warranty. Do not order a board without independent review.**
+License: [MIT](LICENSE). Scope and the "no board has been manufactured" disclaimer are in
+[NOTICE.md](NOTICE.md) — kept out of `LICENSE` on purpose, because appending prose there
+makes GitHub report the license as `NOASSERTION`. **No warranty. Do not order a board
+without independent review.**
