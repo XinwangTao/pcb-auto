@@ -386,23 +386,33 @@ export async function census(args = {}, opt = {}) {
   const st = j.self_ok_true || {}
   const ids = j.blocker_ids || {}
 
-  // 报告可能是**随仓库发布的快照**（作者机器上的 56 个目录），而本机 `out/`
-  // 是空的。这时如实回答 0 —— `census` 问的是「我的语料怎么样」，
-  // 不是「作者当年测到多少」。把快照的数字留在 `snapshotDirs` 里，别混进
-  // `dirs`：`dirs: 56` 在一个空克隆里会被读成「你有 56 个目录」。
+  // 「这份数据是哪来的」其实是**两个**问题，以前被挤在 `source` 一个字段里：
+  //
+  //   Q1  headline（`dirs` / `fabOk` / `blocked`）是不是**本机语料**的测量？
+  //   Q2  报告文件有没有被这次运行重写？
+  //
+  // 挤在一个字段里，两种情形就互相矛盾：量具跑成功但没写报告时，
+  // 如果本机一句 `out/*/_run.json` 都没有，那 `dirs: 0` 是**刚刚数出来的**（Q1=live），
+  // 而文件确实没被重写（Q2=false）。只报一个值，无论报哪个都在骗人。
+  //
+  // 现在：`source` 只回答 Q1，`refreshed` 单独回答 Q2。
   const localDirs = countRunDirs(root)
   const reportDirs = j.all.n || 0
-  const usingSnapshot = !refreshed && reportDirs > 0 && localDirs === 0
-  if (usingSnapshot) {
+
+  // 本机没有语料，但报告里有数字 —— 报告描述的是**别人**的机器。
+  // `census` 回答的是「我的语料怎么样」，所以如实给 0。
+  // 不这么做，一个全新克隆会看到 `dirs: 56`，然后以为装错了。
+  if (localDirs === 0 && reportDirs > 0) {
     return {
       ok: true,
       exitCode: 0,
       at: now(),
-      source: 'snapshot',
-      sourceNote: '量具没有写出新报告，这份数据来自已有的 out/_probe/fab-census.json（可能是随仓库发布的快照）。要一次真实测量，请在有产物目录的仓库里跑。',
-      corpusNote: `你的克隆里 out/ 没有产物目录，所以这次没有可测的样本。`
-        + `报告里那份快照（${reportDirs} 个目录，测于 ${j.measured_at || '未知时刻'}）`
-        + '描述的是作者机器，不是你的 —— 先跑出产物再来。',
+      source: 'live',          // 那 0 个目录是当场数出来的
+      refreshed: false,        // 但报告文件没被重写（量具拒绝销毁证据）
+      corpusNote: '你的克隆里 out/ 没有产物目录，所以这次没有可测的样本。'
+        + `随仓库发布的那份快照（${reportDirs} 个目录，测于 ${j.measured_at || '未知时刻'}）`
+        + '描述的是作者机器，不是你的 —— 先跑出产物再来。'
+        + '为了不销毁证据，这次没有覆盖 out/_probe/fab-census.json。',
       emptyNote: '没有可测量的产物目录（out/ 下没有带 _run.json 的目录）。这不是「全部可下单」，是没有样本。',
       localDirs: 0,
       snapshotDirs: reportDirs,
@@ -414,24 +424,29 @@ export async function census(args = {}, opt = {}) {
     }
   }
 
+  // 本机有语料，但报告没被重写 —— 报告相对本机是旧的，headline 只能标 snapshot。
+  const headlineFromStaleFile = localDirs > 0 && !refreshed
+
   return {
     ok: true,
     exitCode: 0,
     // at 是**这份数据什么时候测的**，不是「我什么时候读的」。两者不是一回事。
-    at: mtimeAfter ? new Date(mtimeAfter).toISOString() : now(),
-    // live = 刚刚真扫了一遍；snapshot = 脚本没写新文件，读到的是随仓库发布的旧报告。
+    at: headlineFromStaleFile && mtimeAfter ? new Date(mtimeAfter).toISOString() : now(),
+    // live = headline 描述的是本机现在；snapshot = 描述的是磁盘上某个更早的时刻。
     // 消费者必须能分辨 —— 否则「53/56 可下单」会被当成此刻的事实。
-    source: refreshed ? 'live' : 'snapshot',
-    ...(refreshed ? {} : {
+    source: headlineFromStaleFile ? 'snapshot' : 'live',
+    // Q2 单独可见：报告文件到底有没有被这次运行重写。
+    refreshed,
+    ...(headlineFromStaleFile ? {
       sourceNote: '量具没有写出新报告，这份数据来自已有的 out/_probe/fab-census.json（可能是随仓库发布的快照）。要一次真实测量，请在有产物目录的仓库里跑。',
-    }),
+    } : {}),
     // 0 个目录不是「全部通过」。不加这一句，`dirs:0 / blocked:0 / ok:true`
     // 会被读成一份完美的成绩单 —— 而它其实一分数据都没有。
-    ...((j.all.n || 0) === 0 ? {
+    ...(reportDirs === 0 ? {
       emptyNote: '没有可测量的产物目录（out/ 下没有带 _run.json 的目录）。这不是「全部可下单」，是没有样本。',
     } : {}),
-    dirs: j.all.n || 0,
-    // 本机语料有多大。通常和 dirs 相等；不相等就说明报告是别的机器上的快照。
+    dirs: reportDirs,
+    // 本机语料有多大。和 dirs 不相等就说明 headline 描述的不是这台机器。
     localDirs,
     fabOk: j.all.fab_ok || 0,
     blocked: j.all.fab_blocked || 0,

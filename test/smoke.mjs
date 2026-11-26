@@ -677,17 +677,51 @@ check('量具跑失败 + 磁盘有旧报告 → 不许拿旧报告当结果', ()
   } finally { rmSync(tmp, { recursive: true, force: true }) }
 })
 
-// 量具成功但**没有写出新报告**：这时读到的必然是旧的，必须标成 snapshot 而不是 live，
-// 也不能把时间戳写成「现在」。
-check('量具没写出新报告 → 标 snapshot，不冒充本次测量', () => {
+// 量具成功但**没有写出新报告**，而且本机一句产物都没有。
+//
+// 这里曾经只断言 `source === 'snapshot'`。那个断言把**两个问题**压成了一句话：
+//   Q1  headline 是不是本机语料的测量？
+//   Q2  报告文件有没有被这次运行重写？
+// 本机 0 个目录时，`dirs: 0` 是当场数出来的（Q1=live），文件确实没被重写（Q2=false）。
+// 只报一个值，无论报哪个都在骗人 —— 报 `dirs: 999` 更糟，那会让一个空克隆
+// 以为自己有 999 个目录。
+//
+// 现在 `source` 只回答 Q1，`refreshed` 单独回答 Q2，两条都钉住。
+check('量具没写出新报告 + 本机无产物 → 报 0，快照数字单列，且不冒充本机数据', () => {
   const tmp = fakeRoot('import sys\nsys.exit(0)\n', STALE)
   try {
     const before = statSync(join(tmp, 'out', '_probe', 'fab-census.json')).mtimeMs
     const j = censusAt(tmp)
     const after = statSync(join(tmp, 'out', '_probe', 'fab-census.json')).mtimeMs
     assert(before === after, '文件竟然被改了，这个用例前提不成立')
-    assert(j.source === 'snapshot', `source=${j.source}，期望 snapshot`)
-    assert(j.sourceNote && j.sourceNote.length > 10, 'snapshot 却没解释原因')
+    // Q1：headline 是本机的 0，不是旧报告里的 999。
+    assert(j.source === 'live', `source=${j.source}，期望 live（0 个目录是当场数的）`)
+    assert(j.dirs === 0, `dirs=${j.dirs} —— 把旧报告里的 999 当成「你有多少目录」报了出来`)
+    assert(j.fabOk === 0, `fabOk=${j.fabOk} —— 同上`)
+    // Q2：文件没被重写，必须看得见。
+    assert(j.refreshed === false, `refreshed=${j.refreshed}，期望 false`)
+    // 旧报告的数字不能消失，但必须单独标着「这是谁的」。
+    assert(j.snapshotDirs === 999, `snapshotDirs=${j.snapshotDirs}，期望 999`)
+    assert(typeof j.corpusNote === 'string' && j.corpusNote.length > 20, '没解释那份快照描述的是谁')
+    // `0/0` 不是 100%。
+    assert(typeof j.emptyNote === 'string', 'dirs=0 却没给 emptyNote —— 会被读成 0/0 全过')
+  } finally { rmSync(tmp, { recursive: true, force: true }) }
+})
+
+// 本机**有**产物，但量具没写出新报告 —— 这时 headline 只能来自那份旧文件，
+// 必须标成 snapshot，也不能把时间戳写成「现在」。
+check('本机有产物但量具没写新报告 → 标 snapshot，at 用文件时间不冒充现在', () => {
+  const tmp = fakeRoot('import sys\nsys.exit(0)\n', STALE)
+  // 造一个真的产物目录：`out/<name>/_run.json` 就是 census 认的样本单位。
+  mkdirSync(join(tmp, 'out', 'FAKE-20260101-000000'), { recursive: true })
+  writeFileSync(join(tmp, 'out', 'FAKE-20260101-000000', '_run.json'), '{"ok":true}', 'utf8')
+  try {
+    const before = statSync(join(tmp, 'out', '_probe', 'fab-census.json')).mtimeMs
+    const j = censusAt(tmp)
+    assert(j.source === 'snapshot', `source=${j.source}，期望 snapshot（headline 来自旧文件）`)
+    assert(j.localDirs === 1, `localDirs=${j.localDirs}，期望 1`)
+    assert(j.dirs === 999, `dirs=${j.dirs}，期望 999（这份 headline 就是旧文件的）`)
+    assert(typeof j.sourceNote === 'string' && j.sourceNote.length > 10, 'snapshot 却没解释原因')
     // at 必须是那份文件的 mtime，不能是现在。
     assert(Math.abs(Date.parse(j.at) - before) < 5000, `at=${j.at} 不是报告文件的时间`)
   } finally { rmSync(tmp, { recursive: true, force: true }) }
