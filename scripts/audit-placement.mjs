@@ -416,6 +416,113 @@ const RULES = [
         : { ok: false, why: `三键均位 ${Math.round(mean)} 偏离中线 ${mid} 达 ${Math.round(off)} mil > 容差 ${Math.round(tol)}` };
     },
   },
+  {
+    id: 'decoupling_near_ic',
+    kind: 'PCB',
+    basis: '每个 IC 的电源脚都要有自己的旁路电容，而且要贴着放 —— 去耦靠的是「小环路 + 短路径」，'
+         + '电容离得远，中间那段走线本身就成了电感，100nF 在需要它的那个频点上已经不是短路了。'
+         + '距离取**边缘到边缘**而不是中心距：贴着大封装放的时候中心距会被封装尺寸放大成假缺陷，'
+         + '决定环路的是两段铜之间那段间隙。阈值按电容值分档：<1uF 取 250 mil，≥1uF 取 400 mil。'
+         + '一个电容只服务一个 IC —— 同一个电容不能同时当两个 IC 的旁路。',
+    fn: (d, g) => {
+      const conns = Array.isArray(d.connections) ? d.connections : [];
+      if (!conns.length) return { why: '设计文件没有 connections —— 无从判断哪个电容服务哪个 IC' };
+      // 位号分类：IC = /^U\d+$/（USB1 是连接器，不算 IC），电容 = /^C\d+$/
+      const isIC = (des) => /^U\d+$/.test(des);
+      const isCap = (des) => /^C\d+$/.test(des);
+      const byNet = new Map();
+      for (const row of conns) {
+        if (!Array.isArray(row) || row.length < 3) {
+          return { why: `connections 里有形状不对的行，无法解读网表：${JSON.stringify(row)}` };
+        }
+        const [des, , net] = row;
+        if (!byNet.has(net)) byNet.set(net, new Map());
+        const m = byNet.get(net);
+        if (!m.has(des)) m.set(des, []);
+        m.get(des).push(row[1]);
+      }
+      // 返回网 = 引脚数最多的那个网。它在每条电容支路上都出现，
+      // 拿它当电源轨判只会得到一条恒真的结论（而且会让所有 IC 都「配上了」）。
+      let ret = null, retPins = -1;
+      for (const [net, m] of byNet) {
+        let n = 0;
+        for (const ps of m.values()) n += ps.length;
+        if (n > retPins) { retPins = n; ret = net; }
+      }
+      const box = new Map(g.comps.map((c) => [c.des, c]));
+      const gap = (a, b) => {
+        const dx = a.x1 < b.x0 ? b.x0 - a.x1 : (b.x1 < a.x0 ? a.x0 - b.x1 : 0);
+        const dy = a.y1 < b.y0 ? b.y0 - a.y1 : (b.y1 < a.y0 ? a.y0 - b.y1 : 0);
+        return Math.hypot(dx, dy);
+      };
+      const farad = (v) => {
+        const m = String(v || '').match(/^\s*([\d.]+)\s*(p|n|u|µ)\s*f/i);
+        if (!m) return null;
+        return Number(m[1]) * ({ p: 1e-12, n: 1e-9, u: 1e-6, 'µ': 1e-6 })[m[2].toLowerCase()];
+      };
+      const valOf = new Map((d.components || []).map((c) => [c.des, c.value]));
+      const judged = [];
+      const misses = [];
+      const skipped = [];
+      const excluded = { oneIc: [], noCap: [] };
+      for (const [net, m] of byNet) {
+        if (net === ret) continue;
+        const ics = [...m.keys()].filter(isIC);
+        const caps = [...m.keys()].filter(isCap);
+        // 「配电轨」= 连到 ≥2 个 IC **且已经放了电容**的网。
+        //   · 单 IC 的网（EN / IMU_REGOUT / IMU_CPOUT）不是配电轨 —— 它们各自的旁路
+        //     要求完全不同（EN 是 RC 延时，放远 349mil 也无所谓），拿同一条阈值判会制造假缺陷。
+        //   · 零电容的网与信号网在网表上**无法区分**（MIC_WS 也连 2 个 IC），
+        //     所以本判据**跳过**它，而不是判它通过。这是本条判据的已知边界，写在输出里。
+        if (ics.length < 2) { excluded.oneIc.push(`${net}(${ics.length})`); continue; }
+        if (!caps.length) { excluded.noCap.push(net); continue; }
+        judged.push(`${net}(${ics.length} 个 IC / ${caps.length} 个电容)`);
+        const pairs = [];
+        for (const ic of ics) {
+          const bi = box.get(ic);
+          if (!bi) { skipped.push(`${net}: ${ic} 尺寸未知`); continue; }
+          for (const cp of caps) {
+            const bc = box.get(cp);
+            if (!bc) { skipped.push(`${net}: ${cp} 尺寸未知`); continue; }
+            const f = farad(valOf.get(cp));
+            pairs.push({ ic, cp, dd: gap(bi, bc), tol: f == null ? null : (f >= 1e-6 ? 400 : 250) });
+          }
+        }
+        // 贪心分配：按距离从近到远，每个 IC 与每个电容各只能用一次。
+        // 不追求最优匹配 —— 贪心的误差方向是更保守（可能把能配上的判成配不上），
+        // 不会反过来放过真缺陷。方向比最优性重要。
+        pairs.sort((a, b) => a.dd - b.dd);
+        const icDone = new Set(), capUsed = new Set(), assign = [];
+        for (const p of pairs) {
+          if (p.tol == null) continue;
+          if (icDone.has(p.ic) || capUsed.has(p.cp)) continue;
+          icDone.add(p.ic); capUsed.add(p.cp); assign.push(p);
+        }
+        for (const a of assign) {
+          if (a.dd > a.tol) {
+            misses.push(`${net}: ${a.ic} 的最近专属电容 ${a.cp} 距 ${Math.round(a.dd)} mil > 阈值 ${a.tol} mil`);
+          }
+        }
+        for (const ic of ics) {
+          if (icDone.has(ic) || !box.get(ic)) continue;
+          const near = pairs.filter((p) => p.ic === ic).sort((a, b) => a.dd - b.dd)[0];
+          misses.push(near
+            ? `${net}: ${ic} 没有专属旁路电容（最近的 ${near.cp} 已分配给别的 IC，距 ${ic} ${Math.round(near.dd)} mil）`
+            : `${net}: ${ic} 一个电容都没有`);
+        }
+      }
+      if (!judged.length) {
+        return { why: `没有找到任何配电轨（连到 ≥2 个 IC 的网；已排除返回网 ${ret}）—— 这条判据在本设计上没有分母` };
+      }
+      const denom = `分母=${judged.length} 条电源轨[${judged.join('；')}]，返回网 ${ret} 已排除`
+        + (excluded.oneIc.length ? `；跳过 ${excluded.oneIc.length} 个单 IC 网[${excluded.oneIc.join(',')}]` : '')
+        + (excluded.noCap.length ? `；跳过 ${excluded.noCap.length} 个零电容网（与信号网在网表上无法区分，跳过而非判通过）[${excluded.noCap.join(',')}]` : '');
+      if (skipped.length) return { why: `${[...new Set(skipped)].join(' / ')} —— 缺尺寸就不能判，不能当成通过（${denom}）` };
+      return misses.length
+        ? { ok: false, why: `${misses.join(' / ')}（${denom}）` }
+        : { ok: true, value: `每条电源轨上的每个 IC 都配到了电容且不超阈值（${denom}）` };
+    },
+  },
 ];
 
 // ── 主流程 ────────────────────────────────────────────────────────────

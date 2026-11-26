@@ -222,11 +222,16 @@ try {
   }
 
   // ── 缺输入必须退 2，不许装成通过 ──
+  // 这条用例的基线必须用 **v5**（11 条判据 11 通过、hardFail=0），不能用 CASES 的 v3。
+  // 原先它用 v3 且一直通过，但那只是因为 v3 当时恰好没有 [PCB] 类失败 ——
+  // 一旦 v3 上出现任何 [PCB] 类 failure，`hardFail>0` 就会把退出码定成 1，
+  // 这条断言就变成在测「v3 有没有 PCB 缺陷」，而不是在测「缺输入会不会退 2」。
+  // 变量没有被隔离的断言，passed 和 failed 都读不出结论。
   n++;
   {
-    const d = JSON.parse(fs.readFileSync(DESIGN, 'utf8'));
+    const d = JSON.parse(fs.readFileSync(path.join(ROOT, 'designs', 'mic-esp32s3-v5.json'), 'utf8'));
     const c0 = d.components.find((x) => x.des === 'R1');
-    if (!c0) fail.push('未知料号: 设计里找不到 R1，用例失效');
+    if (!c0) fail.push('未知料号: v5 里找不到 R1，用例失效');
     else {
       c0.lcsc = 'C99999999';   // 尺寸表里没有 → 该器件几何未知
       const p = path.join(tmpDir, 'case-unknown.json');
@@ -234,9 +239,75 @@ try {
       const r = runAudit(p);
       if (r.spawnError) fail.push(`未知料号: 审计跑不起来 —— ${r.spawnError}`);
       else if (r.summary.unsizedComps < 1) fail.push(`未知料号: 期望 ≥1 个器件尺寸未知，实际 ${r.summary.unsizedComps} —— 缺尺寸被静默忽略了`);
+      else if (r.summary.failPcb > 0) fail.push(`未知料号: v5 基线本应 0 条 [PCB] 类失败，实际 ${r.summary.failPcb} —— 这条用例的前提已失效`);
       else if (r.exitCode !== 2) fail.push(`未知料号: 期望 exit 2（无法判定），实际 ${r.exitCode} —— 缺输入被当成了通过`);
       else if (!/NOSAMPLE/.test(r.banner || '')) fail.push(`未知料号: exit 2 但 banner 是「${r.banner}」—— 退出码与结论文案对不上`);
       else note(`未知料号 → unsizedComps=${r.summary.unsizedComps} / exit 2 / ${r.banner.split('  ')[0]}`);
+    }
+  }
+  // ── decoupling_near_ic：修前样本必须判红、修后样本必须判绿 ──────────
+  // 这一段独立于上面的 CASES 表。CASES 的基线是 v3，而这条判据的两个关键样本是
+  // **v4（修前）与 v5（修后）** —— 拿 v3 当基线在两个方向上都可能恒真，证明不了任何事。
+  // 断言分两层：① v4 判红，且红的**原因**必须真是 U4 没旁路（判红的原因是判据的语义，
+  // 不是副产物）；② v5 判绿；③ 把 v5 里 U4 的专属电容挪走，必须重新变红；
+  // ④ 只轻推 3 mil 的阴性对照必须维持绿，且不允许触发别的判据。
+  n++;
+  {
+    const V4 = path.join(ROOT, 'designs', 'mic-esp32s3-v4.json');
+    const V5 = path.join(ROOT, 'designs', 'mic-esp32s3-v5.json');
+    const RID = 'decoupling_near_ic';
+    const r4 = fs.existsSync(V4) ? runAudit(V4) : { spawnError: `缺样本 ${path.basename(V4)}` };
+    const r5 = fs.existsSync(V5) ? runAudit(V5) : { spawnError: `缺样本 ${path.basename(V5)}` };
+
+    if (r4.spawnError) fail.push(`decoupling[修前 v4]: ${r4.spawnError}`);
+    else {
+      const v4v = verdicts(r4)[RID];
+      const d4 = (r4.rules || []).find((x) => x.id === RID) || {};
+      if (v4v !== 'fail') {
+        fail.push(`decoupling[修前 v4]: 期望 fail，实际 ${v4v} —— 这条判据抓不到`
+          + '「3V3 上 5 个 IC 只有 4 个电容、U4（MEMS 麦）最近的 3V3 电容在 1404 mil 外」这个真缺陷');
+      } else if (!/U4/.test(d4.detail || '')) {
+        fail.push(`decoupling[修前 v4]: 判红了，但原因里没有 U4 —— 它红的不是我们要它抓的那件事：${String(d4.detail).slice(0, 160)}`);
+      } else {
+        note(`decoupling 修前 v4 → fail：${String(d4.detail).slice(0, 130)}`);
+      }
+    }
+
+    if (r5.spawnError) fail.push(`decoupling[修后 v5]: ${r5.spawnError}`);
+    else if (verdicts(r5)[RID] !== 'pass') {
+      fail.push(`decoupling[修后 v5]: 期望 pass，实际 ${verdicts(r5)[RID]} —— 加两个 100nF 没把它修好`);
+    } else {
+      const d5v = (r5.rules || []).find((x) => x.id === RID) || {};
+      // 分母必须写清且非空：只报「通过」而说不出判了几条电源轨，就是没有分母的结论。
+      if (!/分母=1 条电源轨\[3V3\(/.test(d5v.detail || '')) {
+        fail.push(`decoupling[修后 v5]: 通过了，但分母没写在输出里 —— ${String(d5v.detail).slice(0, 160)}`);
+      } else note('decoupling 修后 v5 → pass，分母=1 条电源轨(3V3)');
+
+      // ③ 定向变异：把 U4 的专属电容 C9 挪到板子右上（离 U4 420 mil）
+      const d5 = JSON.parse(fs.readFileSync(V5, 'utf8'));
+      const mv = JSON.parse(JSON.stringify(d5));
+      mv._placement.C9 = { x: 1200, y: -340, rot: 0 };
+      const pm = path.join(tmpDir, `dec-mutate-${n}.json`);
+      fs.writeFileSync(pm, JSON.stringify(mv, null, 1), 'utf8');
+      const rm = runAudit(pm);
+      if (rm.spawnError) fail.push(`decoupling[变异]: ${rm.spawnError}`);
+      else {
+        const got = verdicts(rm)[RID];
+        if (got !== 'fail') fail.push(`decoupling[变异]: 期望 fail，实际 ${got} —— 把 U4 的电容挪到 420 mil 外没触发判据`);
+        const coll = Object.keys(verdicts(r5)).filter((k) => k !== RID && verdicts(r5)[k] !== verdicts(rm)[k]);
+        if (coll.length) fail.push(`decoupling[变异]: 附带改变了 ${coll.join(',')} —— 判据之间串味`);
+      }
+
+      // ④ 阴性对照：C9 朝 U4 方向轻推 3 mil（间距 20 → 17 mil），必须维持 pass
+      const ct = JSON.parse(JSON.stringify(d5));
+      ct._placement.C9 = { x: 502, y: -312, rot: 0 };
+      const pc = path.join(tmpDir, `dec-control-${n}.json`);
+      fs.writeFileSync(pc, JSON.stringify(ct, null, 1), 'utf8');
+      const rc = runAudit(pc);
+      if (rc.spawnError) fail.push(`decoupling[对照]: ${rc.spawnError}`);
+      else if (verdicts(rc)[RID] !== 'pass') {
+        fail.push(`decoupling[对照]: 只挪 3 mil 就翻成 ${verdicts(rc)[RID]} —— 判据对无关微动敏感`);
+      }
     }
   }
 } finally {
