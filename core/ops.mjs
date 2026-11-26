@@ -142,20 +142,19 @@ export const tail = (s, n) => (s.length <= n ? s : '…(已截断 ' + (s.length 
  * 返回 '' 表示不是这一类错误，调用方沿用原始输出。
  *
  * @param {{code: number|null, out: string, err: string}} r
- * @param {string} bin 期望的可执行文件名
- * @param {string} envVar 可以指定位置的环变量名
+ * @param {{bin: string, needs: string, envVar: string}} what
  * @returns {string}
  */
-function explainNotStarted(r, bin, envVar) {
+function explainNotStarted(r, what) {
   if (r.code !== null) return ''
   const all = (r.out || '') + '\n' + (r.err || '')
   if (!/\bENOENT\b/.test(all)) return ''
   return [
-    `找不到 ${bin}，所以这条操作一次都没开始跑（退出码 2 = 没能运行，不是判据没过）。`,
+    `找不到 ${what.bin}，所以这条操作一次都没开始跑（退出码 2 = 没能运行，不是判据没过）。`,
     '',
     '这不是设计文件或产物的问题 —— 是这台机器缺依赖：',
-    `  · build / verify 需要 PowerShell 7（命令名 ${bin}），装好后重试；`,
-    `  · 已经装了但不在 PATH 上时，指一下即可：${envVar}=<可执行文件路径>。`,
+    `  · ${what.needs}；`,
+    `  · 已经装了但不在 PATH 上时，指一下即可：${what.envVar}=<可执行文件路径>。`,
     '',
     '不需要它的操作（只靠 Node，任何系统都能跑）：',
     '  node cli/pcb.mjs list',
@@ -163,6 +162,20 @@ function explainNotStarted(r, bin, envVar) {
     '  node cli/pcb.mjs fabcheck examples/d1',
   ].join('\n')
 }
+
+/** build / verify 都要 pwsh。 */
+const PWSH_WHAT = {
+  bin: 'pwsh',
+  needs: 'build / verify 需要 PowerShell 7（命令名 pwsh），装好后重试',
+  envVar: 'PCB_AUTO_PWSH',
+}
+
+/** census 要 Python 3。bin 用实际解析出来的路径，读者才知道它找的是哪一个。 */
+const PYTHON_WHAT = (py) => ({
+  bin: py,
+  needs: 'census 需要 Python 3（命令名 python 或 python3），装好后重试',
+  envVar: 'PCB_AUTO_PYTHON',
+})
 
 /** Node 解释器：默认就是跑本文件的这个。 */
 export const nodeBin = () => process.env.PCB_AUTO_NODE || process.execPath
@@ -342,7 +355,7 @@ export async function build(args, opt = {}) {
 
   const j = runDir ? readJson(join(runDir, '_run.json')) : null
   const gates = (j && j.gates) || {}
-  const notStarted = explainNotStarted(r, 'pwsh', 'PCB_AUTO_PWSH')
+  const notStarted = explainNotStarted(r, PWSH_WHAT)
   return {
     ok: Boolean(j && j.ok),
     exitCode: typeof r.code === 'number' ? r.code : 2,
@@ -442,10 +455,13 @@ export async function census(args = {}, opt = {}) {
     source: 'none',
     reason: r.code === null ? `量具没能启动（${py}）` : `量具退出码 ${r.code}`,
     dirs: 0, fabOk: 0, blocked: 0, parseErrors: 0, inFlight: 0,
-    raw: tail((r.out + r.err).trim(), 1500)
+    raw: explainNotStarted(r, PYTHON_WHAT(py))
+      || tail((r.out + r.err).trim(), 1500)
+      // spawn 失败时 stdout/stderr 本来是空的，这段兜底曾经是唯一解释来源。
+      // 但 child.on('error') 会把 `spawn … ENOENT` 塞进 err，于是 `||` 里的
+      // 人话**永远轮不到**——一句写得挺好、却一次都没打出来过的说明。
+      // 现在由 explainNotStarted 顶上去，这里只留非 ENOENT 的最后一道。
       || (r.code === null
-        // spawn 失败时 stdout/stderr 都是空的。不补一句，用户看到的是一份「全部为 0
-        // 且没有任何解释」的结果 —— 那比报错更难查。
         ? `无法执行 "${py}"。census 需要 Python 3。\n`
           + `装一个，或用环境变量指定：PCB_AUTO_PYTHON=<python 可执行文件路径>`
         : ''),
@@ -571,7 +587,7 @@ export async function verify(args = {}, opt = {}) {
     nosample: (all.match(/NOSAMPLE\s+(\d+)/) || [])[1] ? Number((all.match(/NOSAMPLE\s+(\d+)/) || [])[1]) : 0,
     failures: (all.match(/\[(?:FAIL|ERROR)\][^\n]*/g) || []).slice(0, 12).join('\n'),
     // 同 build：`spawn pwsh ENOENT` 是事实，不是说明书。
-    raw: line ? '' : (explainNotStarted(r, 'pwsh', 'PCB_AUTO_PWSH') || tail(all.trim(), 1500)),
+    raw: line ? '' : (explainNotStarted(r, PWSH_WHAT) || tail(all.trim(), 1500)),
   }
 }
 

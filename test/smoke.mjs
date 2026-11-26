@@ -823,6 +823,31 @@ check('verify 被抓进管道时中文不乱码、判据不整条消失', () => 
   return `${summary[0].replace(/\s+/g, ' ')}${ns ? ` · NOSAMPLE ${ns}` : ''} · 0 个 U+FFFD`
 })
 
+console.log('\n\x1b[1m10 · 缺运行时的时候说人话\x1b[0m')
+
+// 这类错已经复发三次（git / pwsh / python），每次的形态都一样：
+//   · 退出码 2 是对的（没能运行），但消息是 `spawn pwsh ENOENT`；
+//   · 读者既不知道该装什么，也不知道这算不算「我的板子有问题」；
+//   · 而「退非 0」最容易被记成「判据没过」—— 结论正好反了。
+// 所以钉住的不是「退 2」（那个本来就对），而是「消息里有没有一句能照做的话」。
+for (const [op, envVar, bin] of [
+  ['verify', 'PCB_AUTO_PWSH', 'pwsh'],
+  ['census', 'PCB_AUTO_PYTHON', 'python'],
+]) {
+  check(`缺 ${bin} 时 pcb ${op} 退 2 且给出可照做的说明`, () => {
+    const r = run([join(ROOT, 'cli', 'pcb.mjs'), op],
+      { env: { [envVar]: `C:\\__nope__\\${bin}.exe` } })
+    const j = JSON.parse(r.stdout.trim().split('\n').pop())
+    assert(j.exitCode === 2, `exitCode=${j.exitCode}，期望 2（没能运行）`)
+    const msg = String(j.raw || j.detail || j.reason || '')
+    assert(msg.includes('一次都没开始跑'),
+      `消息里没有「一次都没开始跑」—— 读者会把它当成「我的板子有问题」：${msg.slice(0, 200)}`)
+    // 反过来钉一下：不许退化成原始错误。
+    assert(!/^\s*spawn\s/.test(msg), `消息还是原始的 \`spawn … ENOENT\`：${msg.slice(0, 200)}`)
+    return msg.split('\n')[0].slice(0, 60)
+  })
+}
+
 console.log('\n────────────────────────────────────────────────────────────')
 if (failures.length === 0) {
   console.log(`  \x1b[32mSMOKE=PASS\x1b[0m   ${pass} 项全过`)
