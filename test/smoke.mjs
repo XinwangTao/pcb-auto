@@ -85,6 +85,9 @@ for (const rel of [
   'plugin/docs/DETAIL.md', 'package.json', 'LICENSE', 'README.md', 'llms.txt',
   'AGENTS.md', 'docs/SUPPORT.md', 'docs/WHY.md', 'install/install.mjs',
   '.mcp.json', '.claude-plugin/plugin.json', 'CITATION.cff',
+  // 插件契约测试和它的桩：删掉任何一件，DSH 那一侧就没人验了。
+  'test/plugin-harness.mjs', 'test/dsh-stubs/resolver.mjs',
+  'test/dsh-stubs/dsh-tools.mjs', 'test/dsh-stubs/schemastery.mjs',
 ]) {
   check(`存在 ${rel}`, () => {
     const p = join(ROOT, rel)
@@ -97,7 +100,7 @@ for (const rel of [
 
 console.log('\n\x1b[1m2 · 语法闸门\x1b[0m')
 
-for (const rel of ['core/ops.mjs', 'cli/pcb.mjs', 'mcp/server.mjs', 'plugin/index.js', 'install/install.mjs', 'test/smoke.mjs']) {
+for (const rel of ['core/ops.mjs', 'cli/pcb.mjs', 'mcp/server.mjs', 'plugin/index.js', 'plugin/locate-root.mjs', 'install/install.mjs', 'test/smoke.mjs', 'test/plugin-harness.mjs', 'test/dsh-stubs/resolver.mjs']) {
   check(`node --check ${rel}`, () => {
     const r = run(['--check', join(ROOT, rel)])
     assert(r.code === 0, `exit ${r.code}\n${r.stderr}`)

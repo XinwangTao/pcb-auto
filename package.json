@@ -49,7 +49,7 @@
     "win32"
   ],
   "scripts": {
-    "test": "node test/smoke.mjs",
+    "test": "node test/smoke.mjs && node test/plugin-harness.mjs",
     "pcb": "node cli/pcb.mjs",
     "mcp": "node mcp/server.mjs",
     "install-clients": "node install/install.mjs",

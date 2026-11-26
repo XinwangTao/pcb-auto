@@ -41,8 +41,13 @@ jobs:
           echo "core / cli / mcp / plugin / install 全部只用 node: 内置模块，"
           echo "这样任何 Agent 平台都能直接调用，不需要先装一套包。"
 
-      - name: 契约测试（53 项）
+      - name: 契约测试
         run: node test/smoke.mjs
+
+      # 插件在 DSH 之外 import 不了（@deepseek-ai/dsh-tools 只存在于 DSH 进程里）。
+      # 这套测试用加载器钩子替换那两个 import，被测的 plugin/index.js 一字不改。
+      - name: DSH 插件契约
+        run: node test/plugin-harness.mjs
 
       - name: 列出支持的平台
         run: node install/install.mjs --list
