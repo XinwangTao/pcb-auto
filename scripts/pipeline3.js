@@ -3545,7 +3545,11 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
       if (!vv) continue;
       const curD = Number(vv.getState_Diameter?.() || 0);
       const curH = Number(vv.getState_HoleDiameter?.() || 0);
-      if (curD > 20.5) {
+      // 【门槛必须是"可制造最小值"而不是 20.5mm 之类的约数】实测被删的 4 个孔全是
+      // 19.8mil：它落在 (19.7, 20.5] 之间，旧门槛把它判成"已经最小、只能删"，
+      // 而 19.8 明明还能无损缩到 19.7（0.5mm，嘉立创最小可制造外径）。
+      // 19.75 是"离最小值还有意义"的下界：再小就只剩 0.05mil 的收益，不值得动刀。
+      if (curD > 19.75) {
         // 先尝试缩到规则最小（0.5mm=19.7mil，孔 0.3mm=11.8mil）
         // ★ 「记在 modify 之后」这个理由只对一半：modify **失败时 resolve(undefined) 而不抛**，
         //   所以"抛异常时尺寸没变"成立，"返回 undefined 时尺寸没变"同样成立，而后者没有异常。
@@ -3583,7 +3587,7 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
         const isPourNet = /^(GND|GNDD|AGND|DGND|VSS|GROUND)$/i.test(netName.trim());
         if (!isPourNet) {
           // 【不要再建议"改成缩孔"】离线统计提过这条，但走不到这里：
-          // 能进这个分支的过孔直径已经 <=20.5mil，而 19.7mil = 0.5mm 正是
+          // 能进这个分支的过孔直径已经 <=19.7mil，而 19.7mil = 0.5mm 正是
           // 嘉立创的最小可制造外径（孔 0.3mm=11.8mil）。再缩就是做不出来的板子 ——
           // 用"不可制造"换"间距合规"是更坏的交易。
           // 真正可行的是沿走线方向**平移过孔**再补线，但那会改动铜形，
@@ -3592,35 +3596,29 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
             reason: 'signal net at min diameter; shrinking would be unmanufacturable' });
           continue;
         }
-        // ★ delete 失败是 resolve(false)，不抛。原实现删完就 recMod+fixed++，
-        //   于是删除失败时：日志说"这条 via 删了（因此回不来）"，而板上孔还在，
-        //   并且这个孔此后被 seenVia 永久跳过、不会再被处理。
-        //   `viaDeleted` 还会被整轮回滚归入 viaUnrestorable（"板上确实少了一个孔"）——
-        //   日志与板况正好相反。
-        // 【删之前先把"怎么补回来"记全】删除本身没有 modify 那样的逆操作，但
-        // create 在同一个坐标、同网、同孔径重画一个孔，**电学上就是同一个孔**。
-        // 只记 net/before 是不够的：少了 x/y/viaType 就补不回去，于是整轮回滚
-        // 只能把它记进 viaUnrestorable 然后放行断网。坐标必须在 delete 之前读，
-        // 删完再读只能拿到 undefined。
-        let viaX = NaN, viaY = NaN, viaType = '';
-        try {
-          viaX = Number(vv.getState_X?.());
-          viaY = Number(vv.getState_Y?.());
-          viaType = String(vv.getState_ViaType?.() ?? '');
-        } catch (e) {
-          log('viaGeomErr', { via: viaObjId, m: String(e && e.message).slice(0, 100) });
-        }
-        const dv = await eda.pcb_PrimitiveVia.delete(viaObjId);
-        if (dv !== true) {
-          log('viaDeleteUnconfirmed', { via: viaObjId, d: curD, net: netName.trim() || '(unknown)', ret: String(dv) });
-        } else {
-          recMod(viaObjId, { kind: 'viaDeleted', net: netName.trim(),
-            x: viaX, y: viaY, viaType: viaType || undefined,
-            before: { holeDiameter: curH, diameter: curD } });
-          fixed++;
-          log('viaDeleted', { via: viaObjId, d: curD, net: netName.trim() || '(unknown)',
-            at: [Math.round(viaX), Math.round(viaY)] });
-        }
+        // 【覆铜网的过孔也不许删 · 本轮实测把它关掉】
+        // 旧实现在这个分支里 delete 掉"挡间距"的 GND 过孔。理由写的是
+        // "GND 覆铜已保证连通"—— 这对**缝合孔**成立，对 **EP 散热焊盘上的孔**完全不成立：
+        // 实测（2026-11-26T20:21:44+08:00 那轮）viaDeleted ×4 全是 d=19.8 的 GND 孔，
+        // 坐标 (729,-1737) (633,-2041) (591,-2103) (729,-1683)，正是 preVia 打在 EP 盘上的那 9 个里的 4 个。
+        // 删掉后 4 个 EP 焊盘失去 L1→L2 的唯一铜通路 → GND Connection Error 4→8；
+        // 整轮回滚又把这轮 viaShrunk ×2（无损缩孔）一起撤回，于是最终仍差 0.24mil。
+        // 也就是说：删孔**没修好间距，还断了网，并且把好的改动一起赔进去了**。
+        // 本文件自己的统计早就写着这条：语料 viaDeleted 45/45 全是 GND，
+        // 其中 26 条最终仍 passed ⇒ 约 58% 成功率，属高危路径。
+        //
+        // 交易方向反过来才是对的：一个欠 0.2mil 的间距是**布局级缺陷**，如实报告、
+        // 由人（或下一轮布局）处理；断网是致命的且无人值守下没人会补。
+        // 缩径是无损的（同一坐标、同一网、更小的孔，电学上仍是同一个孔），删孔不是。
+        log('viaKeptPour', { via: viaObjId, net: netName.trim(), d: curD, hole: curH,
+          at: (() => { try { return [Math.round(Number(vv.getState_X?.())),
+                                      Math.round(Number(vv.getState_Y?.()))]; }
+                       catch (e) { return null; } })(),
+          reason: 'pour-net via at min diameter; deleting it can detach an EP/isolated pad '
+                + 'from the pour (measured: 4 GND vias deleted -> GND Connection Error 4->8). '
+                + 'A sub-minimum clearance shortfall is a layout-level defect: report it, '
+                + 'never trade it for a broken net' });
+        continue;
       }
     } catch (e) { log('viaFixErr', { via: viaObjId, m: String(e && e.message).slice(0, 120) }); }
   }

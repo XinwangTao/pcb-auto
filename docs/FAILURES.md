@@ -1,6 +1,6 @@
 # 已知缺陷与自查记录
 
-<!-- ANCHOR-BASE: scripts/pipeline3.js sha256_12=14742F030434。
+<!-- ANCHOR-BASE: scripts/pipeline3.js sha256_12=C3A045FC622C。
      本文所有 pipeline3.js 行号都相对于这一份源码。行号漂移量不是常数
      （实测 stitchErr +497、patchNoGeo +582），所以发现哈希变了必须逐个按内容重锚，
      不能加偏移。test/doc-refs.mjs 只验「被指到的行非空」，不验「指对了」。 -->
@@ -16,15 +16,15 @@
 | 编号 | 结论 | 一句话 | 位置 |
 |---|---|---|---|
 | 1 | 部分真 | `skippedNoAnchor` 字段真实存在且语料全 0，但其中一条自增分支静态不可达 | `scripts/pipeline3.js:2203,2298,2309,2347` |
-| 2 | 真 | 补线阶段 5 处丢弃点，只有一处连日志都没有；真正大量丢的是 80mil 上限那条 | `scripts/pipeline3.js:4452,4462-4464,4495-4499,4572-4576,4578-4580,4616-4619` |
+| 2 | 真 | 补线阶段 5 处丢弃点，只有一处连日志都没有；真正大量丢的是 80mil 上限那条 | `scripts/pipeline3.js:4450,4460-4462,4493-4497,4570-4574,4576-4578,4614-4617` |
 | 3 | 真 | 缝合失败只记一句异常字符串，37 次全是同一句，不带网/坐标/id | `scripts/pipeline3.js:2314-2343` |
-| 4 | 真 | `fixed` 数的是「变更 API 接受了」，不是「违规真的减少了」 | `scripts/pipeline3.js:4172,4183-4185` |
-| 5 | 部分真 | 逐级收窄是真的；但它不是「白名单」，白名单这个词在代码里不存在 | `scripts/pipeline3.js:4332,4464,4496,4511,4579` |
+| 4 | 真 | `fixed` 数的是「变更 API 接受了」，不是「违规真的减少了」 | `scripts/pipeline3.js:4170,4181-4183` |
+| 5 | 部分真 | 逐级收窄是真的；但它不是「白名单」，白名单这个词在代码里不存在 | `scripts/pipeline3.js:4330,4462,4494,4509,4577` |
 | 6 | 假 | 负 Y / 某个负坐标不是坐标系符号错；那条坐标是测试夹具字面 | `scripts/pipeline3.js:729-733` |
-| 7 | 真 | `coverage` 算完只进日志，此后无人读取，「过孔盘覆盖不足」假设没接过任何动作 | `scripts/pipeline3.js:4561,4563-4570,4572-4575` |
+| 7 | 真 | `coverage` 算完只进日志，此后无人读取，「过孔盘覆盖不足」假设没接过任何动作 | `scripts/pipeline3.js:4559,4561-4568,4570-4573` |
 | 8 | 真 | `rulesApplied` 只有一处赋值、不进 `_run.json`、不参与判定；136 次里 30 次为 false | `scripts/pipeline3.js:1857`（`rulesApplied` 全文仅出现在这段注释里，无任何读取/赋值） |
 | 9 | 假 | Slot Region 有 5 条独立处理路径；没有认领者的是另外两类违规 | `scripts/pipeline3.js` 的 `slotKeepout` / `slotPadGeometry` / `ensureGeoIdx` / `slotHoleUsed` / `noSideIsViaOrTrack` |
-| 10 | 真 | `_run.json` 写的是布局前的声明板框，扩板后从不回写 | `scripts/pipeline3.js:704-715,885-897,5182,5260`；`scripts/fabcheck.js:445-448` |
+| 10 | 真 | `_run.json` 写的是布局前的声明板框，扩板后从不回写 | `scripts/pipeline3.js:704-715,885-897,5180,5258`；`scripts/fabcheck.js:445-448` |
 | 11 | 部分真 | 重试阶梯里确实有预缩机制；但语料里 0 次收缩转移，收缩只发生在第一轮之前 | `run-all.ps1:558-571 "$estArea = [Math]::Max(480000, $compCount * 55000 + $connCount * 9000)"` |
 | 12 | 真 | 流水线不查图元绝对坐标出框，真正的判定在离线校验器里 | `scripts/pipeline3.js:836-901`（只查焊盘 bbox 与 `PAD_OFFBOARD_TOL`，不查图元绝对坐标）；`scripts/fabcheck.js:415,463-468` |
 | 13 | 真 | README 生成脚本用动态值算目录数，却把「两目录」写死在散文里 | `out/_probe/sync-readme-numbers.py:153-156`；`交付-README.md:44-45` |
@@ -57,9 +57,9 @@
 
 ### 2. 补线阶段的丢弃路径：只有一处连日志都没有
 
-**现象。** 兜底补线循环（`for (const v of connErrs)`，`4424` 起、`4604` 收）里一共 **7 处 `continue`**。每一处都意味着「这条断连本轮不再往下走」。注意：其中一部分是**已经动过板**才收尾的（`3814` 跨层分支真的打了过孔），另一部分是真的什么都没做。
+**现象。** 兜底补线循环（`for (const v of connErrs)`，`4422` 起、`4602` 收）里一共 **7 处 `continue`**。每一处都意味着「这条断连本轮不再往下走」。注意：其中一部分是**已经动过板**才收尾的（`3814` 跨层分支真的打了过孔），另一部分是真的什么都没做。
 
-**代码位置。** 典型的那一处 `scripts/pipeline3.js:4462-4464`：
+**代码位置。** 典型的那一处 `scripts/pipeline3.js:4460-4462`：
 
 ```js
 const edPos = ed.position;
@@ -71,13 +71,13 @@ if (!net || !pos) { log('patchNoNet', { err: String(ed.globalIndex || ''), obj1:
 
 | 行 | 条件 | 日志名 | 语料次数 |
 |---|---|---|---|
-| `pipeline3.js:4464` | 拿不到网名或位置 | `patchNoNet` | **0** |
-| `pipeline3.js:4496` | 两个图元查不到几何 | `patchNoGeo` | **0** |
-| `pipeline3.js:4502` | `closestPair` 返回空或距离非有限 | **没有日志** | **无法计数** |
-| `pipeline3.js:4540,4547` | 跨层分支收尾（打孔成功记 `patchedCrossLayer`、失败记 `patchCrossLayerNoObj`） | 两条都有 | **0 / 0** |
-| `pipeline3.js:4572` | 两对象已贴合仍不连通（跨层时先试过打孔） | `patchIslandPair` | **1** |
-| `pipeline3.js:4579` | `cp.d > 80`（80mil 上限） | `patchTooFar` | **653** |
-| `pipeline3.js:4618` | `create` 之后一个 id 都没拿到（已回滚） | `patchNoObj` | **0** |
+| `pipeline3.js:4462` | 拿不到网名或位置 | `patchNoNet` | **0** |
+| `pipeline3.js:4494` | 两个图元查不到几何 | `patchNoGeo` | **0** |
+| `pipeline3.js:4500` | `closestPair` 返回空或距离非有限 | **没有日志** | **无法计数** |
+| `pipeline3.js:4538,4545` | 跨层分支收尾（打孔成功记 `patchedCrossLayer`、失败记 `patchCrossLayerNoObj`） | 两条都有 | **0 / 0** |
+| `pipeline3.js:4570` | 两对象已贴合仍不连通（跨层时先试过打孔） | `patchIslandPair` | **1** |
+| `pipeline3.js:4577` | `cp.d > 80`（80mil 上限） | `patchTooFar` | **653** |
+| `pipeline3.js:4616` | `create` 之后一个 id 都没拿到（已回滚） | `patchNoObj` | **0** |
 
 **真正的问题在哪一行。** 不是最容易被注意到的 L4311，而是 **L4349**：
 
@@ -128,7 +128,7 @@ grep -o "Cannot read properties of undefined (reading 'primitiveId')" out/*/_log
 
 **现象。** `clearanceRound` 同一行里印两个数：`violations`（板上还剩几处）和 `fixed`（本轮调用成功几次）。后者与前者不同源，看起来却像「修了 N 处、剩 M 处」。
 
-**代码位置。** `scripts/pipeline3.js:4172` 落盘 `{ round, violations: clears.length, fixed }`；L4030-4032 的注释原文：
+**代码位置。** `scripts/pipeline3.js:4170` 落盘 `{ round, violations: clears.length, fixed }`；L4030-4032 的注释原文：
 
 > 判据只看**板上结果**，不问动作成不成功：fixed 数的是"变更 API 接受了"，
 > 与"这处间距真的变好了"脱钩（本文件里 modify/delete 失败都是返回值不是异常，
@@ -153,7 +153,7 @@ grep -o '{"s":"clearanceNoProgress"[^}]*}' out/*/_log*.json
 
 **现象。** 判断「过孔盘有没有盖住线端」的那几个数，算出来、写进日志，然后就没有下文了。
 
-**代码位置。** `scripts/pipeline3.js:4561-4576`：L4408 `let coverage = null` → L4410-4417 算 `r = dia/2`、`dEnd`（末端到孔心的最小距离）、`covered` → L4419-4422 把 `coverage` 放进 `log('patchIslandPair', ...)` → L4423 `continue`。全文 `coverage` 只此一处赋值、一处构造、一处进日志（L4408 / L4416 / L4421），都在同一个块内，没有第四处读取。
+**代码位置。** `scripts/pipeline3.js:4559-4574`：L4408 `let coverage = null` → L4410-4417 算 `r = dia/2`、`dEnd`（末端到孔心的最小距离）、`covered` → L4419-4422 把 `coverage` 放进 `log('patchIslandPair', ...)` → L4423 `continue`。全文 `coverage` 只此一处赋值、一处构造、一处进日志（L4408 / L4416 / L4421），都在同一个块内，没有第四处读取。
 
 **语料里观测到什么。** `patchIslandPair` 仅 **1** 条，且带 `coverage` 字段。
 
@@ -634,7 +634,7 @@ grep -o '"skippedTooFar":[1-9]' out/*/_log*.json | wc -l      # 非零
 
 **成立的那一半。** 补线对象的筛选确实是逐级收窄的五道门：
 
-- `scripts/pipeline3.js:4332`：只认 `errorType === 'Connection Error'`；
+- `scripts/pipeline3.js:4330`：只认 `errorType === 'Connection Error'`；
 - L4311：还要有 `net` 与 `pos`；
 - L4343：还要 `o1`/`o2` 两个对象几何都取得到，否则 `patchNoGeo`；
 - L4358：`cp.d <= 1.0` 落入「孤岛/跨层」分支（跨层先打过孔，否则记 `patchIslandPair`）；
