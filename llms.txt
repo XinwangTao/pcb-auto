@@ -105,7 +105,7 @@ conservative rather than optimistic. That is a measurement, not a guarantee. Use
 ## Reproduce
 
 ```bash
-git clone https://github.com/1716775457damn/pcb-auto
+git clone https://github.com/XinwangTao/pcb-auto
 cd pcb-auto
 node cli/pcb.mjs list
 node cli/pcb.mjs fabcheck out/d1          # exit 1: 1 blocker, a known false positive

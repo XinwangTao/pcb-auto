@@ -29,18 +29,18 @@
     "中文",
     "硬件自动化"
   ],
-  "homepage": "https://github.com/1716775457damn/pcb-auto#readme",
+  "homepage": "https://github.com/XinwangTao/pcb-auto#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/1716775457damn/pcb-auto.git"
+    "url": "git+https://github.com/XinwangTao/pcb-auto.git"
   },
   "bugs": {
-    "url": "https://github.com/1716775457damn/pcb-auto/issues"
+    "url": "https://github.com/XinwangTao/pcb-auto/issues"
   },
   "license": "MIT",
   "author": {
     "name": "陶鑫旺",
-    "url": "https://github.com/1716775457damn"
+    "url": "https://github.com/XinwangTao"
   },
   "engines": {
     "node": ">=22"

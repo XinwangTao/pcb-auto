@@ -14,13 +14,13 @@ abstract: >-
 authors:
   - family-names: "陶"
     given-names: "鑫旺"
-    alias: "1716775457damn"
-    website: "https://github.com/1716775457damn"
+    alias: "XinwangTao"
+    website: "https://github.com/XinwangTao"
 version: "1.0.0"
 date-released: "2026-11-26"
 license: MIT
-repository-code: "https://github.com/1716775457damn/pcb-auto"
-url: "https://github.com/1716775457damn/pcb-auto"
+repository-code: "https://github.com/XinwangTao/pcb-auto"
+url: "https://github.com/XinwangTao/pcb-auto"
 keywords:
   - PCB automation
   - EDA automation
