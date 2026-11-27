@@ -954,7 +954,7 @@ foreach ($plan in $healPlans) {
   }
   if (-not $v.ok) {
   # 【环境故障不该被报成 DRC 结论】实测 2026-11-27（另一台机器 DESKTOP-K087HI9）：
-  #   outDir 落在 Documents 之外 ⇒ EDA 的写盘 API 对每个路径都返回 false ⇒
+  #   outDir 落在该机白名单之外 ⇒ EDA 的写盘 API 对每个路径都返回 false ⇒
   #   pipeline3 的 writeProbe 把原因压进 envFaults 并提前返回（drcDetailCount=0）。
   #   而这里原来只打「未通过：DRC 违规组 0」—— 读起来像「一条违规都没有却不通过」，
   #   完全不指向真因。而且换板框根本治不了写权限，所以直接停阶梯。
@@ -967,6 +967,8 @@ foreach ($plan in $healPlans) {
     Log ("[$($plan.tag)] 未能开工（环境故障，不是设计结论）：") 'Red'
     $envList | Select-Object -First 3 | ForEach-Object { Log ("    " + $_) 'Red' }
     Log '     换板框改不了写权限/环境，停止自愈阶梯。终判仍按不通过。' 'Red'
+    # 环境故障 ⇒ 退出码 2（没能测量）。它不该和「DRC 查出违规」共用 1。
+    $script:EnvFaultStop = $true
     break
   }
     Log ("[$($plan.tag)] 未通过：DRC 违规组 $($v.drcDetailCount)") 'Yellow'
@@ -1478,8 +1480,14 @@ Write-Host ("日志           : {0}" -f $logFile)
 # ---------- 独立校验（已在上面的自愈循环内逐轮执行，这里只输出最终结论）----------
 # $v.ok 用显式布尔：不能用真值判断 —— 字符串 "false" 在 PowerShell 里是真值，
 # 而 accept.ps1 判同一字段用的是 -eq $true。同一仓库对同一字段两套口径迟早被改歪。
-$vOkBool = ($null -ne $v -and $v.ok -is [bool] -and $v.ok -eq $true)
-$verifyOk = ($vOkBool -and $verifyFails.Count -eq 0)
+# 【三态，不是二值】$null = 流水线根本没回执（没能测量）；
+# 不能把它和「回执了但 ok=false」混成同一个 false ——
+# 两者的处置相反（前者去修环境，后者去改设计）。
+if ($null -eq $v) { $vOkBool = $null }
+elseif ($v.ok -is [bool]) { $vOkBool = [bool]$v.ok }
+else { $vOkBool = $null }
+# 下游合取用的是 $verifyOk -eq $true，$null 会自然被拒，所以这里保留 $null 是安全的。
+if ($null -eq $vOkBool) { $verifyOk = $null } else { $verifyOk = ($vOkBool -and $verifyFails.Count -eq 0) }
 if ($vOkBool) {
   Log '最终独立校验（只读产物文件，不复用流水线结论）'
   $vfOut = (& $nodeVerify (Join-Path $Root 'scripts\verify-artifacts.js') $OutDir $verifyDesignPath 2>&1 | Out-String)
@@ -1586,6 +1594,60 @@ if (-not $KeepSession) {
     if ($docsOk -ne $true) { [void]$why.Add('交付文档未齐全：' + $docsWhy) }
     Log ('终判不通过：' + ($why -join '；')) 'Red'
   }
+
+  # ---------- 退出码三态：0 通过 / 1 有结论（板子不行）/ 2 没能测量 ----------
+  # 六道独立闸门各自可以是 true（测过且通过）/ false（测过且不行）/ $null（没测到）。
+  # $finalOk 是它们的合取，但它只回答「过没过」——把「没能测量」和「板子不行」
+  # 压成同一个退出码 1，而这两者的处置完全相反。
+  # 实测 2026-11-27：EDA 起不来、非 JSON、设计文件不存在 这些全退 1，
+  # 和「DRC 查出 7 处违规」同一个码 —— 违反本仓库 0/1/2 的契约。
+  if ($null -eq $vOkBool) { $gSelf = $null } else { $gSelf = [bool]$vOkBool }
+  if ($null -eq $verifyOk) { $gVerify = $null } else { $gVerify = [bool]$verifyOk }
+  if ($null -eq $bestDrcReOk) { $gDrc = $null } else { $gDrc = [bool]$bestDrcReOk }
+  if ($null -eq $bestFabReOk) { $gFab = $null } else { $gFab = [bool]$bestFabReOk }
+  if ($null -eq $bestFmtBad) { $gFmt = $null } else { $gFmt = (-not [bool]$bestFmtBad) }
+  if ($null -eq $docsOk) { $gDocs = $null } else { $gDocs = [bool]$docsOk }
+
+  $gateFalse = New-Object System.Collections.ArrayList
+  $gateNull = New-Object System.Collections.ArrayList
+  foreach ($gp in @(
+      @{ n = '流水线自述'; v = $gSelf },
+      @{ n = '产物校验'; v = $gVerify },
+      @{ n = '独立 DRC 复核'; v = $gDrc },
+      @{ n = '可打样检查'; v = $gFab },
+      @{ n = '产物格式'; v = $gFmt },
+      @{ n = '交付文档'; v = $gDocs })) {
+    if ($null -eq $gp.v) { [void]$gateNull.Add($gp.n) }
+    elseif ($gp.v -eq $false) { [void]$gateFalse.Add($gp.n) }
+  }
+
+  # 优先级：通过 → 0；环境/崩溃 → 2；查出缺陷 → 1。
+  # 环境故障优先于「查出缺陷」：那时我们连一份可信的测量都没有，
+  # 说「板子不行」没有依据（本仓库反复强调「未能测量 ≠ 查出违规」）。
+  if ($finalOk -eq $true) {
+    $script:ExitCode = 0
+    $script:ExitWhy = '六道独立闸门都测过且通过'
+  } elseif ($script:EnvFaultStop -or $null -ne $script:Uncaught) {
+    $script:ExitCode = 2
+    $script:ExitWhy = '没能测量（环境故障/崩溃），不是「板子不行」'
+  } elseif ($gateFalse.Count -gt 0) {
+    $script:ExitCode = 1
+    $script:ExitWhy = '测过且不通过：' + ($gateFalse -join '、')
+  } else {
+    $script:ExitCode = 2
+    $script:ExitWhy = '没能测量（这些闸门没有读数：' + ($gateNull -join '、') + '）'
+  }
+  $exitColor = if ($script:ExitCode -eq 0) { 'Green' } else { 'Red' }
+  Log ("退出码 {0} = {1}" -f $script:ExitCode, $script:ExitWhy) $exitColor
+}
+catch {
+  # 【崩溃 ≠ 板子不行】实测：`pwsh -File run-all.ps1` 里未捕获的 throw
+  # 会以退出码 1 结束，和「DRC 查出违规」同一个码。
+  # 而崩溃根本没有测量，属于环境/代码问题 ⇒ 归 2。
+  $script:Uncaught = $_
+  Log ('运行中抛出未捕获异常：' + $_.Exception.Message) 'Red'
+  $script:ExitCode = 2
+  $script:ExitWhy = '未能跑完（崩溃），不是「板子不行」'
 }
 finally {
   Release-Lock
@@ -1624,6 +1686,10 @@ finally {
         writer        = 'run-all.ps1'
         generatedAt   = (Get-Date).ToString('o')
         finalOk       = ($finalOk -eq $true)
+      # 退出码与它的原因也要落盘：否则事后只能看到 finalOk=false，
+      # 分不清「板子不行」与「没能测量」。
+      exitCode      = $script:ExitCode
+      exitWhy       = $script:ExitWhy
         reachedFinal  = ($null -ne $finalOk)
         pipelineRev   = $script:PipelineRevUsed
         boardAreaMil2 = $evArea
@@ -1678,5 +1744,8 @@ finally {
     Write-Host ('独立闸门证据写入失败：' + $_.Exception.Message) -ForegroundColor Red
   }
 }
-if ($finalOk) { exit 0 } else { exit 1 }
+# 三态退出码（见上面「退出码三态」那一段）。
+# $script:ExitCode 未赋值 = 没走到那一段（例如在它之前就 throw 了）⇒ 按 2 处理。
+if ($null -ne $script:ExitCode) { exit [int]$script:ExitCode }
+exit 2
 

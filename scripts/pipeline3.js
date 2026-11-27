@@ -206,8 +206,9 @@ try {
 log('writeProbe', writeProbe);
 if (!writeProbe.ok) {
   envFaults.push('EDA 写盘不可用（' + writeProbe.why + '）。已知限制：'
-    + 'eda.sys_FileSystem.saveFileToFileSystem 只允许写入 Documents 目录下的路径。'
-    + '请把仓库（或 -OutDir）放到 %USERPROFILE%\\Documents 下再跑。');
+    + '可写目录是**机器相关的白名单**，不在任何文档里。实测两台机器结果不同'
+    + '（本机 D:/F: 可写、C:/E: 不可；另一台 D: 不可、Documents 可），所以不要猜规律。'
+    + '请把仓库（或 -OutDir）换到一个该机能写的目录再跑（多数机器上用户的 Documents 可用）。');
   return {
     ok: false, components: 0, connections: 0, mismatches: 0, mismatchCount: 0,
     // 键名必须与正常路径一致：正常路径把它们放在 gates 里，且叫 envFaultList。
