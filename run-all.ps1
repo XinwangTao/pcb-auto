@@ -930,6 +930,19 @@ foreach ($plan in $healPlans) {
     }
   }
   if (-not $v.ok) {
+  # 【环境故障不该被报成 DRC 结论】实测 2026-11-27（另一台机器 DESKTOP-K087HI9）：
+  #   outDir 落在 Documents 之外 ⇒ EDA 的写盘 API 对每个路径都返回 false ⇒
+  #   pipeline3 的 writeProbe 把原因压进 envFaults 并提前返回（drcDetailCount=0）。
+  #   而这里原来只打「未通过：DRC 违规组 0」—— 读起来像「一条违规都没有却不通过」，
+  #   完全不指向真因。而且换板框根本治不了写权限，所以直接停阶梯。
+  $envList = @()
+  if ($null -ne $v -and $null -ne $v.envFaultList) { $envList = @($v.envFaultList) }
+  if ($envList.Count -gt 0) {
+    Log ("[$($plan.tag)] 未能开工（环境故障，不是设计结论）：") 'Red'
+    $envList | Select-Object -First 3 | ForEach-Object { Log ("    " + $_) 'Red' }
+    Log '     换板框改不了写权限/环境，停止自愈阶梯。终判仍按不通过。' 'Red'
+    break
+  }
     Log ("[$($plan.tag)] 未通过：DRC 违规组 $($v.drcDetailCount)") 'Yellow'
     # 【失败报告要自带判据】原来只写"DRC 违规组 N"，得再翻 _log.json 才知道是哪类违规。
     # 实测这让我反复做同一次取证（d12 是 SMD Pad to Track，d13 是 Slot Region to Track）。
