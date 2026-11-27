@@ -176,6 +176,45 @@ const artifacts = [];
 // 而 `gates` 里只有 errors 一个通道 —— 读盘者无法分辨"板子不行"和"网络断了"。
 const envFaults = [];
 
+// ---------- 开工前先证明「EDA 能写进 OUT」----------
+// 实测 2026-11-27（另一台机器 DESKTOP-K087HI9，与本机同版 EDA 4.1.111）：
+//   把仓库装在 `D:\projects\pcb-auto` 时，六个导出全部 `ok:false`，
+//   但每一个都带着**真实的 size**（Gerber.zip 113614 / Board.pdf 773881）——
+//   因为 size 是 blob.size，而写盘失败只是一个 false。于是整轮跑完、
+//   产物目录里只有 PowerShell 写的那三个文件，而结论只说“自述未通过”。
+// 逐位定位出来的真相：`eda.sys_FileSystem.saveFileToFileSystem` **只允许写 Documents 目录下**。
+//   C:\Users\Administrator\Documents\_probe_fs\a.bin  -> true
+//   D:\projects\pcb-auto\out\_probe.bin                -> false
+//   C:\Users\...\AppData\Local\Temp\_probe.bin        -> false（本机同样 false）
+// 这个限制不在任何文档里，而失败是**静默**的。所以开工前先写一个探针：
+// 写不进就把它归到 **envFaults**（环境问题）并提前返回，
+// 而不是跑一遍 355 秒后把“写不出去”报成“设计未通过”。
+let writeProbe = { ok: null, why: null };
+try {
+  if (!OUT) writeProbe = { ok: false, why: 'outDir 为空' };
+  else if (!fs || typeof fs.saveFileToFileSystem !== 'function') writeProbe = { ok: false, why: 'eda.sys_FileSystem 不可用' };
+  else {
+    const probeBlob = toBlob(new Uint8Array([0x50, 0x42]));
+    const probePath = String(OUT).replace(/[\\/]+$/, '') + '\\._write_probe.bin';
+    const wr = await fs.saveFileToFileSystem(probePath, probeBlob, '._write_probe.bin');
+    writeProbe = { ok: !!wr, why: wr ? null : ('saveFileToFileSystem 对 ' + probePath + ' 返回 ' + String(wr)) };
+    if (wr) { try { await fs.deleteFileInFileSystem(probePath); } catch (e) { /* 探针残留无害 */ } }
+  }
+} catch (e) {
+  writeProbe = { ok: false, why: String(e && e.message).slice(0, 160) };
+}
+log('writeProbe', writeProbe);
+if (!writeProbe.ok) {
+  envFaults.push('EDA 写盘不可用（' + writeProbe.why + '）。已知限制：'
+    + 'eda.sys_FileSystem.saveFileToFileSystem 只允许写入 Documents 目录下的路径。'
+    + '请把仓库（或 -OutDir）放到 %USERPROFILE%\\Documents 下再跑。');
+  return {
+    ok: false, components: 0, connections: 0, mismatches: 0, mismatchCount: 0,
+    netSummary: [], errors, envFaults, warns, exports: [], artifacts: artifacts,
+    drcPassed: false, drcLeafCount: 0, drcDetailCount: 0, writeProbe, log: L,
+  };
+}
+
 async function waitDoc(uuid, ms = 120000) {
   await eda.dmt_EditorControl.openDocument(uuid);
   await eda.dmt_EditorControl.waitForDocumentReady(uuid, ms);
