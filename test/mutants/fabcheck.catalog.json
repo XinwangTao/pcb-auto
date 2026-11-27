@@ -308,6 +308,24 @@
           "antenna.keepout.copper"
         ]
       }
+    },
+    {
+      "name": "drc.leaves.open",
+      "base": "test/mutants/base",
+      "note": "一块产物格式完好、但**流水线自述 DRC 还有 2 条叶子**的板。对抗性审查实测：这种板以前跑 fabcheck 是 exit 0 / 0 阻断，因为它根本没读 DRC。现在要求 exit 1 并点名 drc.leaves.open。方向必须是单向的：只用「有叶子」加严，不用「0 叶子」背书。",
+      "mutate": [
+        {
+          "op": "write",
+          "file": "_run.json",
+          "text": "{\"designName\":\"X\",\"boardWidthMil\":800,\"boardHeightMil\":600,\"ok\":false,\"gates\":{\"drcLeafCount\":2,\"drcTotalCount\":2,\"drcPassed\":false}}"
+        }
+      ],
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "drc.leaves.open"
+        ]
+      }
     }
   ]
 }

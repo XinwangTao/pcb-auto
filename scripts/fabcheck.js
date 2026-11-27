@@ -428,6 +428,40 @@ function check(dir, opts) {
     } else W('run.missing', '_run.json 缺失：无法核对"本次实际生效"的板框（自愈会放大板框，设计文件里的原值不可信）');
   } catch (e) { W('run.parse', '_run.json 解析失败: ' + e.message); }
 
+  // ---------- 2b. 把「流水线自述的 DRC」纳入判决（单向）----------
+  // 对抗性审查实测（2026-11-27）：三块已被作废的板（含 `drcLeafCount:2` 的
+  // ESP32S3_Wireless_Mic_V5-20261126-214236）跑 fabcheck **全是 exit 0 / 0 阻断**。
+  // 根因不是判据写错，是它根本没读 DRC。
+  //
+  // 【方向必须是单向的】这里只用「有叶子」去**加严**：
+  //   DRC 报了 N>0 ⇒ 不可下单（它是电气层面的硬事实）；
+  //   DRC 报 0 / 缺失 ⇒ **不**据此说通过（不让自述变成保证）。
+  // 否则就把独立性破掉了：生产者说什么就是什么。
+  {
+    const g = (runMeta && runMeta.gates) || null;
+    const leaves = g && Number.isFinite(Number(g.drcLeafCount)) ? Number(g.drcLeafCount) : null;
+    facts.drcSelfReport = { leaves, passed: g ? g.drcPassed : null };
+    // 【读不到也不许沉默】旧产物的 _run.json 里没有 gates 字段。
+    // 那时这一维根本没有读数，不能默默当成「没问题」。
+    if (runMeta && leaves === null) {
+      W('run.drc.missing', '_run.json 里没有 gates.drcLeafCount \u2014\u2014 DRC 这一维没有读数\uff08\u65e7\u4ea7\u7269\u6216\u81ea\u8ff0\u7f3a\u5b57\u6bb5\uff09', { gatesPresent: !!g });
+    }
+    if (leaves !== null && leaves > 0) {
+      B('drc.leaves.open', `流水线自述的 DRC 还有 ${leaves} 条叶子未消 `
+        + `—— 产物即使格式完好也不能下单（电气层面的硬事实）`,
+        { drcLeafCount: leaves, drcPassed: g.drcPassed });
+    }
+  }
+
+  // 【常驻声明：本闸门不查什么】——「PASS」不能被读成「没有短路」。
+  // 实测：审查者拿三块已作废的板跑 fabcheck，全部 exit 0 / 0 阻断；
+  // 而那些板的短路/间距问题是 **EDA 自己的 DRC** 查出来的。
+  // 所以这里把分工写死，不让读者对这份文件的结论做超出它范围的推断。
+  N('scope.electrical', '本闸门**不查**电气间距 / 短路 / 网表连通性 —— '
+    + '那三件由 EDA 的 DRC 与独立复核 scripts/verify-drc.js 负责。'
+    + '本文件的 PASS 只表示「产物本身可制造」；'
+    + '若需下单，请同时看 DRC 与独立复核的结论');
+
   // ---------- 3. Gerber：层、铜、阻焊、丝印、板框、超框 ----------
   const layers = new Map();   // ext -> parsed
   let board = null;           // GKO bbox (mm)
