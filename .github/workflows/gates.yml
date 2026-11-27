@@ -66,6 +66,12 @@ jobs:
             throw "doctor 报了不止一个阻塞项 —— 说明 CI 环境里还有别的硬缺失，先看上面的输出"
           }
           Write-Host 'OK：doctor 只因「没有 EDA」一条阻塞，与 CI 的应然状态一致'
+          # 【必须显式 exit 0】实测 2026-11-27（CI 第三次跑）：上面所有断言都过了、
+          # 也打了 OK，但步骤仍然失败 —— 因为 `shell: pwsh` 的步骤退出码取的是
+          # `$LASTEXITCODE`，而它停在了 `node scripts/preflight.mjs` 的 **1**。
+          # 这是 PowerShell + CI 的经典坑：判辊走完了，退出码却还是上一条命令的。
+          # 用 `$LASTEXITCODE = 0` 不够不够直白：直接 `exit 0`，让意图不可误读。
+          exit 0
 
       - name: 整套闸门
         shell: pwsh
