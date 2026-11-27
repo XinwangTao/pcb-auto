@@ -452,8 +452,23 @@ function Ensure-Session {
   }
 
   # 3) 开新的（限次，且每次开前**清空**所有残留实例）
+  #
+  # 【防御性兜底：本轮**未触发、未验证**】下面这段只在砍到特定错误签名时生效。
+  # 实测 2026-11-27 两次冷启动结果不同：第一次报 SPAWN_OWNER_FAILED，
+  # 第二次（杀光进程后）`open --headless true` 第 1 次就成功 —— 所以那个错误是
+  # **陈旧状态的偶发症状**，不是「缺 WMIC 必失败」。这段代码保留为安全网，
+  # 但**它的生效路径没有被任何一次真实运行走过**。不要当它是修好了什么。实测 2026-11-27（一台干净的 Windows），`open --headless true` 报：
+  #   SPAWN_OWNER_FAILED: Failed to spawn the server copy:
+  #     spawn C:\windows\System32\wbem\WMIC.exe ENOENT
+  # 它靠 WMIC 拉起服务端副本，而那台机器没有 WMIC。官方报错只建议
+  # 「start the client manually」—— 也就是**必须人肉去点一次**。换机器部署时没有人会想到这一步。
+  # GUI 与 CLI 是同一个 exe，所以这里自己把客户端拉起来、等它就绪、再开 headless。
+  $clientBooted = $false
+  $skipClean = $false
   for ($try = 1; $try -le 3; $try++) {
-    Remove-AllLceda | Out-Null
+    # 刚刚为了兜底而启动的客户端不能马上被清掉，否则兜底永远生效不了。
+    if (-not $skipClean) { Remove-AllLceda | Out-Null }
+    $skipClean = $false
     Log "启动新 headless session（第 $try 次）…"
     $open = (& $CLI open --headless true 2>&1 | Out-String)
     $sid = $null
@@ -464,10 +479,27 @@ function Ensure-Session {
       Log "session = $sid（主进程 $(@(Get-LcedaMainProcesses).Count) 个）"
       return $sid
     }
+
+    # 只在第一次且寥到「服务端拉不起来」时才做。别的失败（比如进程残留）照旧重试。
+    if (-not $clientBooted -and $open -match 'SPAWN_OWNER_FAILED|Failed to spawn the server copy|WMIC\.exe') {
+      $clientBooted = $true
+      Log '  服务端拉不起来（多半是这台没有 WMIC）。改为先手动启动客户端再重试 —— 不需要人来点。' 'Yellow'
+      try { Start-Process -FilePath $CLI -ErrorAction Stop } catch { Log ("  启动客户端失败：" + $_.Exception.Message) 'Red' }
+      for ($w = 0; $w -lt 40; $w++) {
+        Start-Sleep -Seconds 1
+        if (@(Get-LcedaMainProcesses).Count -gt 0) { break }
+      }
+      Start-Sleep -Seconds 4
+      Log ("  客户端进程 $(@(Get-LcedaMainProcesses).Count) 个，重试 open …") 'DarkYellow'
+      $skipClean = $true
+      continue
+    }
+
     Log "开启失败或不可用，等待 5s 重试：$($open.Substring(0, [Math]::Min(150, $open.Length)))" 'Yellow'
     Start-Sleep -Seconds 5
   }
-  throw "无法获得可用 EDA session（已重试 3 次）"
+  $hint = if ($clientBooted) { "（已尝试自行拉起客户端作为兜底）" } else { '' }
+  throw "无法获得可用 EDA session（已重试 3 次）$hint"
 }
 
 # ---------- 2. 准备参数 ----------

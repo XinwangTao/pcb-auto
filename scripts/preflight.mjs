@@ -130,10 +130,14 @@ if (lceda) {
 {
   const wmic = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'wbem', 'WMIC.exe');
   if (fs.existsSync(wmic)) ok('WMIC 在（headless 会话能自己拉起来）');
-  else warn('**没有 WMIC** ⇒ `lceda-pro open --headless true` 会报 SPAWN_OWNER_FAILED。\n'
-    + '          绕过办法：先手动起一次客户端，再开 headless。\n'
-    + '            Start-Process lceda-pro.exe ; Start-Sleep 25\n'
-    + '            lceda-pro.exe open --headless true        # 把返回的 sessionId 写进 .session');
+  // 【不要写成「必然失败」】实测 2026-11-27 两次冷启动结果不同：第一次报了这个错
+  //（刚 clone、从未跑过），第二次（杀光进程后）`open --headless true` 第 1 次就成功。
+  // 所以它是**陈旧状态的偶发症状**，不是「缺 WMIC 就必失败」。
+  else warn('没有 WMIC。`lceda-pro open --headless true` **可能**报 SPAWN_OWNER_FAILED'
+    + '（实测两次冷启动一次失败、一次成功）。'
+    + 'run-all.ps1 会先清干净残留再开，并在砍到这个错误签名时自动拉起客户端重试。\n'
+    + '          两条都不行时手动兜底：'
+    + ' Start-Process lceda-pro.exe ; Start-Sleep 25 ; lceda-pro.exe open --headless true');
 }
 
 // ── 7. 控制台编码（GBK 会把子进程的中文 JSON 弄坏）──────────────────────
