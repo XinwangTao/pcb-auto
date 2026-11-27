@@ -611,6 +611,150 @@ const RULES = [
         : { ok: true, value: `距离敏感旁路电容全部贴住（${judged.join('；')}）（${denom}）` };
     },
   },
+  {
+    id: 'acoustic_port_clear',
+    kind: 'PCB',
+    basis: 'MEMS 麦克风、压力传感器这类器件的封装内部自带一个开口（声孔 / 传感孔），'
+         + '声音和气压必须经过它。开口上方若被铜或其它器件的封装体盖住，电气测试会全过、'
+         + '成品却没有声音。这一档 EDA 的通用间距检查结构性覆盖不到 —— 它查「导体与导体」，'
+         + '不查「封装内部的非导体开口有没有被别的东西盖住」；本项目的 DRC 把它误报成 '
+         + '`Slot Region to Track`，而流水线的图元索引里根本没有这个对象。'
+         + '所以只能由设计文件显式声明（_copperVoids），由本判据审：声明的盒子必须落在'
+         + '被它保护的器件占位之内，且不许有任何别的器件封装体侵入。',
+    fn: (d, g) => {
+      const V = d._copperVoids;
+      if (!Array.isArray(V) || V.length === 0) {
+        return { why: '设计文件没有 _copperVoids —— 本设计未声明任何封装内部开口。'
+          + '这不是「已确认没有开口」：本审计读不到封装内部几何，'
+          + '一个自带声孔却没有声明的器件在这里查不出来。已知盲区，不计入通过。' };
+      }
+      // 先把声明本身验一遍。退化盒（x1<=x0 / y1<=y0）会让下面的 overlap() 恒返回 0，
+      // 于是「0 个器件遮挡」会被读成「开口通畅」—— 与 antenna_band_empty 踩过的是同一个坑：
+      // 分母为空却给出「全清」结论。
+      const bad = [];
+      for (let i = 0; i < V.length; i++) {
+        const v = V[i] || {};
+        const tag = `_copperVoids[${i}]`;
+        for (const k of ['x0', 'y0', 'x1', 'y1']) {
+          if (!Number.isFinite(v[k])) bad.push(`${tag}.${k}=${JSON.stringify(v[k])} 不是有限数`);
+        }
+        if (Number.isFinite(v.x0) && Number.isFinite(v.x1) && !(v.x1 > v.x0)) {
+          bad.push(`${tag} x 方向倒置或退化：x0=${v.x0} ≥ x1=${v.x1}`);
+        }
+        if (Number.isFinite(v.y0) && Number.isFinite(v.y1) && !(v.y1 > v.y0)) {
+          bad.push(`${tag} y 方向倒置或退化：y0=${v.y0} ≥ y1=${v.y1}`);
+        }
+        if (v.inflateMil != null && !(Number.isFinite(v.inflateMil) && v.inflateMil >= 0)) {
+          bad.push(`${tag}.inflateMil=${JSON.stringify(v.inflateMil)} 必须是非负数`);
+        }
+        if (!v.why || String(v.why).trim() === '') {
+          bad.push(`${tag} 没有 why —— 没有出处就没有复核依据，这个盒子凭什么在这儿`);
+        }
+      }
+      if (bad.length) {
+        return { ok: false, why: '开口声明本身无效，任何「没人遮挡」的结论都不可信：' + bad.join('；') };
+      }
+      const hits = [];
+      let comparisons = 0;
+      let declaredOpenings = 0;
+      for (let i = 0; i < V.length; i++) {
+        const v = V[i];
+        const inf = Number.isFinite(v.inflateMil) ? v.inflateMil : 0;
+        const ko = {
+          x0: v.x0 - inf, x1: v.x1 + inf,
+          y0: v.y0 - inf, y1: v.y1 + inf, des: `void[${i}]`,
+        };
+        const owner = v.owner == null ? null : String(v.owner);
+        const ob = owner ? g.comps.find((c) => c.des === owner) : null;
+        if (owner && !ob) {
+          hits.push(`_copperVoids[${i}] 自称属于 ${owner}，但 _placement 里没有这个位号`
+            + ' —— 这段声明没有对象，它保护的可能是一块空地');
+          continue;
+        }
+        declaredOpenings++;
+        if (ob) {
+          const insideOwner = v.x0 >= ob.x0 - 0.5 && v.x1 <= ob.x1 + 0.5
+            && v.y0 >= ob.y0 - 0.5 && v.y1 <= ob.y1 + 0.5;
+          if (!insideOwner) {
+            hits.push(`_copperVoids[${i}] 的开口 [${v.x0},${v.y0}]-[${v.x1},${v.y1}] 不在 ${owner} 的占位 `
+              + `[${Math.round(ob.x0)},${Math.round(ob.y0)}]-[${Math.round(ob.x1)},${Math.round(ob.y1)}] 内`
+              + ' —— 它保护的是别处');
+          }
+        }
+        for (const b of g.comps) {
+          if (owner && b.des === owner) continue;   // 开口在它自己的封装体内，属正常
+          comparisons++;
+          const a = overlap(b, ko, 0);
+          if (a > 0) {
+            hits.push(`${b.des} 的封装体侵入 ${owner || `void[${i}]`} 的开口 ${Math.round(a)} mil²`
+              + `（含 ${inf} mil 余量）—— 器件盖住开口和铺铜盖住开口同样致命`);
+          }
+        }
+      }
+      const denom = `分母=${declaredOpenings} 个声明开口 / ${comparisons} 次「开口 × 器件占位」求交`;
+      return hits.length
+        ? { ok: false, why: `${hits.join(' / ')}（${denom}）` }
+        : { ok: true, value: `${declaredOpenings} 个封装开口位置自洽、且无器件封装体遮挡（${denom}）` };
+    },
+  },
+    {
+      id: 'board_shape_declared',
+      kind: 'PCB',
+      basis: '上面十三条里没有任何一条问过「这块板为什么是这个尺寸」。'
+           + '于是板宽从 1300 改到 1625，十三条全绿——而「板框是器件推出来的」'
+           + '与「板框被核对过」是两个不同的结论。所以要设计文件显式声明'
+           + '尺寸来历（_formFactor），并与**实际**板框、与**实测**的器件云四边留白逐项对账。'
+           + '第二件事才是关键：它把「留白有多大」从巧合变成一个必须维护的数字。',
+      fn: (d, g) => {
+        const F = d._formFactor;
+        if (!F || typeof F !== 'object' || Array.isArray(F)) {
+          return { why: '设计文件没有 _formFactor —— 板框尺寸没有声明来历。'
+            + '「板框是器件推出来的」和「板框被核对过」不是同一个结论：'
+            + '缺这一项时，板子改成任何尺寸本审计都不会有意见。已知盲区，不计入通过。' };
+        }
+        const bad = [];
+        const num = (v) => typeof v === 'number' && Number.isFinite(v);
+        const tol = F.toleranceMil;
+        if (!num(tol) || tol < 0) bad.push(`toleranceMil=${JSON.stringify(tol)} 不是非负有限数`);
+        if (typeof F.why !== 'string' || !F.why.trim()) bad.push('why 为空 —— 尺寸来历必须写成一句可核对的话');
+        const dm = F.declaredMil || {};
+        const W = Number(d.boardWidthMil), H = Number(d.boardHeightMil);
+        const T = num(tol) && tol >= 0 ? tol : 0;
+        const cmp = [];
+        if (!num(dm.w) || dm.w <= 0) bad.push(`declaredMil.w=${JSON.stringify(dm.w)} 不是正数`);
+        else cmp.push(['板宽', dm.w, W]);
+        if (!num(dm.h) || dm.h <= 0) bad.push(`declaredMil.h=${JSON.stringify(dm.h)} 不是正数`);
+        else cmp.push(['板长', dm.h, H]);
+
+        // 实测器件云四边留白。板框是 X∈[0,W]、Y∈[-H,0]。
+        // 留白为负意味着器件超出板边（天线悬出），那不是错，但必须写进声明。
+        if (Array.isArray(g.comps) && g.comps.length) {
+          const minX = Math.min(...g.comps.map((b) => b.x0));
+          const maxX = Math.max(...g.comps.map((b) => b.x1));
+          const minY = Math.min(...g.comps.map((b) => b.y0));
+          const maxY = Math.max(...g.comps.map((b) => b.y1));
+          const measured = { left: minX, right: W - maxX, top: -maxY, bottom: minY + H };
+          const decl = F.marginsMil || {};
+          for (const k of ['left', 'right', 'top', 'bottom']) {
+            if (!num(decl[k])) { bad.push(`marginsMil.${k}=${JSON.stringify(decl[k])} 没声明`); continue; }
+            cmp.push([`留白.${k}`, decl[k], measured[k]]);
+          }
+        } else {
+          bad.push('读不到任何器件几何 —— 没有器件就算不出留白，不能当成通过');
+        }
+        for (const [name, declared, actual] of cmp) {
+          if (Math.abs(declared - actual) > T) {
+            bad.push(`${name} 声明 ${Math.round(declared * 10) / 10} 实测 ${Math.round(actual * 10) / 10}`
+              + ` 差 ${Math.round(Math.abs(declared - actual) * 10) / 10} > 容差 ${T}`);
+          }
+        }
+        const denom = `分母=${cmp.length} 项对账（2 边 + 4 边留白），容差 ${T} mil`
+          + `；板 ${W}×${H} mil，器件 ${Array.isArray(g.comps) ? g.comps.length : 0} 件`;
+        return bad.length
+          ? { ok: false, why: `${bad.join(' / ')}（${denom}）` }
+          : { ok: true, value: `板框 ${W}×${H} mil 与声明一致，四边留白也与实测一致（${denom}）—— 来历：${String(F.why).slice(0, 60)}` };
+      },
+    },
 ];
 
 // ── 主流程 ────────────────────────────────────────────────────────────

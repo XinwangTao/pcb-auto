@@ -54,9 +54,12 @@ const BANDS = [
     why: '麦克风要正对使用者的嘴，所以必须在棒的顶端面附近；LED 与限流电阻跟着它，'
        + '因为它们是人声/人眼都是「顶端事件」。',
     parts: [
-      { des: 'U4', x: 650, y: -200 },   // MEMS 麦克风，居中：说话时正对
-      { des: 'D1', x: 1000, y: -200 },  // 状态 LED，偏右避免挡住麦克风进音孔
-      { des: 'R1', x: 1000, y: -330 },  // LED 限流
+      { des: 'U4', x: 650, y: -200, hz: 'center' },   // MEMS 麦克风，居中：说话时正对
+      { des: 'D1', x: 1000, y: -200, hz: { of: 'U4', dx: 350 } },  // 状态 LED，偏右避免挡住麦克风进音孔
+      { des: 'R1', x: 1000, y: -330, hz: { of: 'U4', dx: 350 } },  // LED 限流
+      // C9 是 U4 的 3V3 去耦（100nF），贴左侧面：实测中心距 188 mil。
+      // 它原先不在计划表里 —— 于是 `relayout.mjs` 对 v5 会 exit 2（计划 26 / 器件 28）。
+      { des: 'C9', x: 499, y: -312, hz: { of: 'U4', dx: -151 } },
     ],
   },
   {
@@ -68,9 +71,9 @@ const BANDS = [
        + '③ 放到底部上方又会挤占握持区。顶端左侧边同时满足「在端部」「远离天线」「不占握持」。'
        + 'R4/R5 是 CC1/CC2 下拉，必须贴连接器 —— 跟着 USB 走。',
     parts: [
-      { des: 'USB1', x: 200, y: -220, rot: 90, lock: true },  // 锁死：对口面必须贴板边
-      { des: 'R4', x: 200, y: -500 },
-      { des: 'R5', x: 340, y: -500 },
+      { des: 'USB1', x: 200, y: -220, rot: 90, lock: true, hz: 'edgeL' },  // 锁死：对口面必须贴板边
+      { des: 'R4', x: 200, y: -500, hz: { of: 'USB1', dx: 0 } },
+      { des: 'R5', x: 340, y: -500, hz: { of: 'USB1', dx: 140 } },
     ],
   },
   {
@@ -78,9 +81,9 @@ const BANDS = [
     why: '三个用户键是拇指区。拇指绕握持轴转动时到板中线的距离最小，所以三个键'
        + '关于中线对称排（299/650/1001），中心键给「按住说话」。',
     parts: [
-      { des: 'SW1', x: 299, y: -900, rot: 90 },   // PTT
-      { des: 'SW2', x: 650, y: -900, rot: 90 },   // 自定义
-      { des: 'SW3', x: 1001, y: -900, rot: 90 },  // 自定义
+      { des: 'SW1', x: 299, y: -900, rot: 90, hz: 'spreadL' },   // PTT
+      { des: 'SW2', x: 650, y: -900, rot: 90, hz: 'center' },   // 自定义
+      { des: 'SW3', x: 1001, y: -900, rot: 90, hz: 'spreadR' },  // 自定义
     ],
   },
   {
@@ -88,10 +91,10 @@ const BANDS = [
     why: 'BOOT/RST 是维修/烧录才按的服务键，必须靠板边（壳体上一般是针孔或侧凹），'
        + '不能占正面拇指区。R2/R3 是按键上拉，跟着按键走。',
     parts: [
-      { des: 'SW4', x: 299, y: -1250, rot: 90 },   // BOOT
-      { des: 'SW5', x: 1001, y: -1250, rot: 90 },  // RST
-      { des: 'R2', x: 650, y: -1230 },             // 上拉
-      { des: 'R3', x: 650, y: -1400 },             // 上拉
+      { des: 'SW4', x: 299, y: -1250, rot: 90, hz: 'spreadL' },   // BOOT
+      { des: 'SW5', x: 1001, y: -1250, rot: 90, hz: 'spreadR' },  // RST
+      { des: 'R2', x: 650, y: -1230, hz: 'center' },             // 上拉
+      { des: 'R3', x: 650, y: -1400, hz: 'center' },             // 上拉
     ],
   },
   {
@@ -105,13 +108,12 @@ const BANDS = [
        + '离 U5 332 mil（8.4 mm）处，那颗 2.2nF 等于没装。判据见 audit-placement.mjs 的'
        + 'bypass_cap_distance。',
     parts: [
-      { des: 'U5', x: 650, y: -1720 },  // MPU-6050，正中线
-      { des: 'C4', x: 830, y: -1720 },  // 3V3 去耦，紧贴 U5 右侧
-      { des: 'C5', x: 1000, y: -1720 }, // 去耦
+      { des: 'U5', x: 650, y: -1720, hz: 'center' },  // MPU-6050，正中线
+      { des: 'C4', x: 830, y: -1720, hz: { of: 'U5', dx: 180 } },  // 3V3 去耦，紧贴 U5 右侧
       // U5 实测 189×205 mil，x∈[556,744]、y∈[-1822,-1618]。
       // 右侧面被 C4 占住，所以 C6 沿 +y 错开一格仍贴在右侧面；左侧面整段空着，C7 贴左边。
-      { des: 'C6', x: 830, y: -1600 },  // IMU_REGOUT 旁路，边缘间隙 26 mil
-      { des: 'C7', x: 420, y: -1720 },  // IMU_CPOUT 2.2nF，边缘间隙 76 mil
+      { des: 'C6', x: 830, y: -1600, hz: { of: 'U5', dx: 180 } },  // IMU_REGOUT 旁路，边缘间隙 26 mil
+      { des: 'C7', x: 420, y: -1720, hz: { of: 'U5', dx: -230 } },  // IMU_CPOUT 2.2nF，边缘间隙 76 mil
     ],
   },
   {
@@ -121,9 +123,11 @@ const BANDS = [
        + '**本带只有 U3 一个器件。** 原先这里还挂着 C6/C7，注释把 C7 写成功放的「CPOUT 2.2nF」，'
        + '而 MAX98357A 根本没有 CPOUT 引脚 —— 那颗电容属于 MPU-6050，于是它被放在离 U5'
        + ' 332 mil 处，射频与模拟上都没起作用。C6/C7 已移回 IMU 带。'
-       + '功放自己的电源去耦由 IMU 带的 C5（3V3）就近承担，实测间隙 79 mil。',
+       + '**C5（3V3 去耦）就在本带**，贴在 U3 右侧，实测间隙 79.5 mil。'
+       + '（旧注释把它写成「IMU 带的 C5」，那是计划表过期：设计文件里它一直在 AMP 带。）',
     parts: [
-      { des: 'U3', x: 650, y: -2100 },  // 功放
+      { des: 'U3', x: 650, y: -2100, hz: 'center' },  // 功放
+      { des: 'C5', x: 860, y: -2160, hz: { of: 'U3', dx: 210 } },  // 功放 3V3 去耦，间隙 79.5 mil
     ],
   },
   {
@@ -131,7 +135,7 @@ const BANDS = [
     why: '扬声器口要远离麦克风（防同腔啸叫），又要在天线之上（扬声器磁体会拉偏天线）。'
        + '放在中下段是这两条要求的交集：离麦克风 2400 mil ≈ 61 mm，离天线 1600 mil。',
     parts: [
-      { des: 'H1', x: 650, y: -2350 },  // 扬声器排针
+      { des: 'H1', x: 650, y: -2350, hz: 'center' },  // 扬声器排针
     ],
   },
   {
@@ -142,11 +146,15 @@ const BANDS = [
        + '压差 1.1 V，输入 5 V 输出 3.3 V 有 1.7 V 余量，65 mV 不影响稳压。'
        + '作为交换，USB 的共模噪声与充电回路离天线远了 2600 mil —— 后者对射频更重要。',
     parts: [
-      { des: 'U2', x: 700, y: -2780 },             // AMS1117
-      { des: 'C1', x: 1000, y: -2600 },            // 10uF 输入
-      { des: 'C2', x: 1000, y: -2760 },            // 10uF 输出
-      { des: 'C3', x: 1160, y: -2680 },            // 100nF
-      { des: 'C8', x: 1160, y: -2560 },            // 100nF（3.3V 输出去耦）
+      { des: 'U2', x: 700, y: -2780, hz: 'center' },             // AMS1117
+      { des: 'C1', x: 1000, y: -2600, hz: { of: 'U2', dx: 300 } },            // 10uF 输入
+      { des: 'C2', x: 1000, y: -2760, hz: { of: 'U2', dx: 300 } },            // 10uF 输出
+      { des: 'C3', x: 1160, y: -2680, hz: { of: 'U2', dx: 460 } },            // 100nF
+      { des: 'C8', x: 1160, y: -2560, hz: { of: 'U2', dx: 460 } },            // 100nF（3.3V 输出去耦）
+      // C10 是 3V3 去耦（100nF）。**如实记一处弱点**：它到 U2 的边到边间隙
+      // 实测约 253 mil，正卡在 audit-placement.mjs 的 bypass_cap_distance 250 mil 容差上。
+      // 也就是说这颗的「就近」是勉强成立的，不是有依据的选择；要改得重新排 PWR 带。
+      { des: 'C10', x: 219, y: -2889, hz: { of: 'U2', dx: -481 } },
     ],
   },
   {
@@ -155,7 +163,7 @@ const BANDS = [
        + '悬出是最省净空的做法。模组远离 USB（USB 与充电噪声）与功放（开关噪声），'
        + '这两个是天线最讨厌的邻居。',
     parts: [
-      { des: 'U1', x: 650, y: -3316, rot: 180, lock: true },  // 天线朝 -Y 悬出；锁死：天线悬出方案是整块板的锚
+      { des: 'U1', x: 650, y: -3316, rot: 180, lock: true, hz: 'center' },  // 天线朝 -Y 悬出；锁死：天线悬出方案是整块板的锚
     ],
   },
 ];
@@ -216,15 +224,87 @@ if (missing.length || extra.length) {
   process.exit(2);
 }
 
-// 收集意图
+// ── 水平意图解析（让板宽真的驱动摆放）────────────────────────
+// 这里是本文件为什么必须存在的理由。之前 BANDS 里的 x 全是绝对坐标，
+// W 只用来判越界（事后否决）。于是“根据基板形状决定怎么摆”这条依赖
+// 在结构上不存在：把板宽改成 1625，除了判定变松一个器件都不会动。
+//
+// 三种语义，因为“中间”“靠这条边”“跟着那颗 IC”是三件不同的事：
+//   center        功能上属于正中：麦克风、IMU、功放、扬声器口、模组
+//   {of,dx}       品位没有独立意义，意义是“贴着某一颗”（旁路电容）
+//   edgeL/edgeR   属于“这条边”（连接器口面）
+//   spreadL/R    属于“在宽度上均布”（拇指区三键）
+// 缺省 = 绝对坐标，不动 —— 对那些确实属于“这个位置”的器件。
+const NOMINAL_CX = 650;   // 设计标称中线（与 BANDS 里的 650 同源）
+const NOMINAL_W = 1300;   // 设计标称板宽
+const CX = W / 2;
+
+function halfWidth(des, lcsc, rot) {
+  const s = SIZES[lcsc];
+  if (!s) return null;
+  if (lcsc === 'C2913199') return PAD_HALF;              // 模组只用焊盘区定宽
+  const swap = ((rot % 180) + 180) % 180 === 90;
+  return (swap ? s.h : s.w) / 2;
+}
+
+/** 把一个器件的声明 x 解析成实际 x。返回 { x, how } 以便写进报告。 */
+function resolveX(p, lcsc, xOf) {
+  const hz = p.hz;
+  if (!hz) return { x: p.x, how: '绝对' };
+  const hw = halfWidth(p.des, lcsc, p.rot || 0);
+  if (hw == null) { console.error(`算不出半宽：${p.des}(${lcsc})`); process.exit(2); }
+  if (hz === 'center') {
+    // 功能上属于正中：跟着板中线平移。W=1300 时 CX=650，结果与声明值相等。
+    return { x: CX + (p.x - NOMINAL_CX), how: '跟板中线' };
+  }
+  if (hz === 'edgeL') {
+    // 属于左边这条边：保持「封装左边距板边」= 声明值，与板宽无关。
+    // 器件尺寸若变了，边距不变、位置自动跟着尺寸走 —— 这才是「贴边」的含义。
+    const insetL = p.x - hw;
+    return { x: insetL + hw, how: `贴左边（边距 ${Math.round(insetL)} mil）` };
+  }
+  if (hz === 'edgeR') {
+    const insetR = NOMINAL_W - p.x - hw;
+    return { x: W - insetR - hw, how: `贴右边（边距 ${Math.round(insetR)} mil）` };
+  }
+  if (hz === 'spreadL' || hz === 'spreadR') {
+    // 属于「在宽度上均布」：把声明偏离中线的比例在新宽度上展开。
+    // 当前 351/650 ≈ 0.54，所以 W=1300 时结果仍是 299 / 1001。
+    const frac = Math.abs(p.x - NOMINAL_CX) / (NOMINAL_W / 2);
+    const off = frac * (W / 2);
+    return { x: CX + (hz === 'spreadL' ? -off : off), how: `按比例展开 ${frac.toFixed(3)}` };
+  }
+  if (hz && typeof hz === 'object' && hz.of) {
+    const ax = xOf.get(hz.of);
+    if (ax == null) {
+      console.error(`hz.of 指向不存在或尚未解析的位号: ${hz.of}（${p.des}）`
+        + ' —— 被依赖的器件必须在 BANDS 里排在它前面');
+      process.exit(2);
+    }
+    return { x: ax + (hz.dx || 0), how: `跟 ${hz.of} 偏 ${hz.dx || 0}` };
+  }
+  console.error(`无法理解的 hz: ${JSON.stringify(hz)}（${p.des}）`);
+  process.exit(2);
+}
+
+// 收集意图。**一轮有序遍历**，不允许两轮 —— intent 的顺序会影响
+// separate() 推开得谁先碰到谁，两轮会把后一类器件全挤到末尾，
+// 从而让 W=1300 的输出不再与改动前逐字节相同。
 const intent = [];
+const xOf = new Map();
 for (const b of BANDS) {
   for (const p of b.parts) {
     const lcsc = lcscOf[p.des];
-    const gg = box(p.des, p.x, p.y, p.rot || 0, lcsc);
-    if (!gg) { console.error(`尺寸表里没有 ${p.des}(${lcsc}) —— 不猜，直接退出`); process.exit(2); }
-    intent.push({ band: b.id, ...p, lcsc, ...gg });
+    if (!SIZES[lcsc]) { console.error(`尺寸表里没有 ${p.des}(${lcsc}) —— 不猜，直接退出`); process.exit(2); }
+    const r = resolveX(p, lcsc, xOf);
+    xOf.set(p.des, r.x);
+    intent.push({ band: b.id, ...p, x: r.x, hzHow: r.how, lcsc });
   }
+}
+for (const t of intent) {
+  const gg = box(t.des, t.x, t.y, t.rot || 0, t.lcsc);
+  if (!gg) { console.error(`box() 对 ${t.des} 返回了 null`); process.exit(2); }
+  Object.assign(t, gg);
 }
 
 const fixes = [];

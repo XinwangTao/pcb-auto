@@ -1090,6 +1090,125 @@ try {
   log('antennaKeepoutErr', String(e && e.message).slice(0, 160));
 }
 
+// ---------- 7.35 声明式禁布区：封装自带的开口（声孔 / 传感窗 / 金腔）不许走铜 ----------
+// 【为什么需要这个字段】v5 的 U4 是 MEMS 硅麦，它的封装内部自带一个 17x17mil 的开口。
+// 实测（run -211421 的 slotGeoCmp 与 geoIdPrefix 两条 telemetry）：
+//   obBBox [642,-260,658,-243]，obCenter [650,-251]，落在 U4 占位 x[578.5,721.5] y[-283.5,-116.5] 内；
+//   DRC 把它记成 `Slot Region to Track`，clearDiag 实测 cur=0 need=11.811 —— 走线**压在**开口上。
+// 它既不是焊盘孔（全板 holeTypes 只有 ROUND 8 / SLOT 4，4 个 SLOT 都在 TYPE-C 那侧），
+// 也不是 Fill（idxSizes 实测 fill:0 pour:2 poured:2），所以在 slotKeepout 与 slotPadGeometry
+// 里都不存在；geoIdPrefix 自己的原话是「前 16 位也不在图元索引里 -> 仍走 bbox 兜底」。
+// => 封装内部的这段几何**读不出来**，只能由设计文件声明。这不是退让，是把读不到的东西
+//    挪到读得到的地方，并且带上出处。
+// 落地方式与 _antennaKeepout 完全一致（不新造机制）：pcb_PrimitiveRegion(layer=12 MULTI,
+// ruleType=[5 禁线, 6 禁填充, 7 禁覆铜])。**故意不含 2(禁元件)**：器件本体必须坐在这儿。
+//
+// 三条必须记的账（缺任何一条，这个字段都会退化成"声明了就等于做到了"）：
+//   1. 声明数与真正建成的数分开记（declared / built / skipped）；
+//   2. 声明的盒子必须落在它自称的 owner 器件 bbox 内 —— 否则那个盒子保护的是空气；
+//   3. 盒子里若压着焊盘必须报错 —— NO_WIRES 会把那些焊盘出线全部封死，
+//      那比原来那条违规严重得多（_antennaKeepout 的 padsInBox 就是这么加上去的）。
+// 另外 inflateMil 单独一个字段：实测开口尺寸与工艺净距是**两个量**，混在一个盒子里
+// 就没法回答"这个盒子到底代表开口，还是代表开口加余量"。
+let copperVoids = { declared: 0, built: 0, skipped: 0, list: [] };
+try {
+  const V = Array.isArray(D._copperVoids) ? D._copperVoids : [];
+  copperVoids.declared = V.length;
+  if (V.length === 0) log('copperVoids', { skipped: '设计文件没有 _copperVoids' });
+  for (let vi = 0; vi < V.length; vi++) {
+    const v = (V[vi] && typeof V[vi] === 'object') ? V[vi] : {};
+    const rec = { i: vi, why: String(v.why || '').slice(0, 60), owner: v.owner == null ? null : String(v.owner) };
+    const finite = [v.x0, v.y0, v.x1, v.y1].every(Number.isFinite);
+    if (!finite || !(v.x1 > v.x0) || !(v.y1 > v.y0)) {
+      copperVoids.skipped++;
+      rec.err = '坐标不完整或宽高非正';
+      rec.got = [v.x0, v.y0, v.x1, v.y1];
+      copperVoids.list.push(rec);
+      errors.push('copperVoids[' + vi + ']: 坐标不完整或宽高非正 ' + JSON.stringify(rec.got));
+      continue;
+    }
+    const inflate = Number.isFinite(v.inflateMil) ? Math.max(0, v.inflateMil) : 0;
+    const kx0 = v.x0 - inflate, kx1 = v.x1 + inflate;
+    const ky0 = v.y0 - inflate, ky1 = v.y1 + inflate;
+    rec.box = [Math.round(v.x0), Math.round(v.y0), Math.round(v.x1), Math.round(v.y1)];
+    rec.keepoutBox = [Math.round(kx0), Math.round(ky0), Math.round(kx1), Math.round(ky1)];
+    rec.inflateMil = inflate;
+    if (rec.owner) {
+      let ownerBox = null;
+      try {
+        const cIds = (await eda.pcb_PrimitiveComponent.getAllPrimitiveId()) || [];
+        const cObjs = await eda.pcb_PrimitiveComponent.get(cIds);
+        for (const c of (Array.isArray(cObjs) ? cObjs : [cObjs]).filter(Boolean)) {
+          if (String(c.getState_Designator?.()) !== rec.owner) continue;
+          const bb = await eda.pcb_Primitive.getPrimitivesBBox([c.getState_PrimitiveId()]);
+          if (bb && Number.isFinite(bb.minX)) ownerBox = bb;
+          break;
+        }
+      } catch (e) { log('copperVoidOwnerErr', String(e && e.message).slice(0, 90)); }
+      if (!ownerBox) {
+        rec.ownerCheck = 'ownerNotFound';
+        errors.push('copperVoids[' + vi + ']: 自称属于 ' + rec.owner + '，但板上找不到这个位号'
+          + ' —— 盒子保护的可能是一块空地');
+      } else {
+        const inside = v.x0 >= ownerBox.minX && v.x1 <= ownerBox.maxX
+          && v.y0 >= ownerBox.minY && v.y1 <= ownerBox.maxY;
+        rec.ownerCheck = inside ? 'inside' : 'outside';
+        rec.ownerBox = [Math.round(ownerBox.minX), Math.round(ownerBox.minY),
+          Math.round(ownerBox.maxX), Math.round(ownerBox.maxY)];
+        if (!inside) {
+          errors.push('copperVoids[' + vi + ']: 声明的盒子 ' + JSON.stringify(rec.box)
+            + ' 不在 ' + rec.owner + ' 的占位 ' + JSON.stringify(rec.ownerBox) + ' 内');
+        }
+      }
+    }
+    let padsIn = 0; const padsSample = [];
+    try {
+      for (const pid of (await eda.pcb_PrimitivePad.getAllPrimitiveId()) || []) {
+        const pp = await eda.pcb_PrimitivePad.get(pid);
+        const px = pp?.getState_X?.(), py = pp?.getState_Y?.();
+        if (typeof px !== 'number' || typeof py !== 'number') continue;
+        if (px > kx0 && px < kx1 && py > ky0 && py < ky1) {
+          padsIn++;
+          if (padsSample.length < 5) padsSample.push([Math.round(px), Math.round(py)]);
+        }
+      }
+    } catch (e) { log('copperVoidPadScanErr', String(e && e.message).slice(0, 90)); }
+    rec.padsIn = padsIn;
+    rec.padsInSample = padsSample;
+    if (padsIn > 0) {
+      errors.push('copperVoids[' + vi + ']: 禁布区里有 ' + padsIn + ' 个焊盘'
+        + (padsSample.length ? '（如 ' + padsSample.map(s => s.join(',')).join(' / ') + '）' : '')
+        + ' —— NO_WIRES 会把它们的出线全部拒掉，请把 inflateMil 收小或挪盒子');
+    }
+    let built = false;
+    try {
+      const vw = kx1 - kx0, vh = ky1 - ky0;
+      const vpoly = eda.pcb_MathPolygon.createPolygon(['R', kx0, ky1, vw, vh, 0, 0]);
+      const nm = 'VOID_' + (rec.owner || ('v' + vi)) + '_' + vi;
+      const vreg = await eda.pcb_PrimitiveRegion.create(12, vpoly, [5, 6, 7], nm, 10, false);
+      built = !!vreg;
+      if (!built) errors.push('copperVoids[' + vi + ']: region 未创建（规则 5/6/7 未落地）');
+    } catch (e) {
+      rec.err = String(e && e.message).slice(0, 120);
+      errors.push('copperVoids[' + vi + ']: ' + rec.err);
+      log('copperVoidCreateErr', rec.err);
+    }
+    rec.built = built;
+    if (built) copperVoids.built++; else copperVoids.skipped++;
+    copperVoids.list.push(rec);
+  }
+  if (copperVoids.declared > 0) {
+    if (copperVoids.built !== copperVoids.declared) {
+      errors.push('copperVoids: 声明 ' + copperVoids.declared + ' 条，只建成 '
+        + copperVoids.built + ' 条 —— 剩下的没有禁布保护');
+    }
+    log('copperVoids', copperVoids);
+  }
+} catch (e) {
+  errors.push('copperVoids: ' + String(e && e.message).slice(0, 120));
+  log('copperVoidsErr', String(e && e.message).slice(0, 160));
+}
+
 // ---------- 7.4 把板上的槽（Slot）罩成禁布区，让布线器一开始就绕开 ----------
 // 实测依据：d13（太阳能+锂电+OLED）的失败特征反复是 `Clearance Error | Slot Region to Track`，
 // 命中的永远是同一个 20 位 hex 的 Slot Region（实测 d6893410d653eee4e18）。
@@ -3534,7 +3653,18 @@ for (let round = 0; round < MAX_CLEAR_ROUNDS; round++) {
         const needDist = holeNumMil(e.clearance);
         const curDist = holeNumMil(e.minDistance);
         const p = e.position || {};
-        const ax = Number(p.x), ay = Number(p.y);
+        // 【position 与 clearance/minDistance 同一套单位：画布单位 = mil/10】
+        // 2026-11-26 21:5x 实测（run -214236）：clearance=1.2、minDistance=0.8 经
+        // holeNumMil ×10 得到 need=12 / cur=8，与钻孔实测边距 8.38 mil 吻合
+        // （孔 0.305mm @x=88.95 ↔ 槽 0.8mm 左缘 x=103.32）；position 也是同一套：
+        //   p = (9.914, -38.964) ×10 = (99.14, -389.64) mil，与 DRC 叶子 (99,-390) 对上。
+        // 但下面遍历 viaGeo 用的是 getState_X/Y 的**mil**，旧代码把两者直接相减，
+        // 于是 d 恒在 350 量级（主要是 y 差：-389 mil vs -38.96）、
+        // 永远过不了 `best.d <= 40`，`holePairNudged` 一次都没出现过
+        // （语料 holePairSummary 全 fixed:0，holePairNoVia 的 near 停在 79~90）。
+        // 这不是「没有可动的孔」，是**拿画布单位的点去和 mil 单位的孔算距离**。
+        // 改正后 d=10.2 → 过门；deficit=(12-8)=4 → delta=5 → 边距 8.38+5=13.38 > 12。
+        const ax = Number(p.x) * 10, ay = Number(p.y) * 10;
         if (!Number.isFinite(ax) || !Number.isFinite(ay) || !Number.isFinite(needDist) || !Number.isFinite(curDist)) {
           log('holePairNoCoord', { need: String(e.clearance), cur: String(e.minDistance) });
           continue;
@@ -5254,6 +5384,8 @@ try {
         maxErrMil: Math.round(explicitPlacement.maxErrMil) } : null,
       // 天线净空：null = 设计没给这块信息（不能读成通过）
       antennaKeepout,
+      // 声明式禁布区（封装内部开口）：declared 与 built 分开记，不许互相当证明
+      copperVoids,
       drcPassed, drcLeafCount, drcTotalCount, schDrcErrors,
       exportsOk: exports.filter(e => e && e.ok === true).length, exportsTotal: exports.length,
       artifacts: artifacts.length,
@@ -5309,7 +5441,7 @@ return {
   schDrcErrors, schDrcWarns,
   schDrcRules: [...new Set((schDrcViolations || []).map(v => v?.rule))],
   imported, outlineOk, layoutState, placementMode, placementOk,
-  placements: explicitPlacement, antennaKeepout, routeState,
+  placements: explicitPlacement, antennaKeepout, copperVoids, routeState,
   drcPassed,
   drcDetailCount: Array.isArray(drcDetails) ? drcDetails.length : null,
   // 叶子级违规数：顶层"违规组"计数会把 1 组 5 条显示成 1，看不出严重程度

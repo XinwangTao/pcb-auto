@@ -38,6 +38,10 @@ $ErrorActionPreference = 'Stop'
 # 更糟的是给人看的东西：陌生人看到的是异常栈，不是一句「去装 EDA」。
 try {
     $CLI = Resolve-LcedaCli
+    # 【把 CLI 路径传给子进程】scripts/verify-drc.js 自己找不到 lceda-pro.exe，于是每次都退 2（环境异常）。
+    # 实测 2026-11-26 23:0x 的原话："verify-drc: 找不到 lceda-pro.exe。设置 PCB_AUTO_LCEDA 指向它。"
+    # 本文件已经知道它在哪，不该让下游去猜；已有值时不覆盖。
+    if (-not $env:PCB_AUTO_LCEDA) { $env:PCB_AUTO_LCEDA = $CLI }
 }
 catch {
     Write-Host ''
@@ -1072,6 +1076,10 @@ foreach ($plan in $healPlans) {
         # 其它退出码 = 环境/用法问题：不算设计失败，但也**不是通过**
         $drcReNote = "环境异常 exit $drcReCode"
         Log ("[$($plan.tag)] 独立 DRC 复核环境异常（exit $drcReCode，第 $drcTry 次），未判定") 'DarkYellow'
+        # 【量具读不到输入时不许沉默】只打一个退出码，事后就只能猜原因。
+        # 实测 2026-11-26 22:2x：连续两次 exit 2，而日志里一行原因都没有，
+        # 于是分不清是「会话没了」、「超时」还是「输出不是 JSON」。
+        ($drcReRaw -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 6) | ForEach-Object { Log ("    verify-drc: " + $_.Trim()) 'DarkYellow' }
         if ($drcTry -lt 2) { Start-Sleep -Seconds 4 }
       } catch {
         $drcReNote = "异常 " + $_.Exception.Message
@@ -1079,7 +1087,33 @@ foreach ($plan in $healPlans) {
         if ($drcTry -lt 2) { Start-Sleep -Seconds 4 }
       }
     }
-    if (-not $drcReOk) { Log ("[$($plan.tag)] 独立 DRC 复核未完成（$drcReNote），本轮判不通过") 'Red'; continue }
+    if (-not $drcReOk) {
+      # 【未能复核 ≠ 查出违规】这两件事处置相反：
+      #   查出违规 ⇒ 换一个方案试试（当前方案已证实不行）；
+      #   未能测量 ⇒ **对这块板一个判断都没下过**，换板没有任何依据。
+      # 实测 2026-11-26 22:2x：attempt 1 自述 ok=True、drcLeaves=0，holePairNudged ×2，
+      # 一条违规都没有；但 verify-drc.js 两次 exit 2，于是这里判不通过并 continue，
+      # 阶梯进入 expand-1.25x（板宽 1300 → 1625）——一块没查出问题的板被更宽的板顶替了。
+      # 现在：能判定就按原逻辑走；判不出来就停止阶梯、保留本轮产物。
+      # $bestDrcReOk 保持 $null ⇒ 终判仍是不通过（未复核 ≠ 通过）。
+      $drcReEnvOnly = -not ($drcReNote -match '^违规')
+      if ($drcReEnvOnly) {
+        # 【不能把 + 写在行首】PowerShell 只允许二元运算符放在**行尾**续行。
+        # 行首的 + 会报「表达式中缺少右括号」——与真实错误毫无关系。
+        # 2026-11-26 实测踩过一次（就是这一行），由 test/syntax-gate.mjs 4 秒拦住。
+        # 【+ 必须写在**行尾**】行首的 + 被当成一元加号，PS 会试图把字符串转成 Int32：
+        #   InvalidArgument: 无法将值 "停止自愈阶梯…" 转换为类型 "System.Int32"
+        # 2026-11-26 23:1x 实测踩过两次（两版都写在行首）。语法闸门不报，运行时才炸。
+        # 顺带：把记账提到 Log 之前 —— Log 一旦抛异常，原因就丢了（实测丢过）。
+        $bestDrcReNote = $drcReNote
+        $envFaultMsg = "独立 DRC 复核未完成（$drcReNote）—— 这是**未能测量**，不是查出了违规。" +
+          "停止自愈阶梯、保留本轮产物；终判仍按不通过（未复核 ≠ 通过）"
+        Log ("[$($plan.tag)] " + $envFaultMsg) 'Red'
+        break
+      }
+      Log ("[$($plan.tag)] 独立 DRC 复核未通过（$drcReNote），本轮判不通过") 'Red'
+      continue
+    }
 
     # 第三道独立闸门：**能不能拿去打样**。
     # 前两道闸门只看"设计对不对"（网表一致、DRC 无违规），完全不查导出产物本身。
@@ -1492,6 +1526,7 @@ finally {
       #   语法检查会通过，运行到那里才抛「哈希文本中不允许使用空键」；而它又被本段的 try/catch
       #   接住，于是整份证据静默不落地 —— 看起来"没写文件"而不是"写失败"。实测踩过。
       $evSelfOk = $null; $evVerify = $null; $evDrc = $null; $evFab = $null; $evFmt = $null; $evDocs = $null
+      $evDrcNote = $bestDrcReNote
       if ($null -ne $v) { $evSelfOk = [bool]$v.ok }
       if ($null -ne $verifyOk) { $evVerify = [bool]$verifyOk }
       if ($null -ne $bestDrcReOk) { $evDrc = [bool]$bestDrcReOk }
@@ -1524,6 +1559,9 @@ finally {
           pipelineSelfOk  = $evSelfOk
           verifyArtifacts = $evVerify
           drcIndependent  = $evDrc
+          # 【为什么是 null，也要机器可读】只写 null 时，事后分不清是「没跑」、
+          # 「跑了但环境异常」还是「跑了且查出违规」。与 pipelineSelfOk 等字段同一套三态。
+          drcIndependentNote = $evDrcNote
           fabcheck        = $evFab
           artifactsFormat = $evFmt
           deliverableDocs = $evDocs
