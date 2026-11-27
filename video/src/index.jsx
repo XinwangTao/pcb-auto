@@ -6,6 +6,7 @@ import { PcbRealV6, PCB_V6_TOTAL_FRAMES } from './PcbRealV6.jsx';
 import { PcbRealV7, PCB_V7_TOTAL_FRAMES } from './PcbRealV7.jsx';
 import { PcbRealV9, PCB_V9_TOTAL_FRAMES } from './PcbRealV9.jsx';
 import { PcbRealV10, PCB_V10_TOTAL_FRAMES, PCB_V10_LAYOUT } from './PcbRealV10.jsx';
+import { PcbRealV11, PCB_V11_TOTAL_FRAMES } from './PcbRealV11.jsx';
 import { VIDEO } from './theme.js';
 
 export const RemotionRoot = () => (
@@ -69,6 +70,18 @@ export const RemotionRoot = () => (
       id="PcbRealV10"
       component={PcbRealV10}
       durationInFrames={PCB_V10_TOTAL_FRAMES}
+      fps={30}
+      width={1080}
+      height={1920}
+      defaultCodec="h264"
+      defaultPixelFormat="yuv420p"
+    />
+    {/* V11：只用最近一次建筑的帧（一次 attempt 一条时间线）。
+        帧由 video/scripts/build-v11.mjs 按 tag 在当前批次里挑，写 public/v11/manifest.json。 */}
+    <Composition
+      id="PcbRealV11"
+      component={PcbRealV11}
+      durationInFrames={PCB_V11_TOTAL_FRAMES}
       fps={30}
       width={1080}
       height={1920}
