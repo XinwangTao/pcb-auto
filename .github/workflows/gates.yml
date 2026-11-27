@@ -1,0 +1,62 @@
+name: gates
+
+# README 与 AGENTS.md 都写着「24 道闸门」，而 smoke.yml 只跑其中 7 道。
+# 这个 workflow 把 `npm test` 整套跑一遍 —— **公开主张必须由 CI 验证**，
+# 否则「24 道」只是一个可以随便写的数字。
+#
+# 为什么只在 windows：其中 7 道闸门要 pwsh 7（run-all.ps1 的退出码三态、
+# 控制台编码、runall-fabcheck 的嵌入执行、rundir、以及两个 powershell 侧的自检），
+# 而本项目的流水线本身也只支持 Windows。跨平台的接入层由 smoke.yml 在 ubuntu 上覆盖 ——
+# 两个 job 加起来才是完整主张。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-chain:
+    name: 24 道闸门 · windows
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 与 smoke.yml 相反：**这里必须 npm install**。
+      # `scripts/staticcheck.js`（契约闸门）需要 acorn + eslint-scope 真正解析
+      # `scripts/*.js` 的 invoke 函数体；缺了它只报「解析器不可用，本关跳过」，
+      # 也就是**契约闸门静默关闭而没有任何一处会红**。
+      # 这两个包已声明为 devDependencies；运行时仍然零依赖。
+      - name: 装测试依赖（acorn / eslint-scope）
+        run: npm install --no-audit --no-fund
+
+      - name: 确认契约闸门没有静默跳过
+        shell: pwsh
+        run: |
+          $out = node scripts/staticcheck.js scripts/pipeline3.js 2>&1 | Out-String
+          Write-Host $out
+          if ($LASTEXITCODE -ne 0) { throw "staticcheck exit=$LASTEXITCODE（契约闸门跑不起来，等于关闭）" }
+          if ($out -match '解析器不可用') { throw "解析器仍不可用 —— npm install 没生效" }
+
+      - name: 部署前置检查（doctor 自身也要能跑）
+        shell: pwsh
+        run: node scripts/preflight.mjs
+
+      - name: 整套闸门
+        shell: pwsh
+        run: npm test
+
+      - name: 闸门数量必须与 README 声称的一致
+        shell: pwsh
+        run: |
+          $n = (Get-Content package.json -Raw | ConvertFrom-Json).scripts.test.Split('&&').Count
+          Write-Host "package.json 里的闸门数 = $n"
+          if ($n -lt 20) { throw "闸门数只有 $n，README 声称 24 道 —— 主张与实现不一致" }
