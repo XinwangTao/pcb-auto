@@ -106,3 +106,16 @@ desktop.ini
 # 跟踪它有两个后果：跟文档跑一次 build 工作区就脏了；仓库里永久躺着一个作者机器的路径。
 # 下划线前缀在本仓库一直表示「不是交付物」（test/dev-path-scan.mjs 的 scratch-probes 豁免）。
 /scripts/_args_live.json
+
+# ── V11 视频资产：全部可由一条命令重跑，不进仓库 ──────────────────
+#   pwsh -File video\scripts\make-v11.ps1 -Batch <HHmmss>
+# 理由：这些是**生成物**（片段 mp4 / 配音 wav / 抽帧 png，合计约 7 MB），
+# 而入库的那份是压缩演示片 docs/media/demo.mp4（1.9 MB），够看、够小。
+# 先例：video/public/v10 也只在仓库里留了 bgm 一个文件。
+/video/public/v11/
+/video/public/v11motion/
+/video/public/voice_v11/
+
+# 量具的中间产物（mp4 与抽帧），留在磁盘上供复核，但不入库
+/out/_probe/*.mp4
+/out/_probe/v11-still-*.png
