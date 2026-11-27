@@ -136,6 +136,10 @@ function readPnp(p) {
   const head = lines[0].split(delim).map((s) => s.replace(/^["']|["']$/g, '').trim());
   const idx = (n) => head.findIndex((h) => h.toLowerCase() === n.toLowerCase());
   const iD = idx('Designator'); const iX = idx('Mid X'); const iY = idx('Mid Y'); const iL = idx('Layer');
+  const iP = idx('Pins');   // 有它就能精确取几个焊盘，不用「最近者赢」去猜
+  // 旋转也要读：垂直放的封装在板框里是横着量的，不归一就会把「旋转」
+  // 误读成「尺寸差 2 倍」。实测：5 个开关全是 rot=90。
+  const iR = idx('Rotation');
   if (iD < 0 || iX < 0 || iY < 0) throw new Error('PnP 表头缺 Designator/Mid X/Mid Y：' + head.join(','));
   const out = new Map();
   for (const l of lines.slice(1)) {
@@ -145,6 +149,8 @@ function readPnp(p) {
     out.set(des, {
       x: numOf(c[iX]), y: numOf(c[iY]),
       layer: iL >= 0 ? String(c[iL] || '').trim() : '',
+      pins: iP >= 0 ? numOf(c[iP]) : NaN,   // 这一列也带引号（"2"），Number(…) 会得 NaN
+      rot: iR >= 0 ? numOf(c[iR]) : NaN,
     });
   }
   return out;
@@ -200,7 +206,10 @@ if (missing.length === des.length) bail('PnP 里一个器件都对不上：' + m
 const pos = [];
 for (const c of des) {
   const p = pnp.get(c.des);
-  if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) pos.push({ ...c, x: p.x, y: p.y, top: p.layer !== 'B' });
+  // pins 必须一起搬过来：下面靠它封顶每个器件拿几个焊盘。实测：摘了它会导致一个都分不到。
+  if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) {
+    pos.push({ ...c, x: p.x, y: p.y, top: p.layer !== 'B', pins: p.pins });
+  }
 }
 if (!pos.length) bail('没有可用的器件坐标');
 
@@ -223,13 +232,9 @@ for (const p of points) {
   if (multiLayer && maxDim <= VIA_MAX_MM) { viasDropped++; continue; }
   keep.push(p);
 }
+// 踢完过孔后的焊盘（保留中心与半宽）。归堆在下面做，做完才展开成四角。
 points.length = 0;
-for (const p of keep) {
-  points.push({ x: p.x - p.hw, y: p.y - p.hh, top: p.top },
-              { x: p.x + p.hw, y: p.y - p.hh, top: p.top },
-              { x: p.x - p.hw, y: p.y + p.hh, top: p.top },
-              { x: p.x + p.hw, y: p.y + p.hh, top: p.top });
-}
+for (const p of keep) points.push(p);
 
 // 把每个铜点归给最近的器件（同层优先），得到每个器件的铜包围盒
 // 【必须有半径】否则板子边缘的剩余焊盘会被归给远处那个最近的器件，把它撑大。
@@ -238,21 +243,39 @@ for (const p of keep) {
 // 【半径必须大于最大封装的对角】实测 2026-11-27：取 12mm 时 ESP32-S3 模组（18×25.5mm）
 // 的焊盘被截掉一半，高度只量到 514 mil（实际应 ~1000）。过孔已经被双层判据踢除，
 // 所以放大半径比之前安全。模组对角 ≈ 15.6mm，取 24mm 留余量。
+// 【用 PnP 的 Pins 数精确取焊盘】实测 2026-11-27：「最近者赢」在密集板上会把邻件焊盘抢过来，
+// 0603 被量成 150×109（真值 86.6×35.4）；而 PnP 就写着这个器件有几个焊盘。
+// 所以改成全局贪心：把（器件, 焊盘, 距离）全部对按距离排序，从近到远分配，
+// 每个器件最多拿 pins 个、每个焊盘只能归一个器件。这样两边都不会多拿。
 const MAX_R_MM = 24;
-const boxes = new Map();
-for (const pt of points) {
-  let best = null; let bestD = Infinity;
-  for (const c of pos) {
-    if (c.top !== pt.top) continue;              // 不同层直接不归
-    const d = Math.hypot(pt.x - c.x, pt.y - c.y);
-    if (d < bestD) { bestD = d; best = c; }
+const padList = points.filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+const pairs = [];
+for (const c of pos) {
+  if (!Number.isFinite(c.pins) || c.pins <= 0) continue;
+  for (let i = 0; i < padList.length; i++) {
+    const p = padList[i];
+    if (c.top !== p.top) continue;
+    const d = Math.hypot(p.x - c.x, p.y - c.y);
+    if (d <= MAX_R_MM) pairs.push({ ci: c, pi: i, d });
   }
-  if (!best || bestD > MAX_R_MM) continue;
-  const b = boxes.get(best.des) || { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, n: 0 };
-  b.x0 = Math.min(b.x0, pt.x); b.x1 = Math.max(b.x1, pt.x);
-  b.y0 = Math.min(b.y0, pt.y); b.y1 = Math.max(b.y1, pt.y);
+}
+pairs.sort((a, b) => a.d - b.d);
+const takenPad = new Set();
+const padCount = new Map();
+const boxes = new Map();
+for (const { ci, pi } of pairs) {
+  if (takenPad.has(pi)) continue;
+  const have = padCount.get(ci.des) || 0;
+  if (have >= ci.pins) continue;
+  takenPad.add(pi);
+  padCount.set(ci.des, have + 1);
+  const p = padList[pi];
+  const b = boxes.get(ci.des) || { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, n: 0 };
+  // 包围盒用焊盘的**铜范围**（中心±半宽），不是中心点
+  b.x0 = Math.min(b.x0, p.x - p.hw); b.x1 = Math.max(b.x1, p.x + p.hw);
+  b.y0 = Math.min(b.y0, p.y - p.hh); b.y1 = Math.max(b.y1, p.y + p.hh);
   b.n++;
-  boxes.set(best.des, b);
+  boxes.set(ci.des, b);
 }
 
 // 按 LCSC 汇总（同一料号可能有多个器件位号，取各自的 bbox 尺寸再取中位数）
@@ -268,6 +291,20 @@ for (const c of pos) {
 }
 
 const median = (a) => { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const byDesignator = [];
+for (const c of pos) {
+  const b = boxes.get(c.des);
+  if (!b || b.n < 2) continue;
+  const r = pnp.get(c.des) || {};   // 含 rot，供旋转归一
+  byDesignator.push({
+    des: c.des, lcsc: c.lcsc, pins: b.n,
+    rot: Number.isFinite(r.rot) ? r.rot : null,
+    wMil: Math.round((b.x1 - b.x0) * MIL * 10) / 10,
+    hMil: Math.round((b.y1 - b.y0) * MIL * 10) / 10,
+  });
+}
+byDesignator.sort((a, b) => a.des.localeCompare(b.des));
+
 const result = [];
 for (const [lcsc, arr] of byLcsc) {
   result.push({
@@ -292,6 +329,7 @@ if (opt.json) {
     viasDropped,
     componentsInPnp: pos.length,
     measured: result,
+    byDesignator,
   }, null, 2));
   process.exit(0);
 }

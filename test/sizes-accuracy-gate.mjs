@@ -92,27 +92,68 @@ if (measured) {
   ok(Math.abs(w - 86.6) <= 6, '实测值与手算 55.2 + 2×15.7 ≈ 86.6 相差不超过 6 mil', `实际 ${w}`);
 }
 
-// ── 4. 把偏差明示出来（不是失败，是「已知未修」）──────────────────────
+// ── 4. 不变量：声明的碰撞盒必须 >= 实测铜范围（全 15 种料号）───
+//
+// 为什么是「>=」而不是「≈」：`relayout.mjs` 的 `box()` 用 SIZES 建碰撞盒，
+// `overlapArea()` 用它判两个器件是否重叠（下一行就是 `if (o) …`）。
+// 声明值一旦**小于**实际占用，两个器件的本体可以重叠而布局器看不见 ——
+// 这是一个可判定的缺陷；反之声明得偏大只是浪费面积，不会出错。
+{
+  const FIX = path.join(ROOT, 'test', 'fixtures', 'sizes-measured.json');
+  if (!fs.existsSync(FIX)) { console.log('  SIZESACC=ENVSKIP  缺 test/fixtures/sizes-measured.json'); process.exit(2); }
+  let fx = null;
+  try { fx = JSON.parse(fs.readFileSync(FIX, 'utf8')); } catch (e) { console.log('  SIZESACC=ENVSKIP  基线读不了'); process.exit(2); }
+  const entries = fx.entries || {};
+  const tol = Number(fx.toleranceMil || 0.6);
+
+  const src = fs.readFileSync(SIZES_SRC, 'utf8');
+  const declared = {};
+  for (const m of src.matchAll(/(\w+):\s*\{\s*w:\s*([\d.]+),\s*h:\s*([\d.]+)\s*\}/g)) {
+    declared[m[1]] = { w: Number(m[2]), h: Number(m[3]) };
+  }
+
+  const viol = [];
+  let checked = 0;
+  for (const [lcsc, m] of Object.entries(entries)) {
+    const d = declared[lcsc];
+    if (!d) { viol.push(`${lcsc}: SIZES 里没有这个料号（布局器会直接退 2）`); continue; }
+    checked++;
+    const badW = d.w + tol < m.wMil;
+    const badH = d.h + tol < m.hMil;
+    if (badW || badH) {
+      viol.push(`${lcsc}: 声明 ${d.w}\u00d7${d.h} < 实测 ${m.wMil}\u00d7${m.hMil}`
+        + `（${badW ? 'w 短 ' + (Math.round((m.wMil - d.w) * 10) / 10) : ''}`
+        + `${badW && badH ? '，' : ''}${badH ? 'h 短 ' + (Math.round((m.hMil - d.h) * 10) / 10) : ''} mil）`);
+    }
+  }
+  for (const v of viol) console.log('  [FAIL] ' + v);
+  ok(viol.length === 0, `声明的碰撞盒全部覆盖了实测铜范围（分母 = ${checked} 种料号）`);
+  ok(checked >= 10, '基线覆盖面足够（>=10 种）', `实际 ${checked}`);
+  console.log(`  [info] 对账了 ${checked} / ${Object.keys(entries).length} 种料号，容差 ${tol} mil`);
+}
+
+// ── 5. 把两者的关系说清楚（这不是偏差，是两个量）───────────
+//
+// 审查报过「0603 表里写 119，成品铜宽只有 76」，当成一个缺陷。
+// 实测澄清后：那是**两个不同的量** ——
+//   SIZES 是碰撞盒（布局器用它判两个器件是否重叠），必须 ≥ 铜范围；
+//   76 / 86.6 是焊盘铜实际占的范围（上面已经验证它与 PnP 自洽）。
+// 119 比 86.6 大是**正确**的：碰撞盒要把本体也算进去。把它压到 87 反而会让两个
+// 0603 的本体可以重叠而布局器看不见 —— 所以下面这条是**不可逆的方向性**断言：
+// 谁想把声明值压到实测值以下，这里就会红。
 {
   const src = fs.readFileSync(SIZES_SRC, 'utf8');
   const m = /C14663:\s*\{\s*w:\s*([\d.]+),\s*h:\s*([\d.]+)\s*\}/.exec(src);
   if (m && measured && measured.wMil > 0) {
-    const declW = Number(m[1]);
-    const ratio = declW / measured.wMil;
-    const pct = Math.round((ratio - 1) * 1000) / 10;
+    const declW = Number(m[1]), declH = Number(m[2]);
     console.log('');
-    console.log(`  ── 已知偏差（未修）──`);
-    console.log(`  SIZES 声明 ${declW} mil，成品实测 ${measured.wMil} mil，声明值偏大 ${pct}%`);
-    console.log(`  为什么没修：密集整板上这个量具会被过孔/邻件污染（同一料号四块板读出`);
-    console.log(`  56.4 / 311.4 / 311.4 / 311.4），**凭不可信的读数去改布局器输入，比留着偏差更糟**。`);
-    console.log(`  要修得先有一个可信的封装尺寸来源（EDA 库或 datasheet），再连带重跑全部设计。`);
-    // 【棘轮】既然这个偏差是已知且未修的，就把它**钉住**：
-    // 声明值必须仍是 119。谁把它改了，就得同步改这里与上面的说明，
-    // 而不能惄悄改一个数字。（实测：改成 87 时 ratio 仍 >1，
-    // 只判「偏差方向」是拦不住的。）
-    ok(declW === 119, 'C14663 声明值仍是已登记的 119（改了就要同步这里）', `实际 ${declW}`);
-    ok(ratio > 1.2, '声明值仍明显偏大（>20%），与审查结论一致',
-      `声明/实测 = ${Math.round(ratio * 100) / 100}`);
+    console.log('  ── 两个量的关系（不是偏差）──');
+    console.log(`  SIZES（碰撞盒）${declW}×${declH} mil ≥ 成品铜实测 ${measured.wMil}×${measured.hMil} mil`);
+    console.log(`  碰撞盒比焊盘铜宽 ${Math.round((declW / measured.wMil) * 100)}%，那是应该的：它还要盖住封装本体。`);
+    ok(declW >= measured.wMil, 'C14663 的碰撞盒不小于实测铜宽（压到铜宽以下会让本体可以重叠）',
+      `声明 ${declW} / 实测 ${measured.wMil}`);
+    ok(declH >= measured.hMil, 'C14663 的碰撞盒不小于实测铜高',
+      `声明 ${declH} / 实测 ${measured.hMil}`);
   }
 }
 
@@ -120,5 +161,5 @@ console.log('');
 const total = pass + fail;
 if (!total) { console.log('  SIZESACC=FAIL  一条断言都没跑'); process.exit(1); }
 if (fail) { console.log(`  SIZESACC=FAIL  ${fail} / ${total} 条断言未过`); process.exit(1); }
-console.log(`  SIZESACC=PASS  ${total} 条断言全过（量具回归锁 3 条 + 自洽 1 条 + 偏差方向 1 条；偏差本身已明示）`);
+console.log(`  SIZESACC=PASS  ${total} 条断言全过（量具回归锁 3 条 + 自洽 1 条 + 碰撞盒不变量 3 条 + 方向性 2 条）`);
 process.exit(0);
