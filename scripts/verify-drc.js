@@ -21,6 +21,8 @@
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
+// 裁定逻辑单独一个纯函数（不碰 EDA / 不碰 fs），让闸门能用构造信封直接测退出码。
+const { decide } = require('./drc-verdict.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const CLI = process.env.PCB_AUTO_LCEDA || process.env.LCEDA;
@@ -114,16 +116,23 @@ for (const it of items) {
   if (ot) byObjType[ot] = (byObjType[ot] || 0) + 1;
 }
 
-// 【passed 必须与 total 交叉校验】pcb_Drc.check 在"覆铜刚重建完"的异步窗口里
-// 会返回 true 而明细非空（本文件开头已承认这个窗口存在）。只信 passed 就会
-// "有违规但 exit 0"。两个信号必须同时成立才算通过；不自洽时宁可判不通过。
+// 【两个信号原样交出去，裁定交给外层】
+// 原来这里就地算了一个 consistent，形状是
+//   passed ? (itemsErr === null && total === 0) : true
+// —— passed=false 时恒为 true，于是「明细取不到」也走 exit 1（= 有违规）。
+// 另一个方向也错：passed=true 但明细非空 ⇒ consistent=false ⇒ exit 2（= 环境异常），
+// 【这段在 INNER 模板字符串里，注释里不能出现反引号】——反引号会直接终止模板字符串，
+// 于是整个文件变成一个语法错误，而报错指向的是一行看起来无害的注释。
+// 2026-11-27 实测踩过（就是这一行）：Synta xError: Unexpected identifier —— 闸门 3 秒拦住。
+// 而真相是这块板**确实有违规**。
+// 裁定现在在 scripts/drc-verdict.js：哪里有四种组合的完整表与表驱动闸门。
+// pcb_Drc.check 在"覆铜刚重建完"的异步窗口里会返回 true 而明细非空（见文件头），
+// 所以 passed 与 total **必须都交出去**，任何单独一个都不足以判定。
 const total = items.length;
-const consistent = passed ? (itemsErr === null && total === 0) : true;
 return {
   ok: true,
-  passed: (passed && consistent),
-  passedRaw: passed,
-  consistent,
+  // 字段名就叫 passed：它是 DRC API 自己的布尔。裁定结果在外层另取一个名字（passed）。
+  passed,
   itemsErr,
   rebuilt,
   projectUuid,
@@ -188,9 +197,19 @@ if (!env.ok) {
 }
 
 const v = env.value || {};
+// 【这一行是唯一的裁定入口】返回 { code, verdict, reason, measured, consistent }
+const d = decide(env);
+
 console.log(JSON.stringify({
   ok: true,
-  passed: v.passed,
+  // passed 的含义收紧为「最终裁定是通过」。
+  // 原来它是内层的自述，于是 `passed:true` 配 `total:3` 也会打出来，
+  // 读的人无法判断到底算不算过。
+  passed: (d.verdict === 'clean'),
+  verdict: d.verdict,
+  verdictReason: d.reason,
+  measured: d.measured,
+  selfPassed: v.passed,
   projectUuid: v.projectUuid,
   pcbUuid: v.pcbUuid,
   pcbName: v.pcbName,
@@ -200,21 +219,20 @@ console.log(JSON.stringify({
   byType: v.byType,
   byObjType: v.byObjType,
   items: v.items,
-  // 【退出码的依据必须留在 JSON 里】L211 用 `v.consistent === false` 决定 exit 2，
-  // 但这两个字段原来没被打印 —— 调用方只看到 exit≠0 和一份"total 为 0/缺失"的 JSON，
-  // 于是 run-all 打印出「独立 DRC 复核失败：0 处违规」，一个自相矛盾的结论。
-  consistent: v.consistent,
+  // 【退出码的依据必须留在 JSON 里】曾经只有 exit≠0 加一份
+  // "total 为 0/缺失" 的 JSON，调用方只能打出「独立 DRC 复核失败：0 处违规」
+  // 这种自相矛盾的结论。现在 verdict/reason/measured 都在这里。
+  consistent: d.consistent,
   itemsErr: v.itemsErr,
 }, null, 2));
 
-// 【退出码必须区分"板子有违规"与"根本没查成"】
-// 文件头约定：0=通过 1=有违规 2=环境错误。但 `openTarget()` 找不到同时有
-// 原理图页和 PCB 的板时 return { ok:false, error:'no board…' }，这个对象若落进
-// env.value，`v.passed` 就是 undefined → exit 1 → run-all.ps1 打印
-// "独立 DRC 复核失败：（流水线自述通过 = 假阴性）"，把**环境故障记成设计缺陷**，
-// 还会白烧一整轮 590s 去换板框。同理 passed 与 total 不自洽也不是"有违规"。
-if (!env.value || env.value.ok === false) {
-  console.error('独立 DRC 未能执行（环境/工程问题）：' + JSON.stringify(env.value || env, null, 2).slice(0, 1200));
-  process.exit(2);
+// 【原因要说清楚】且分开两种归类——「查出违规」是一个结论，
+// 「没量成」是另一件事，两者的处置完全相反（前者换板框，后者停梯梯）。
+if (d.code !== 0) {
+  const tag = (d.verdict === 'violations')
+    ? '独立 DRC 复核：查出违规'
+    : '独立 DRC 复核未能完成（不是设计结论）';
+  console.error(tag + ' —— ' + d.verdict + '：' + d.reason);
 }
-process.exit(v.passed === true ? 0 : (v.consistent === false ? 2 : 1));
+// 退出码：0 = 通过；1 = 有违规（一个结论）；2 = 没量成。三者不能互相顶替。
+process.exit(d.code);

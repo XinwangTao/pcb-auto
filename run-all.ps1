@@ -1090,10 +1090,27 @@ foreach ($plan in $healPlans) {
     # 所以先重试一次，仍异常就判本轮不过（换下一个方案，而不是放过这块板）。
     $drcReOk = $false
     $drcReNote = ''
+  # 裁定字段：由 scripts/drc-verdict.js 给出（clean/violations/no-detail/
+  # no-total/contradictory/no-passed/bad-envelope/cli-refused/no-value/eda-refused）。
+  # 它是区分「查出违规」与「没量成」的**唯一**依据。
+  $drcReVerdict = ''
     for ($drcTry = 1; $drcTry -le 2; $drcTry++) {
       try {
-        $drcReRaw = (& $nodeVerify (Join-Path $Root 'scripts\verify-drc.js') $v.projectUuid $sid 2>&1 | Out-String)
-        $drcReCode = $LASTEXITCODE
+        # 【stdout 与 stderr 必须分开收】原来用 `2>&1 | Out-String` 合流，于是只要
+        # verify-drc 往 stderr 写一句人话，合并后的文本就不是 JSON，
+        # ConvertFrom-Json 必然失败 —— 调用方只能打印「解析失败」，
+        # 把「有 3 处违规」和「根本没跑成」混成同一句话。
+        # 实测 2026-11-27：exit 2 分支长期只打得出「解析失败」，就是这个原因。
+        $drcReErrFile = [IO.Path]::GetTempFileName()
+        try {
+          $drcReRaw = (& $nodeVerify (Join-Path $Root 'scripts\verify-drc.js') $v.projectUuid $sid 2>$drcReErrFile | Out-String)
+          $drcReCode = $LASTEXITCODE
+          $drcReErr = ''
+          if (Test-Path $drcReErrFile) { $drcReErr = [string](Get-Content $drcReErrFile -Raw -ErrorAction SilentlyContinue) }
+        } finally {
+          Remove-Item $drcReErrFile -Force -ErrorAction SilentlyContinue
+        }
+        if (-not $drcReRaw) { $drcReRaw = '' }
         if ($drcReCode -eq 0) {
           $drcReOk = $true
           Log ("[$($plan.tag)] 独立 DRC 复核通过") 'Green'
@@ -1102,31 +1119,46 @@ foreach ($plan in $healPlans) {
         if ($drcReCode -eq 1) {
           $drcReJson = $null
           try { $drcReJson = $drcReRaw | ConvertFrom-Json } catch { }
-          # 【别把"查不成"说成"0 处违规"】exit 1 有两条路：真查出违规，或 passed/total
-          # 不自洽（verify-drc.js L211 对 consistent=false 也给 exit 2，但 total 缺失时
-          # 这里曾经只剩一个 0/`?`），于是日志会出现「复核失败：0 处违规」这种自相矛盾的
-          # 句子，把人往"违规统计坏了"的方向引，而真实原因是这份 DRC 结果不可采信。
-          $nBad = if ($drcReJson -and $null -ne $drcReJson.total) { $drcReJson.total } else { $null }
-          if ($null -eq $nBad) {
-            Log ("[$($plan.tag)] 独立 DRC 复核失败：结果里没有 total（consistent=" + $(if ($drcReJson) { $drcReJson.consistent } else { '解析失败' }) + "，itemsErr=" + $(if ($drcReJson) { $drcReJson.itemsErr } else { '?' }) + "），这份 DRC 不可采信") 'Yellow'
-          } elseif ([int]$nBad -eq 0) {
-            Log ("[$($plan.tag)] 独立 DRC 复核判不通过，但 total=0（consistent=" + $(if ($drcReJson) { $drcReJson.consistent } else { '?' }) + "）—— 自相矛盾的结论，按不通过处理") 'Yellow'
+          # 【判据换成裁定字段，不再靠字符串前缀】
+          # 原来这里把 note 无条件写成「违规 N 处」（N 可能是 $null），
+          # 而下面用 `-match '^违规'` 区分「查出违规」与「未量成」——
+          # 于是那个三态判据对**整个 exit 1 类**恒为真，改不动任何行为。
+          # 现在 verify-drc.js 给出 verdict，且 exit 1 **只可能**是 violations
+          # （其余裁定一律 exit 2）。两边对得上，不再靠措辞耦合。
+          $drcReVerdict = if ($drcReJson -and $drcReJson.verdict) { [string]$drcReJson.verdict } else { 'unknown' }
+          if ($drcReVerdict -ne 'violations') {
+            # 防御：万一 verify-drc 将来报了一个新裁定但退码还是 1，
+            # 不能当成「查出违规」去换板框。
+            $drcReCode = 2
+            $drcReNote = "未量成 exit1/$drcReVerdict"
+            Log ("[$($plan.tag)] 独立 DRC 退 1 但裁定是 $drcReVerdict（不是 violations）—— 按未量成处理") 'Yellow'
+            if ($drcTry -lt 2) { Start-Sleep -Seconds 4 }
           } else {
-            Log ("[$($plan.tag)] 独立 DRC 复核失败：$nBad 处违规（流水线自述通过 = 假阴性）") 'Yellow'
+            $nBad = if ($drcReJson -and $null -ne $drcReJson.total) { $drcReJson.total } else { $null }
+            Log ("[$($plan.tag)] 独立 DRC 复核查出违规：$nBad 处（流水线自述通过 = 假阴性）") 'Yellow'
+            if ($drcReJson -and $drcReJson.byType) {
+              $drcReJson.byType.PSObject.Properties | ForEach-Object { Log ("    违规类型 $($_.Name) = $($_.Value)") 'DarkYellow' }
+            }
+            if ($drcReJson -and $drcReJson.verdictReason) { Log ("    判据：" + $drcReJson.verdictReason) 'DarkYellow' }
+            $drcReNote = "违规 $nBad 处"
+            break
           }
-          if ($drcReJson -and $drcReJson.byType) {
-            $drcReJson.byType.PSObject.Properties | ForEach-Object { Log ("    违规类型 $($_.Name) = $($_.Value)") 'DarkYellow' }
-          }
-          $drcReNote = "违规 $nBad 处"
-          break
         }
-        # 其它退出码 = 环境/用法问题：不算设计失败，但也**不是通过**
-        $drcReNote = "环境异常 exit $drcReCode"
-        Log ("[$($plan.tag)] 独立 DRC 复核环境异常（exit $drcReCode，第 $drcTry 次），未判定") 'DarkYellow'
+        if ($drcReCode -ne 1) {
+        # 其它退出码 = **没量成**（环境/工程问题）：不算设计失败，但也**不是通过**
+        $drcReJsonE = $null
+        try { $drcReJsonE = $drcReRaw | ConvertFrom-Json } catch { }
+        if ($drcReJsonE -and $drcReJsonE.verdict) { $drcReVerdict = [string]$drcReJsonE.verdict }
+        $drcReNote = "未量成 exit $drcReCode" + $(if ($drcReVerdict) { "（$drcReVerdict）" } else { '' })
+        Log ("[$($plan.tag)] 独立 DRC 复核未能完成（exit $drcReCode，verdict=" + $(if ($drcReVerdict) { $drcReVerdict } else { '?' }) + "，第 $drcTry 次）") 'DarkYellow'
+        }
         # 【量具读不到输入时不许沉默】只打一个退出码，事后就只能猜原因。
         # 实测 2026-11-26 22:2x：连续两次 exit 2，而日志里一行原因都没有，
         # 于是分不清是「会话没了」、「超时」还是「输出不是 JSON」。
-        ($drcReRaw -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 6) | ForEach-Object { Log ("    verify-drc: " + $_.Trim()) 'DarkYellow' }
+        # 原因在 stderr（现已分开收）。若 stderr 为空又确实没输出，那本身就是信号。
+        $drcReWhy = if ($drcReErr) { $drcReErr } else { $drcReRaw }
+        if (-not $drcReWhy) { $drcReWhy = '（stdout 与 stderr 都是空——进程可能被杀）' }
+        ($drcReWhy -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 6) | ForEach-Object { Log ("    verify-drc: " + $_.Trim()) 'DarkYellow' }
         if ($drcTry -lt 2) { Start-Sleep -Seconds 4 }
       } catch {
         $drcReNote = "异常 " + $_.Exception.Message
@@ -1143,7 +1175,10 @@ foreach ($plan in $healPlans) {
       # 阶梯进入 expand-1.25x（板宽 1300 → 1625）——一块没查出问题的板被更宽的板顶替了。
       # 现在：能判定就按原逻辑走；判不出来就停止阶梯、保留本轮产物。
       # $bestDrcReOk 保持 $null ⇒ 终判仍是不通过（未复核 ≠ 通过）。
-      $drcReEnvOnly = -not ($drcReNote -match '^违规')
+      # 【判据换成裁定字段】`-match '^违规'` 依赖 note 的措辞：
+      # catch 分支写的是「异常 …」、未赋值时是空串、exit 1 分支写的是「违规 N 处」——
+      # 措辞一改就静默失效，而且它从来就没能区分"exit 1 但 total 缺失"。
+      $drcReEnvOnly = ($drcReVerdict -ne 'violations')
       if ($drcReEnvOnly) {
         # 【不能把 + 写在行首】PowerShell 只允许二元运算符放在**行尾**续行。
         # 行首的 + 会报「表达式中缺少右括号」——与真实错误毫无关系。
