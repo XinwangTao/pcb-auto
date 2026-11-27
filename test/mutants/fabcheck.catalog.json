@@ -17,7 +17,12 @@
           "with": "$1$2D02*$3"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["gerber.outline.closed"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "gerber.outline.closed"
+        ]
+      }
     },
     {
       "name": "gerber.outline.d01",
@@ -34,7 +39,12 @@
           "with": "D04*"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["gerber.outline.d01"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "gerber.outline.d01"
+        ]
+      }
     },
     {
       "name": "gerber.outline.multicontour",
@@ -50,7 +60,12 @@
           "with": "$1$2D01*$2D02*"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["gerber.outline.closed"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "gerber.outline.closed"
+        ]
+      }
     },
     {
       "name": "gerber.copper.empty",
@@ -64,7 +79,12 @@
           "text": "G04 top copper layer emptied by mutant*\n%FSLAX45Y45*%\n%MOMM*%\nM02*\n"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["gerber.copper.empty"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "gerber.copper.empty"
+        ]
+      }
     },
     {
       "name": "gerber.traces.empty",
@@ -78,7 +98,12 @@
           "match": "D01*"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["gerber.traces.empty"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "gerber.traces.empty"
+        ]
+      }
     },
     {
       "name": "bom.qty",
@@ -94,7 +119,12 @@
           "with": ""
         }
       ],
-      "expect": { "exit": 0, "mustInclude": ["bom.qty"] }
+      "expect": {
+        "exit": 0,
+        "mustInclude": [
+          "bom.qty"
+        ]
+      }
     },
     {
       "name": "bom.duplicate",
@@ -110,7 +140,12 @@
           "with": "<c r=\"D2\" t=\"s\"><v>$1</v></c>$2<c r=\"D3\" t=\"s\"><v>$1</v></c>"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["bom.duplicate"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "bom.duplicate"
+        ]
+      }
     },
     {
       "name": "pnp.nan",
@@ -126,7 +161,12 @@
           "with": "$1NaN"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["pnp.nan"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "pnp.nan"
+        ]
+      }
     },
     {
       "name": "pnp.overlap",
@@ -142,7 +182,12 @@
           "with": "$1$2,$3$4$2,$3"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["pnp.overlap"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "pnp.overlap"
+        ]
+      }
     },
     {
       "name": "drill.outside",
@@ -159,7 +204,12 @@
           "with": "X999Y$1"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["drill.outside"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "drill.outside"
+        ]
+      }
     },
     {
       "name": "drill.tht.mismatch",
@@ -175,16 +225,30 @@
           "with": "$1$2\n$2$3"
         }
       ],
-      "expect": { "exit": 0, "mustInclude": ["drill.tht.mismatch"] }
+      "expect": {
+        "exit": 0,
+        "mustInclude": [
+          "drill.tht.mismatch"
+        ]
+      }
     },
     {
       "name": "pdf.pages",
       "base": "test/mutants/base",
       "note": "Board.pdf 截到 8 字节：一个 /Type /Page 都没有。",
       "mutate": [
-        { "op": "truncate", "file": "Board.pdf", "bytes": 8 }
+        {
+          "op": "truncate",
+          "file": "Board.pdf",
+          "bytes": 8
+        }
       ],
-      "expect": { "exit": 1, "mustInclude": ["pdf.pages"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "pdf.pages"
+        ]
+      }
     },
     {
       "name": "netlist.parse",
@@ -199,7 +263,51 @@
           "with": "$1@@@"
         }
       ],
-      "expect": { "exit": 1, "mustInclude": ["netlist.parse"] }
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "netlist.parse"
+        ]
+      }
+    },
+    {
+      "name": "drill.tool.missing",
+      "base": "test/mutants/base",
+      "note": "把钻孔文件里 `G90` 后面的 `T01` 刀具选择删掉：T01 定义还在，但后面那组孔坐标没有选中任何刀具 ⇒ 孔打不出来。这是「有孔坐标、无刀具」，与「删掉整个钻孔层」是两件事。",
+      "mutate": [
+        {
+          "op": "replace",
+          "file": "Gerber.zip",
+          "entry": "Drill_PTH_Through.DRL",
+          "regex": true,
+          "find": "(G90)\\r?\\nT01\\r?\\n",
+          "with": "$1\\n"
+        }
+      ],
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "drill.tool.missing"
+        ]
+      }
+    },
+    {
+      "name": "antenna.keepout.copper",
+      "base": "test/mutants/base",
+      "note": "天线净空盒子覆盖整板 ⇒ 成品铜层里必然有铜落在带内 ⇒ 它必须判红。原实现在缺 `_design.snapshot.json` 时这整块检查静默消失（对抗性审查实测：加与不加两次都 exit 0，notes 一字不变）。这条用 `write` op 把 snapshot 补上再验证判据真的会亮。mil -> mm 的换算是 ×0.0254，所以 ±5000 mil = ±127 mm 足以包住这块板。",
+      "mutate": [
+        {
+          "op": "write",
+          "file": "_design.snapshot.json",
+          "text": "{\"_antennaKeepout\":{\"x0\":-5000,\"x1\":5000,\"y0\":-5000,\"y1\":5000}}"
+        }
+      ],
+      "expect": {
+        "exit": 1,
+        "mustInclude": [
+          "antenna.keepout.copper"
+        ]
+      }
     }
   ]
 }

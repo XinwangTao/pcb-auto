@@ -278,6 +278,21 @@ function applyOp(dir, op) {
     });
     return;
   }
+  if (kind === 'write') {
+    // 【用来构造「输入缺失/存在」型突变】比如天线净空需要
+    // `_design.snapshot.json` 才能核，而 base 里原本没有这个文件 —— 没有
+    // 这个 op 就永远无法证明那条判据会不会亮。
+    const p = safePath(dir, op.file);
+    const content = String(op.text == null ? '' : op.text);
+    if (fs.existsSync(p)) {
+      let same = false;
+      try { same = fs.readFileSync(p, 'utf8') === content; } catch (_) { same = false; }
+      if (same) throw new MeasureError(`write 无变化：${op.file} 内容已经相同`);
+    }
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, content, 'utf8');
+    return;
+  }
   throw new MeasureError('未知突变 op: ' + kind);
 }
 
@@ -463,7 +478,8 @@ function runCatalog({ catalogPath, print }) {
   // 对抗性审查实测：把 `antenna.keepout.copper` 那条判据敲坏
   //（`else if (false && copperBad)`）——寓言下渲染不了那个坑，而 **16 道闸门全绿**。
   // 现在它是棘轮：只许升不许降。底数 12 是**实测值**，不是目标值。
-  const MIN_PROVEN = 12;
+  const MIN_PROVEN = 14;   // 2026-11-27：补齐 drill.tool.missing 与 antenna.keepout.copper 后的实测值
+// 只许升不许降。上一个实测值是 12。
   const pct = ((proven.size / total) * 100).toFixed(1);
   say(`覆盖只统计被 mustInclude 点名、且在该突变输出里真的出现的 id；base 自带的 id 不计入。`);
   if (pass === results.length) {
@@ -473,7 +489,11 @@ function runCatalog({ catalogPath, print }) {
     say(`MUTANTS=FAIL ${pass}/${results.length} 命中 · 未命中 ${failedNames.length}（${failedNames.join(', ')}）`);
     say(`覆盖判据 ${proven.size} / 共 ${total}（${pct}%）`);
   }
-  if (proven.size < MIN_PROVEN) {
+  // 【只在「全部命中」的前提下才报棘轮】实测 2026-11-27：单条突变失败时
+  // proven 也会少一条，于是输出里同时出现「未命中 1」和「棘轮被破 13/14」——
+  // 后者是假的，会把人引向「删了用例」而不是「闸门坏了」。棘轮只对
+  // 「全部命中但覆盖面变小」这种情形发声。
+  if (pass === results.length && proven.size < MIN_PROVEN) {
     say(`MUTANTS=FAIL 覆盖棘轮被破：${proven.size} / ${MIN_PROVEN} —— 删掉变异用例就等于放宽了闸门`);
     return { code: 1, lines, results, proven, total };
   }
