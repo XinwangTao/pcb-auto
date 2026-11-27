@@ -17,7 +17,7 @@
 | 流水线本体 | `scripts/` | CommonJS | 真正跟 EDA 打交道的步骤；只被 `build` / `fabcheck` / `census` 以子进程调用 |
 | 数据 | `designs/`、`out/` | JSON | 输入设计与产物目录；`out/_probe/` 是量具 |
 
-`core/ops.mjs` 里导出的表 `OPS` 是 5 个操作的自描述源（`core/ops.mjs:602`）。CLI 的 `--help` 与 MCP 的 `tools/list` 都从这张表生成，所以不存在「文档说有、接口里没有」。
+`core/ops.mjs` 里导出的表 `OPS` 是 5 个操作的自描述源（`core/ops.mjs:649`）。CLI 的 `--help` 与 MCP 的 `tools/list` 都从这张表生成，所以不存在「文档说有、接口里没有」。
 
 ## 2. 为什么这么分
 
@@ -36,10 +36,10 @@
 | 操作 | core 函数 | 实际执行的子进程 | 谁能调用 |
 |---|---|---|---|
 | `idea-to-design` | `core/ops.mjs:288` | `node scripts/idea2design.js <想法>` | CLI、MCP、插件 |
-| `build` | `core/ops.mjs:330` | `pwsh -File run-all.ps1 -Design <abs>` | CLI、MCP、插件 |
-| `fabcheck` | `core/ops.mjs:386` | `node scripts/fabcheck.js <dir>` | CLI、MCP、插件 |
-| `census` | `core/ops.mjs:423` | `python out/_probe/fab-census.py --quiet [--settle N]` | CLI、MCP、插件 |
-| `verify` | `core/ops.mjs:567` | `pwsh -File verify-delivery.ps1 [-SkipCensus]` | CLI、MCP、插件 |
+| `build` | `core/ops.mjs:381` | `pwsh -File run-all.ps1 -Design <abs>` | CLI、MCP、插件 |
+| `fabcheck` | `core/ops.mjs:433` | `node scripts/fabcheck.js <dir>` | CLI、MCP、插件 |
+| `census` | `core/ops.mjs:470` | `python out/_probe/fab-census.py --quiet [--settle N]` | CLI、MCP、插件 |
+| `verify` | `core/ops.mjs:614` | `pwsh -File verify-delivery.ps1 [-SkipCensus]` | CLI、MCP、插件 |
 
 三个入口的操作名一致，只有拼写形态不同：
 
@@ -65,7 +65,7 @@
 | `1` | 判定为否 —— 跑完了，结论是「不行」 | **这是结果，不是错误** |
 | `2` | 调用错误：参数不对、路径不存在、缺依赖、环境不对 | 一次都没开始跑 |
 
-`fabcheck` 是这个契约最纯的形状：`orderable: r.code === 0`（`core/ops.mjs:403`），`scripts/fabcheck.js` 侧是 `exit: blockers.length ? 1 : 0`。参数缺失、目录不存在都直接返回 `exitCode: 2`，**不进** `scripts/fabcheck.js`。
+`fabcheck` 是这个契约最纯的形状：`orderable: r.code === 0`（`core/ops.mjs:450`），`scripts/fabcheck.js` 侧是 `exit: blockers.length ? 1 : 0`。参数缺失、目录不存在都直接返回 `exitCode: 2`，**不进** `scripts/fabcheck.js`。
 
 CLI 侧的收尾是一行 `process.exit(code)`，`code` 优先取结果里的 `exitCode`，其次 `ok === false` 时给 1，异常一律 2。`--help` / `-h` 退 **0**（要帮助是成功的），完全不给子命令才退 2（`cli/pcb.mjs:126`）。未知子命令退 2（`cli/pcb.mjs:152`）。
 

@@ -240,6 +240,57 @@ function fileMtime(p) {
  * @param {string} designName
  * @returns {string|null}
  */
+/**
+ * 从 run-all 的输出里拿出本次的输出目录。
+ *
+ * 【不能靠「遇到空格就停」定边界】旧写法是
+ *     ([A-Za-z]:[\\/][^\s"']+)
+ * 于是路径含空格时被截断：
+ *     「-> C:\\Users\\John Doe\\…\\out\\X-20261127-101010」 → 取到 C:\\Users\\John
+ * ⇒ existsSync 假 ⇒ runDir 为空 ⇒ 读不到 _run.json ⇒ 返回 ok:false、
+ *   drcPassed:false、exportsOk:0/0，而 exitCode 是 **0** —— 一次成功构建被报成失败。
+ * 作者机器路径无空格，所以本机永远复现不出来。
+ *
+ * 现在改成：先取「盘符开头直到行尾」的整段，再从尾往头**逐字符回退**，
+ * 用「这个路径真的存在吗」来定边界 —— 而不是用字符类去猜。
+ * 这样路径里有空格、有中文、行尾还跟了别的字，都没关系。
+ *
+ * @param {string} text run-all 的合并输出
+ * @param {(p:string)=>boolean} [exists] 注入存在性判定（闸门用构造目录测）
+ * @returns {string} 存在的目录，或空串
+ */
+export function extractRunDir(text, exists) {
+  const has = typeof exists === 'function' ? exists : existsSync
+  const src = String(text || '')
+
+  // 1) 带标记的行：标记之后、盘符开头、一直到行尾
+  const markers = /(?:流水线启动|输出目录|runDir)[^\n]*?([A-Za-z]:[\\/][^\n]*)/g
+  const tails = []
+  for (const m of src.matchAll(markers)) tails.push(m[1])
+
+  // 2) 没有标记时：直接找形如 …/out/<名字>-YYYYMMDD-HHMMSS 的尾巴
+  if (!tails.length) {
+    const g = /([A-Za-z]:[\\/][^\n]*?out[\\/][^\n\\/]*?-[0-9]{8}-[0-9]{6})/g
+    for (const m of src.matchAll(g)) tails.push(m[1])
+  }
+
+  for (const raw of tails) {
+    // 去掉行尾的引号与标点（但不碰路径中间的）
+    let cand = raw.trim().replace(/["'」「』]+$/g, '').replace(/[)）,;，。]+$/g, '').trim()
+    if (!cand) continue
+    // 从尾往头回退，第一个真存在的就是它
+    for (let i = cand.length; i >= 3; i--) {
+      const p = cand.slice(0, i).replace(/[\\/]+$/, '')
+      if (p.length < 3) continue
+      if (has(p)) return p
+      // 遇到分隔符就可以大步回退，不必逐字符
+      const j = Math.max(p.lastIndexOf('\\'), p.lastIndexOf('/'))
+      if (j > 2) i = j + 1
+    }
+  }
+  return ''
+}
+
 function newestRunDir(root, designName) {
   const outDir = join(root, 'out')
   if (!existsSync(outDir)) return null
@@ -343,11 +394,7 @@ export async function build(args, opt = {}) {
   { cwd: root, signal: opt.signal, timeoutMs: opt.timeoutMs || DEFAULT_TIMEOUT })
 
   const all = r.out + '\n' + r.err
-  let runDir = (/(?:流水线启动|输出目录|runDir)[^\n]*?([A-Za-z]:[\\/][^\s"']+)/.exec(all) || [])[1] || ''
-  if (!runDir) {
-    const m = /([A-Za-z]:[\\/][^\s"']*out[\\/][^\s\\/]+-[0-9]{8}-[0-9]{6})/.exec(all)
-    if (m) runDir = m[1]
-  }
+  let runDir = extractRunDir(all)
   if ((!runDir || !existsSync(runDir))) {
     const name = (r.out.match(/设计\s*:\s*(\S+)/) || [])[1]
     runDir = name ? newestRunDir(root, name) : ''

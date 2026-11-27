@@ -716,6 +716,13 @@ const RULES = [
         const num = (v) => typeof v === 'number' && Number.isFinite(v);
         const tol = F.toleranceMil;
         if (!num(tol) || tol < 0) bad.push(`toleranceMil=${JSON.stringify(tol)} 不是非负有限数`);
+        // 【容差必须有上限】实测 2026-11-27（对抗性审查）：这个字段原来无上界，
+        // 写 100 mil 就能让四边留白的对账恒为真。而川实测差异只有十几 mil 量级。
+        // 容差一旦能吸收真实测量误差，这条对账就不再代表任何东西。
+        const TOL_MAX = 1;
+        if (num(tol) && tol > TOL_MAX) {
+          bad.push(`toleranceMil=${tol} 太大（上限 ${TOL_MAX}）—— 容差能吸收真实测量误差时，对账形同虚设`);
+        }
         if (typeof F.why !== 'string' || !F.why.trim()) bad.push('why 为空 —— 尺寸来历必须写成一句可核对的话');
         const dm = F.declaredMil || {};
         const W = Number(d.boardWidthMil), H = Number(d.boardHeightMil);
@@ -737,6 +744,14 @@ const RULES = [
           const decl = F.marginsMil || {};
           for (const k of ['left', 'right', 'top', 'bottom']) {
             if (!num(decl[k])) { bad.push(`marginsMil.${k}=${JSON.stringify(decl[k])} 没声明`); continue; }
+            // 【留白必须是整数】实测 2026-11-27：这四个数当时是「运一遍审计、把输出贴回设计」
+            // 得到的（设计文件自己就写着「留白数字是用审计自己的尺子量的」），
+            // 所以限差 0.5 mil 的对账在当时是**恒真**的。让它带小数就等于留下一个审计回声的指纹。
+            // 设计意图是人定的整数（「每侧至少 276 mil」那种），不是四位小数的测量值。
+            if (!Number.isInteger(decl[k])) {
+              bad.push(`marginsMil.${k}=${decl[k]} 不是整数 —— 留白是设计意图，不该是审计是输出的回声`);
+              continue;
+            }
             cmp.push([`留白.${k}`, decl[k], measured[k]]);
           }
         } else {
@@ -752,7 +767,10 @@ const RULES = [
           + `；板 ${W}×${H} mil，器件 ${Array.isArray(g.comps) ? g.comps.length : 0} 件`;
         return bad.length
           ? { ok: false, why: `${bad.join(' / ')}（${denom}）` }
-          : { ok: true, value: `板框 ${W}×${H} mil 与声明一致，四边留白也与实测一致（${denom}）—— 来历：${String(F.why).slice(0, 60)}` };
+          : { ok: true, value: `板框 ${W}×${H} mil 与声明一致，四边留白与实测一致（${denom}）`
+              + `。【这是一把**回归锁**，不是独立验证】留白与实测用的是同一份 SIZES 表，`
+              + `它能抵住「布局被改而留白没跟着改」，但**不能**证明尺子本身准不准 ——`
+              + `后者要靠 fabcheck 对**产物 GKO 实测板框**的对账。来历：${String(F.why).slice(0, 60)}` };
       },
     },
 ];
