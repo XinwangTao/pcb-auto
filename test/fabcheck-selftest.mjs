@@ -59,6 +59,60 @@ try { j = JSON.parse(out); } catch (_) {
   process.exit(2);
 }
 
+/* ──────────────── 【自己测，不信自述】 ────────────────
+ * 实测 2026-11-27（对抗性审查）：把 fabcheck 的 selftest() 换成「常量返回 PASS」，
+ * 这道闸门**仍然 PASS**，而且把从 JSON 里读到的 exitGood/exitBad
+ * 直接印成「证据」—— 那两个退出码从来没被测量过。
+ * 一个只复述被测对象结论的闸门，等于没有闸门。
+ *
+ * 现在自己跑两次：好样本必须 exit 0、坏样本必须 exit 1；
+ * 并把**自述值与实测值对账** —— 自述报一个没发生过的数字也要红。
+ * 坏样本用最硬的一种：把 Gerber.zip 清零（对应 file.empty / gerber.zip.invalid）。
+ */
+function runFab(dir) {
+  try {
+    const o = execFileSync(process.execPath, [FAB, dir], {
+      encoding: 'utf8', timeout: 180000, stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return { code: 0, out: String(o) };
+  } catch (e) {
+    // fabcheck 把 FAIL 报告写 stderr，所以两边都要收
+    return { code: typeof e.status === 'number' ? e.status : 2, out: String(e.stdout || '') + String(e.stderr || '') };
+  }
+}
+
+const badDir = path.join(ROOT, 'out', `_fabcheck-bad-${process.pid}`);
+let measuredGood = null;
+let measuredBad = null;
+try {
+  fs.rmSync(badDir, { recursive: true, force: true });
+  fs.mkdirSync(badDir, { recursive: true });
+  fs.cpSync(BASE, badDir, { recursive: true });
+  fs.writeFileSync(path.join(badDir, 'Gerber.zip'), Buffer.alloc(0));
+
+  const g = runFab(BASE);
+  const b = runFab(badDir);
+  measuredGood = g.code;
+  measuredBad = b.code;
+
+  const mism = [];
+  if (g.code !== 0) mism.push(`好样本实测 exit=${g.code}，期望 0`);
+  if (b.code !== 1) mism.push(`坏样本实测 exit=${b.code}，期望 1`);
+  if (j && typeof j.exitGood === 'number' && j.exitGood !== g.code) {
+    mism.push(`自述 exitGood=${j.exitGood} 与实测 ${g.code} 不符`);
+  }
+  if (j && typeof j.exitBad === 'number' && j.exitBad !== b.code) {
+    mism.push(`自述 exitBad=${j.exitBad} 与实测 ${b.code} 不符`);
+  }
+  if (mism.length) {
+    console.error('  FABCHECK-SELFTEST=FAIL 独立测量与自述不一致：');
+    for (const m of mism) console.error('      ✗ ' + m);
+    process.exit(1);
+  }
+} finally {
+  try { fs.rmSync(badDir, { recursive: true, force: true }); } catch (_) { }
+}
+
 if (code === 0 && j.selftest === 'PASS') {
   const cases = j.cases || [];
   const neg = cases.filter((c) => c.ok).length;
@@ -68,7 +122,16 @@ if (code === 0 && j.selftest === 'PASS') {
     console.error('FABCHECK-SELFTEST=NOSAMPLE 自检报 PASS 但一条断言都没有 —— 空集不能算通过');
     process.exit(2);
   }
-  console.log(`  FABCHECK-SELFTEST=PASS ${neg} 条断言全过（好样本 exit=${j.exitGood} / 坏样本 exit=${j.exitBad}）`);
+  // 【断言条数棘轮】只要有一条 case 就算通过的话，
+  // 把 selftest() 换成「返回 {selftest:'PASS', cases:[{ok:true}]}」的常量就能绕过。
+  // 18 是 2026-11-27 实测值（只许升不许降），不是目标值。
+  const MIN_CASES = 18;
+  if (neg < MIN_CASES) {
+    console.error('  FABCHECK-SELFTEST=FAIL 自检断言从 ' + MIN_CASES + ' 条降到 ' + neg + ' 条 —— 棘轮被破，少检就等于放宽闸门');
+    process.exit(1);
+  }
+  // 报**实测**值，不报自述值。
+  console.log(`  FABCHECK-SELFTEST=PASS ${neg} 条断言全过（实测：好样本 exit=${measuredGood} / 坏样本 exit=${measuredBad}，且与自述一致）`);
   console.log('                          样本 test/mutants/base（版本化，不依赖会被清理的 out/）');
   process.exit(0);
 }

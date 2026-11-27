@@ -32,9 +32,21 @@ const read = (p) => readFileSync(p, 'utf8')
 let pass = 0
 const failures = []
 
+// 【跳过 ≠ 通过】原来 fn 返回一句「（跳过）」的字符串也会计入 pass，
+// 于是**删掉一个输入文件就能让一条断言安静消失**，末尾还写着「96 项全过」。
+// 实测 2026-11-27（对抗性审查）：删 out/_probe/undefined-names.py →
+// 「缺 undefined-names.py（跳过）」→ SMOKE=PASS 96 项全过、exit 0。
+// 现在跳过单独计数且不进分子；有跳过就不能说「全过」，退 2。
+const skips = []
+const skip = (reason) => ({ __skip: String(reason) })
 const check = (name, fn) => {
   try {
     const detail = fn()
+    if (detail && typeof detail === 'object' && detail.__skip) {
+      skips.push({ name, reason: detail.__skip })
+      console.log('  \x1b[33mSKIP\x1b[0m  ' + name + '  \x1b[90m' + detail.__skip + '\x1b[0m')
+      return
+    }
     pass += 1
     console.log(`  \x1b[32mPASS\x1b[0m  ${name}${detail ? `  \x1b[90m${detail}\x1b[0m` : ''}`)
   } catch (e) {
@@ -466,7 +478,7 @@ const PROBE = join(ROOT, 'out', '_probe')
 for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'artifact-consistency.py']) {
   check(`量具 ${rel} 不硬编码开发者路径`, () => {
     const p = join(PROBE, rel)
-    if (!existsSync(p)) return '不存在（跳过）'
+    if (!existsSync(p)) return skip('量具不存在（这条本次没有测）')
     const src = read(p)
     assert(!/^\s*ROOT\s*=\s*r?"[A-Za-z]:\\/m.test(src), '仍然把 ROOT 写成绝对路径常量')
     assert(!/陶鑫旺/.test(src), '仍然含开发者用户名')
@@ -513,7 +525,7 @@ for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'arti
       // 不是 git 仓库（例如从 tar 包里跑）时无法枚举「被跟踪的文件」。
       // 这里必须明说，不能静默通过 —— 静默通过正是当初那个假绿闸门的形状。
       if (/not a git repository|ENOENT.*git/i.test(e.message)) {
-        return 'SKIP 不是 git 仓库，无法枚举被跟踪文件（这条只在 git 检出上有效）'
+        return skip('不是 git 仓库，无法枚举被跟踪文件（这条只在 git 检出上有效）')
       }
       throw e
     }
@@ -540,7 +552,7 @@ for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'arti
       hits = mod.scan(ROOT)
     } catch (e) {
       if (/not a git repository|ENOENT.*git/i.test(e.message)) {
-        return 'SKIP 不是 git 仓库'
+        return skip('不是 git 仓库')
       }
       throw e
     }
@@ -569,7 +581,7 @@ for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'arti
 for (const rel of ['fab-census.py', 'idea-fabchain.py', 'make-dossier.py', 'artifact-consistency.py']) {
   check(`量具 ${rel} 不依赖控制台代码页`, () => {
     const p = join(PROBE, rel)
-    if (!existsSync(p)) return '不存在（跳过）'
+    if (!existsSync(p)) return skip('量具不存在（这条本次没有测）')
     const src = read(p)
     assert(/reconfigure\(\s*encoding\s*=\s*["']utf-8["']/.test(src),
       '没有把 stdout/stderr 强制成 UTF-8 —— 在 cp1252 或任何非中文代码页上会 UnicodeEncodeError')
@@ -591,7 +603,7 @@ check('量具报告是原子写（崩溃不留半截 JSON）', () => {
  */
 check('量具没有「模块级用了却从未导入」的名字', () => {
   const script = join(PROBE, 'undefined-names.py')
-  if (!existsSync(script)) return '缺 undefined-names.py（跳过）'
+  if (!existsSync(script)) return skip('缺 out/_probe/undefined-names.py —— 这条本次没有测')
   const targets = readdirSync(PROBE).filter((f) => f.endsWith('.py')).map((f) => join(PROBE, f))
   // ubuntu 上通常只有 python3；Windows 上通常只有 python。两个都试。
   const candidates = [process.env.PCB_AUTO_PYTHON, 'python', 'python3'].filter(Boolean)
@@ -602,7 +614,7 @@ check('量具没有「模块级用了却从未导入」的名字', () => {
     assert(r.status === 0, `${r.stdout || ''}${r.stderr || ''}`.trim().slice(0, 800))
     return `${targets.length} 个脚本（${py}）`
   }
-  return `跳过：没有可用的 Python（${tried}）`
+  return skip(`没有可用的 Python（${tried}）`)
 })
 
 /**
@@ -669,7 +681,7 @@ check('census 退出码与 ok 一致（ok=true ⇔ exitCode=0）', () => {
 check('census 跑完之后报告文件原样还原（测试不销毁证据）', () => {
   // 上两条已经会写盘又还原。这里再独立确认一次净变化为零。
   const report = join(PROBE, 'fab-census.json')
-  if (!existsSync(report)) return '本仓库没有该文件（新克隆里已被 gitignore 之外的路径保护，跳过）'
+  if (!existsSync(report)) return skip('本仓库没有该报告文件')
   const before = readFileSync(report)
   censusOnThisRepo()
   const after = readFileSync(report)
@@ -787,7 +799,7 @@ const hasPwsh = (() => {
 })()
 
 check('verify 被抓进管道时中文不乱码、判据不整条消失', () => {
-  if (!hasPwsh) return 'SKIP 本机没有 pwsh，这条没测（CI 的 windows / ubuntu 两个 job 上有）'
+  if (!hasPwsh) return skip('本机没有 pwsh，这条没测')
   // 为什么要专门测「被抓进管道」这一种跑法：
   // 有控制台时 PowerShell 一切正常。stdout 一旦被重定向（管道 / 文件 / Agent 的 spawn），
   // 它解码 **native 命令输出** 用的是 [Console]::OutputEncoding，而那个默认值来自系统
@@ -935,6 +947,14 @@ check('反过来：给了具名文件时不需要 git，不该被连坐退 2', (
 })
 
 console.log('\n────────────────────────────────────────────────────────────')
+if (failures.length === 0 && skips.length > 0) {
+  // 有跳过就不能说「全过」：跳过是「这条没测」，不是「这条对」。
+  // 按仓库退出码契约，未测齐归 2。
+  console.log('  \x1b[33mSMOKE=ENVSKIP\x1b[0m  ' + pass + ' 过 / ' + skips.length + ' 跳过（跳过不算通过，也不算失败）')
+  for (const s of skips) console.log('    \u2013 ' + s.name + '  \x1b[90m' + s.reason + '\x1b[0m')
+  console.log('─'.repeat(60) + '\n')
+  process.exit(2)
+}
 if (failures.length === 0) {
   console.log(`  \x1b[32mSMOKE=PASS\x1b[0m   ${pass} 项全过`)
   console.log('────────────────────────────────────────────────────────────\n')
