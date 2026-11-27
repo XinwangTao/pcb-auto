@@ -459,6 +459,11 @@ function runCatalog({ catalogPath, print }) {
 
   const pass = results.filter((r) => r.ok).length;
   const total = totalSet.size;
+  // 【覆盖率必须进判决】原来它只是打在结论行里的一个数字：12/69（17.4%）也照样 exit 0。
+  // 对抗性审查实测：把 `antenna.keepout.copper` 那条判据敲坏
+  //（`else if (false && copperBad)`）——寓言下渲染不了那个坑，而 **16 道闸门全绿**。
+  // 现在它是棘轮：只许升不许降。底数 12 是**实测值**，不是目标值。
+  const MIN_PROVEN = 12;
   const pct = ((proven.size / total) * 100).toFixed(1);
   say(`覆盖只统计被 mustInclude 点名、且在该突变输出里真的出现的 id；base 自带的 id 不计入。`);
   if (pass === results.length) {
@@ -467,6 +472,10 @@ function runCatalog({ catalogPath, print }) {
     const failedNames = results.filter((r) => !r.ok).map((r) => r.name);
     say(`MUTANTS=FAIL ${pass}/${results.length} 命中 · 未命中 ${failedNames.length}（${failedNames.join(', ')}）`);
     say(`覆盖判据 ${proven.size} / 共 ${total}（${pct}%）`);
+  }
+  if (proven.size < MIN_PROVEN) {
+    say(`MUTANTS=FAIL 覆盖棘轮被破：${proven.size} / ${MIN_PROVEN} —— 删掉变异用例就等于放宽了闸门`);
+    return { code: 1, lines, results, proven, total };
   }
   return { code: pass === results.length ? 0 : 1, lines, results, proven, total };
 }

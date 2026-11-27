@@ -99,17 +99,19 @@ check('apply() 能跑完（不需要任何配置）', () => {
   return `注册 ${ctx._tools.length} 个工具`
 })
 
-check('注册的工具数与 core 的 OPS 表一一对应', () => {
-  const want = Object.keys(core.OPS).length
-  assert(ctx._tools.length === want, `注册 ${ctx._tools.length} 个，OPS 有 ${want} 个`)
-  return `${want} 个`
-})
+// 【期望值必须独立于被测对象】下面这张清单是**对外承诺**，不从 core.OPS 推导。
+// 原来写的是 `Object.keys(core.OPS)`，而工具也是由同一张 OPS 生成的 ⇒ 两边同步变，
+// 断言恒真。实测 2026-11-27（对抗性审查）：`delete OPS.verify` 整个删掉 verify 操作，
+// 仍然 PLUGIN=PASS 11 项全过。现在改 OPS 必须同时改这里 —— 这才是契约。
+const CONTRACT_TOOLS = ['pcb_build', 'pcb_census', 'pcb_fabcheck', 'pcb_idea_to_design', 'pcb_verify']
 
-check('工具名是 pcb_ 前缀 + 连字符转下划线', () => {
+check('注册的工具集合与对外承诺一致（期望值不从 core.OPS 推导）', () => {
   const got = ctx._tools.map((t) => t.name).sort()
-  const want = Object.keys(core.OPS).map((k) => `pcb_${k.replace(/-/g, '_')}`).sort()
-  assert(JSON.stringify(got) === JSON.stringify(want), `实际 [${got}] 期望 [${want}]`)
-  return got.join(' ')
+  const want = [...CONTRACT_TOOLS].sort()
+  assert(JSON.stringify(got) === JSON.stringify(want),
+    `实际 [${got}] 期望 [${want}]（差异：多 ${got.filter((x) => !want.includes(x))} 少 ${want.filter((x) => !got.includes(x))}）`)
+  assert(ctx._tools.length === CONTRACT_TOOLS.length, `数量 ${ctx._tools.length} ≠ ${CONTRACT_TOOLS.length}`)
+  return `${CONTRACT_TOOLS.length} 个：${got.join(' ')}`
 })
 
 check('每个工具的参数声明与 core 的 args 一致', () => {

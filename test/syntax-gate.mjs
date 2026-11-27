@@ -483,6 +483,22 @@ function main() {
     for (const [file, message] of bad) failures.push({ file, kind: 'ps1', message })
   }
 
+  // 【零样本守卫必须在 --json 之前】它原来只在 else（非 JSON）分支里，
+  // 于是 `node test/syntax-gate.mjs --json <一个不含可检语法的文件>` 会打印
+  // counts 全 0、failures 为空，然后 **exit 0** —— 一个合法但空的结果被当成通过。
+  // 实测 2026-11-27 by adversarial review：带 --json 退 0，不带 --json 退 2（NO-SAMPLE）。
+  {
+    const checkedNow = js.length + esm.length + cjs.length + py.length + ps.length
+    if (checkedNow === 0) {
+      if (JSON_OUT) {
+        console.log(JSON.stringify({ counts: { js: 0, mjs: 0, cjs: 0, py: 0, ps1: 0 }, forms, failures: [], warnings, unmeasured, noSample: true }, null, 2))
+      } else {
+        console.log('  SYNTAX=NO-SAMPLE  0 个文件被解析 —— 这不是通过。检查 ROOT 与 git 是否指对了仓库。')
+      }
+      return 2
+    }
+  }
+
   if (JSON_OUT) {
     console.log(JSON.stringify({
       counts: { js: js.length, mjs: esm.length, cjs: cjs.length, py: py.length, ps1: ps.length },
