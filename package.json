@@ -58,7 +58,8 @@
     "mcp": "node mcp/server.mjs",
     "install-clients": "node install/install.mjs",
     "fabcheck": "node scripts/fabcheck.js",
-    "verify": "pwsh -NoProfile -ExecutionPolicy Bypass -File verify-delivery.ps1"
+    "verify": "pwsh -NoProfile -ExecutionPolicy Bypass -File verify-delivery.ps1",
+    "doctor": "node scripts/preflight.mjs"
   },
   "bin": {
     "pcb": "cli/pcb.mjs"

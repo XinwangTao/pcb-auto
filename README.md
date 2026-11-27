@@ -402,6 +402,36 @@ node scripts\idea2design.js "做一块 RP2040 主控板，USB 供电，带 LDO �
 | DRC | `pcb_Drc.check(strict, ui, verbose)` |
 | 导出 | `pcb_ManufactureData.getGerberFile/getBomFile/getPickAndPlaceFile/getTestPointFile/getPdfFile` |
 
+## 在新机器上部署（先跑这一条）
+
+```bash
+git clone <repo> && cd pcb-auto
+npm install            # 不装的话契约闸门会**静默跳过**（见下方第 1 条）
+npm run doctor         # 把下面四个坑提前查出来
+```
+
+`npm run doctor` 检查 10 项，区分「阻塞」与「提醒」（退码 0 可跑 / 1 有阻塞项 / 2 检查器跑不起来）：
+Node ≥ 18.17、`acorn`+`eslint-scope`、pwsh 7、git、LCEDA 4.1.111、WMIC、
+控制台编码、仓库位置、`.pipeline.lock`、python（可选）。
+
+**四个只有装完才知道的坑**（实测 2026-11-27，一台干净的 Windows，前四次尝试全部失败）：
+
+1. **只 `git clone` 不 `npm install`** ⇒ `staticcheck` 报「解析器不可用，本关跳过」。
+   这意味着「返回对象引用了不可见标识符」这类闸门**静默关闭**而没有一处会红。
+2. **仓库装在该机写不进去的分区** ⇒ 六个导出全 `ok:false` 却各自带着真实 size，
+   跑满 336 秒、产物目录只剩几个文件。EDA 的可写白名单**不写在任何文档里**、各机器不同，
+   不要猜规律；先试用户 `Documents` 下（开工前的写盘探针会 5 秒内告诉你是这一类）。
+3. **该机没有 WMIC** ⇒ `open --headless true` 报 `SPAWN_OWNER_FAILED`。
+   先手动起一次客户端再开 headless：
+   `Start-Process lceda-pro.exe` → 等 25 s → `lceda-pro.exe open --headless true` → 把 `sessionId` 写进 `.session`。
+4. **中文版 Windows 的控制台编码** ⇒ 子进程中文 JSON 解析失败，被报成「fabcheck 输出不是 JSON」。
+   触发条件不是「中文版」本身，而是**进程没有附加控制台或输出被重定向**时落到 ANSI 代码页；
+   同一台机器交互时是 utf-8、spawn 出来就是 gb2312。`run-all.ps1` 已自动切 UTF-8。
+
+验收口径：完整跑通一轮应得到 `退出码 0 = 六道独立闸门都测过且通过`，
+`_gates.independent.json` 里 `finalOk:true` 且 `exitCode:0`。参考实测：
+`out/_probe/INSTALL-ON-ANOTHER-MACHINE.md`。
+
 ## 环境
 
 - CLI：**嘉立创 EDA Pro 4.1.111** 的 `lceda-pro.exe`（GUI 与 CLI 是同一个 exe）。
