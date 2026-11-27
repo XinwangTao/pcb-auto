@@ -210,7 +210,11 @@ if (!writeProbe.ok) {
     + '请把仓库（或 -OutDir）放到 %USERPROFILE%\\Documents 下再跑。');
   return {
     ok: false, components: 0, connections: 0, mismatches: 0, mismatchCount: 0,
-    netSummary: [], errors, envFaults, warns, exports: [], artifacts: artifacts,
+    // 键名必须与正常路径一致：正常路径把它们放在 gates 里，且叫 envFaultList。
+    // 实测 2026-11-27：早退写成顶层 envFaults（数组）⇒ run-all 读 $v.envFaultList 得 undefined
+    // ⇒ 环境故障分支从来不触发，仍打「DRC 违规组 0」。两处一起改。
+    netSummary: [], errors, warns, exports: [], artifacts: artifacts,
+    envFaults: envFaults.length, envFaultList: envFaults.slice(0, 10),
     drcPassed: false, drcLeafCount: 0, drcDetailCount: 0, writeProbe, log: L,
   };
 }

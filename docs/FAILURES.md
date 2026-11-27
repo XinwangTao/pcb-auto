@@ -1,6 +1,6 @@
 # 已知缺陷与自查记录
 
-<!-- ANCHOR-BASE: scripts/pipeline3.js sha256_12=44F763CF93F0。
+<!-- ANCHOR-BASE: scripts/pipeline3.js sha256_12=DA04F79F10D8。
      本文所有 pipeline3.js 行号都相对于这一份源码。行号漂移量不是常数
      （实测 stitchErr +497、patchNoGeo +582），所以发现哈希变了必须逐个按内容重锚，
      不能加偏移。test/doc-refs.mjs 只验「被指到的行非空」，不验「指对了」。 -->

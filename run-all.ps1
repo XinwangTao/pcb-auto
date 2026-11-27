@@ -936,7 +936,10 @@ foreach ($plan in $healPlans) {
   #   而这里原来只打「未通过：DRC 违规组 0」—— 读起来像「一条违规都没有却不通过」，
   #   完全不指向真因。而且换板框根本治不了写权限，所以直接停阶梯。
   $envList = @()
+  # 顶层（早退路径）与 gates 里（正常路径）都认：两条路径的形状曾经不一致，
+  # 而这种不一致的表现是“分支从不触发”——不报错、只是永远走不到。
   if ($null -ne $v -and $null -ne $v.envFaultList) { $envList = @($v.envFaultList) }
+  elseif ($null -ne $v -and $null -ne $v.gates -and $null -ne $v.gates.envFaultList) { $envList = @($v.gates.envFaultList) }
   if ($envList.Count -gt 0) {
     Log ("[$($plan.tag)] 未能开工（环境故障，不是设计结论）：") 'Red'
     $envList | Select-Object -First 3 | ForEach-Object { Log ("    " + $_) 'Red' }
