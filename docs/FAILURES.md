@@ -25,7 +25,7 @@
 | 8 | 真 | `rulesApplied` 只有一处赋值、不进 `_run.json`、不参与判定；136 次里 30 次为 false | `scripts/pipeline3.js:2068`（`rulesApplied` 全文仅出现在这段注释里，无任何读取/赋值） |
 | 9 | 假 | Slot Region 有 5 条独立处理路径；没有认领者的是另外两类违规 | `scripts/pipeline3.js` 的 `slotKeepout` / `slotPadGeometry` / `ensureGeoIdx` / `slotHoleUsed` / `noSideIsViaOrTrack` |
 | 10 | 真 | `_run.json` 写的是布局前的声明板框，扩板后从不回写 | `scripts/pipeline3.js:751-762,932-944,5391,5471`；`scripts/fabcheck.js:445-448` |
-| 11 | 部分真 | 重试阶梯里确实有预缩机制；但语料里 0 次收缩转移，收缩只发生在第一轮之前 | `run-all.ps1:570-583 "$estArea = [Math]::Max(480000, $compCount * 55000 + $connCount * 9000)"` |
+| 11 | 部分真 | 重试阶梯里确实有预缩机制；但语料里 0 次收缩转移，收缩只发生在第一轮之前 | `run-all.ps1:593-606 "$estArea = [Math]::Max(480000, $compCount * 55000 + $connCount * 9000)"` |
 | 12 | 真 | 流水线不查图元绝对坐标出框，真正的判定在离线校验器里 | `scripts/pipeline3.js:883-948`（只查焊盘 bbox 与 `PAD_OFFBOARD_TOL`，不查图元绝对坐标）；`scripts/fabcheck.js:415,463-468` |
 | 13 | 真 | README 生成脚本用动态值算目录数，却把「两目录」写死在散文里 | `out/_probe/sync-readme-numbers.py:153-156`；`交付-README.md:44-45` |
 | 14 | 真 | `fabcheck` 四类结果都以 `id` 为第一键同台输出，正则数 `"id"` 会把阻断数放大 | `scripts/fabcheck.js:312-319,764-771,781-784` |
@@ -659,7 +659,7 @@ sed -n '3590,3600p;3720,3730p;3750,3760p;3770,3780p;3835,3845p' scripts/pipeline
 
 ### 11. 重试阶梯：机制上有预缩，语料里 0 次收缩
 
-**成立的那一半。** 「重试阶梯能把板改小」有代码支撑。`run-all.ps1:574-576 "if ($baseArea -gt [Math]::Max($estArea * 2.2, $FIVExFIVE_MIL2)) {"` 是**预缩**分支：`if ($baseArea -gt [Math]::Max($estArea * 2.2, $FIVExFIVE_MIL2)) { $baseW = [int]($estSide * 1.15); ... }`。L565-571 才是放大。阶梯本身在 L683-726（`$healPlans` 的四个 @{w;h;tag}）：smart-fit 之后三档 `expand-1.25x / retry / retry2` 尺寸相同，只差 tag。
+**成立的那一半。** 「重试阶梯能把板改小」有代码支撑。`run-all.ps1:597-599 "if ($baseArea -gt [Math]::Max($estArea * 2.2, $FIVExFIVE_MIL2)) {"` 是**预缩**分支：`if ($baseArea -gt [Math]::Max($estArea * 2.2, $FIVExFIVE_MIL2)) { $baseW = [int]($estSide * 1.15); ... }`。L565-571 才是放大。阶梯本身在 L683-726（`$healPlans` 的四个 @{w;h;tag}）：smart-fit 之后三档 `expand-1.25x / retry / retry2` 尺寸相同，只差 tag。
 
 按 `designs/*.json` 复算，唯一触发预缩的是 `d7-rp2040-flash.json`（声明 2400×1800、11 器件 56 连）→ smart-fit 1212×1212、expand 1515×1515，**比设计声明小**。
 
@@ -744,7 +744,7 @@ grep -o '{"s":"clearanceNoHandler".*' out/*/_log*.json | head
 
 `scripts/pipeline3.js` 不是独立模块，而是宿主 `invoke` 的**顶层 await 函数体**。在 CommonJS 里直接 `node --check`，第一个顶层 `await`（L205）就会报 `SyntaxError: await is only valid in async functions and the top level bodies of modules`。
 
-仓里真正的闸门有两处，都按「包装后的函数体」解析：`run-all.ps1:100 "try { new (require('vm').Script)('(async function(){'"`（不通过就回退上一次验证过的备份），以及全仓闸门 `test/syntax-gate.mjs`。后者在 `test/syntax-gate.mjs:10-12` 记了一张对照表：受跟踪 `.js` 186 个、`node --check` 失败 92 个（≥49%）、按真实形式解析失败 0 个。
+仓里真正的闸门有两处，都按「包装后的函数体」解析：`run-all.ps1:123 "try { new (require('vm').Script)('(async function(){'"`（不通过就回退上一次验证过的备份），以及全仓闸门 `test/syntax-gate.mjs`。后者在 `test/syntax-gate.mjs:10-12` 记了一张对照表：受跟踪 `.js` 186 个、`node --check` 失败 92 个（≥49%）、按真实形式解析失败 0 个。
 
 也就是接近一半的 `.js` 在 `node --check` 下必然假红（这张表也随文件数变，别单独引用其中的数字）。看到一个红就去「修」，会修一个不存在的问题；学会忽略它，真正的语法错误也会被一起忽略。要查语法，跑 `node test/syntax-gate.mjs`。
 

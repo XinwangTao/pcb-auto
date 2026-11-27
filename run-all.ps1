@@ -23,6 +23,29 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+# ============================================================
+# 【强制 UTF-8 控制台编码】中文版 Windows 默认代码页是 936(GBK)，
+# 而本流水线要解析**子进程输出的 JSON**（fabcheck / verify-* / pipeline3 的回执），
+# 那些 JSON 里带中文（如 summary.line、建议文案）。
+# 实测 2026-11-27（另一台机器，pwsh 7.6.10，chcp 936）：
+#   [Console]::OutputEncoding = gb2312/936 ⇒ ConvertFrom-Json 报
+#   「After parsing a value an unexpected character was encountered: b. Path 'summary.line'」
+#   ⇒ run-all 只能报「下单资格（诊断用）未取得：fabcheck exit=0，输出不是 JSON」
+#   而 fabcheck 本身完全正常（13036 字、exit 0、stderr 为空）。
+# 本机（pwsh 7.7.0）恰好是 utf-8/65001 所以永远复现不出来 —— 而中文版 Windows
+# 正是嘉立创 EDA 用户的默认环境。这里强制改成 UTF-8，并在失败时不阻断
+# （只是少了一层保障，不该让整轮跑不了）。
+# ============================================================
+try {
+  $prevOutEnc = [Console]::OutputEncoding
+  [Console]::OutputEncoding = [Text.Encoding]::UTF8
+  $OutputEncoding = [Text.Encoding]::UTF8
+  if ($env:PYTHONIOENCODING -ne 'utf-8') { $env:PYTHONIOENCODING = 'utf-8' }
+} catch {
+  Write-Host "[pcb-auto] 警告：无法把控制台编码切到 UTF-8（$($_.Exception.Message)。" -ForegroundColor Yellow
+  Write-Host "           子进程的中文 JSON 可能无法解析（例：「下单资格未取得」），请先跑 chcp 65001。" -ForegroundColor Yellow
+}
+
 # 外部程序位置统一由 scripts\tool-paths.ps1 解析：
 #   环境变量 > 常见安装位置 > PATH 上的命令，都不中就抛一条能照做的错。
 # 以前这里是写死的 lceda-pro.exe 绝对路径 —— 作者机器上能跑，
