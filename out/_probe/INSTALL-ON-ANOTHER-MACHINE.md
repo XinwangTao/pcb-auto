@@ -147,7 +147,45 @@ Path 'summary.line', line 21, position 3.
 > （`# [Console]::OutputEncoding = …` 里仍含那个子串）。已改成行首锚定 + `(?!#)` 排除注释。
 > **只匹配子串、不管是否生效的断言，是另一种假绿。**
 
-## 五、还留着的两个问题（未修）
+## 六、最终：对端跑通了（2026-11-27 16:06–16:14）
+
+代码 `7ebba6d`（含编码修复、退出码三态、布线变体排序），仓库在
+`C:\Users\Administrator\Documents\pcb-auto`：
+
+| 项 | 结果 |
+|---|---|
+| `ok` | **True** |
+| DRC 叶子 / 总数 | **0 / 0** |
+| exports | **6/6** |
+| routeState | completed |
+| 耗时 | 336.8 s（smart-fit 一次过） |
+| 独立 DRC 复核 | 通过 |
+| 独立校验 | **19 通过 / 0 失败 / 0 备注** |
+| `_gates.independent.json` | `finalOk:true` / `exitCode:0` / 「六道独立闸门都测过且通过」 |
+| 产物 | 16 个（Gerber 111229 / Board.pdf 801150 / BOM / PnP / Netlist / TestPoints + 3 份交付文档） |
+
+**与本机一致的地方**：宽 1300 时 0 叶子、路径上那次 1625 宽才出 7 叶子 —— 两台机器现在给出同一个结果。
+
+同一台机器上的全部 21 道闸门也全绿（`npm test` exit 0）—— 闸门是可移植的。
+
+## 七、回馈到项目里的改动
+
+七个问题里四个只有装完才知道，这不该靠读文档发现。所以它们变成了一条命令：
+
+```
+npm run doctor        # scripts/preflight.mjs
+```
+
+检查 10 项，区分阻塞与提醒（0 可跑 / 1 有阻塞 / 2 检查器跑不起来）。
+**在出问题的那台机器上实测过**：`PREFLIGHT=OK 8 项通过 / 2 个提醒`（提醒正是
+那机的真实情况：没 WMIC 与 gb2312 控制台）。
+
+另修了一个漂移点：我第一版 preflight 自己写了一份 LCEDA 候选路径，与
+`scripts/tool-paths.ps1` 的 `Resolve-LcedaCli` 不是同一份（后者还认 `LCEDA_PRO_EXE`、
+多三个安装位置）。两份清单漂开的表现是「doctor 说没装、但流水线跑得好好的」
+—— 最坏的那种假警。现在直接叫那份唯一实现。
+
+## 八、还留着的两个问题（未修）
 
 1. ~~`fabcheck exit=0，输出不是 JSON`~~（已修，见四之二）：：对端 run-all 多次报这个。本地正常。
    抗审者早就指出过 `fabcheck` 把 FAIL 报告写 stderr、包装器只读 stdout 的错配，
