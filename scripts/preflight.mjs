@@ -93,31 +93,37 @@ if (PWSH) {
   else bad('找不到 git。syntax-gate / dev-path-scan / doc-refs 会退 2（拿不到文件清单）');
 }
 
-// ── 5. LCEDA（唯一的硬依赖）───────────────────────────────────────────
-{
-  const cands = [];
-  if (process.env.PCB_AUTO_LCEDA) cands.push(process.env.PCB_AUTO_LCEDA);
-  const pf = process.env.ProgramFiles || 'C:\\Program Files';
-  cands.push(path.join(pf, 'lceda-pro', 'lceda-pro.exe'));
-  cands.push(path.join(process.env.LOCALAPPDATA || '', 'Programs', 'lceda-pro', 'lceda-pro.exe'));
-  const found = cands.find((p) => p && fs.existsSync(p));
-  const onPath = (() => {
-    for (const d of (process.env.PATH || '').split(path.delimiter)) {
-      const p = path.join(d, 'lceda-pro.exe');
-      try { if (fs.existsSync(p)) return p; } catch (_) { }
-    }
-    return null;
-  })();
-  const exe = found || onPath;
-  if (exe) {
-    ok(`LCEDA 找到：${exe}`);
-    // 版本目录名里通常带版本号，读不到就跳过（不猜）
-    const m = /(\d+\.\d+\.\d+)/.exec(exe);
-    if (m && m[1] !== '4.1.111') warn(`版本号看起来是 ${m[1]}，本项目只在 4.1.111 上验证过`);
-  } else {
-    bad('找不到 lceda-pro.exe。设环境变量 PCB_AUTO_LCEDA 指到它（本项目只支持 4.1.111），'
-      + `\n         或把它加到 PATH。试过：${cands.filter(Boolean).join(' / ')}`);
+// ── 5. LCEDA（唯一的硬依赖）───────────────────────
+// 【不要在这里另写一份候选列表】实测 2026-11-27：我先写了一份，
+// 而它和 scripts/tool-paths.ps1 的 Resolve-LcedaCli 不一致（后者还认
+// LCEDA_PRO_EXE 这个环境变量与另三个安装路径）。两份清单迟早会漂，
+// 而漂开的表现是「doctor 说没装、但流水线跑得好好的」——最坏的那种假警。
+// 所以直接调那份唯一实现。
+let lceda = null;
+if (PWSH) {
+  const r = tryRun(PWSH, ['-NoProfile', '-Command',
+    `. '${path.join(ROOT, 'scripts', 'tool-paths.ps1')}'; Resolve-LcedaCli`]);
+  const line = r.out.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).pop() || '';
+  if (r.status === 0 && line && fs.existsSync(line)) lceda = line;
+  else if (r.status !== 0) {
+    // 解析器自己报的错就是最好的错信息（它会列出每一条试过的路径）
+    lceda = null;
+    bad(`LCEDA 解析失败（\`scripts/tool-paths.ps1\` 的 Resolve-LcedaCli 原话）：\n`
+      + r.out.split(/\r?\n/).map((s) => '         ' + s.trim()).filter((s) => s.trim()).join('\n'));
   }
+} else {
+  // 没 pwsh 时退化为最小检查（已经报过 pwsh 缺失）
+  const cands = [process.env.PCB_AUTO_LCEDA, process.env.LCEDA_PRO_EXE].filter(Boolean);
+  lceda = cands.find((p) => fs.existsSync(p)) || null;
+}
+if (lceda) {
+  ok(`LCEDA 找到：${lceda}`);
+  const m = /(\d+\.\d+\.\d+)/.exec(lceda);
+  if (m && m[1] !== '4.1.111') warn(`版本号看起来是 ${m[1]}，本项目只在 4.1.111 上验证过`);
+} else if (PWSH) {
+  // 上面已经 bad() 过了，这里不重复报
+} else {
+  bad('未能确认 LCEDA（没 pwsh 时只能看 PCB_AUTO_LCEDA / LCEDA_PRO_EXE 两个环境变量）');
 }
 
 // ── 6. WMIC（没有它 headless 会起不来，而报错信息不会告诉你该手动起客户端）──
