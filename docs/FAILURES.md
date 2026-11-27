@@ -1,6 +1,6 @@
 # 已知缺陷与自查记录
 
-<!-- ANCHOR-BASE: scripts/pipeline3.js sha256_12=2FB9656FF757。
+<!-- ANCHOR-BASE: scripts/pipeline3.js sha256_12=D5E543995972。
      本文所有 pipeline3.js 行号都相对于这一份源码。行号漂移量不是常数
      （实测 stitchErr +497、patchNoGeo +582），所以发现哈希变了必须逐个按内容重锚，
      不能加偏移。test/doc-refs.mjs 只验「被指到的行非空」，不验「指对了」。 -->
@@ -15,35 +15,35 @@
 
 | 编号 | 结论 | 一句话 | 位置 |
 |---|---|---|---|
-| 1 | 部分真 | `skippedNoAnchor` 字段真实存在且语料全 0，但其中一条自增分支静态不可达 | `scripts/pipeline3.js:2415,2510,2521,2559` |
-| 2 | 真 | 补线阶段 5 处丢弃点，只有一处连日志都没有；真正大量丢的是 80mil 上限那条 | `scripts/pipeline3.js:4662,4672-4674,4705-4709,4782-4786,4788-4790,4826-4829` |
-| 3 | 真 | 缝合失败只记一句异常字符串，37 次全是同一句，不带网/坐标/id | `scripts/pipeline3.js:2526-2555` |
-| 4 | 真 | `fixed` 数的是「变更 API 接受了」，不是「违规真的减少了」 | `scripts/pipeline3.js:4382,4393-4395` |
-| 5 | 部分真 | 逐级收窄是真的；但它不是「白名单」，白名单这个词在代码里不存在 | `scripts/pipeline3.js:4542,4674,4706,4721,4789` |
+| 1 | 部分真 | `skippedNoAnchor` 字段真实存在且语料全 0，但其中一条自增分支静态不可达 | `scripts/pipeline3.js:2453,2548,2559,2597` |
+| 2 | 真 | 补线阶段 5 处丢弃点，只有一处连日志都没有；真正大量丢的是 80mil 上限那条 | `scripts/pipeline3.js:4700,4710-4712,4743-4747,4820-4824,4826-4828,4864-4867` |
+| 3 | 真 | 缝合失败只记一句异常字符串，37 次全是同一句，不带网/坐标/id | `scripts/pipeline3.js:2564-2593` |
+| 4 | 真 | `fixed` 数的是「变更 API 接受了」，不是「违规真的减少了」 | `scripts/pipeline3.js:4420,4431-4433` |
+| 5 | 部分真 | 逐级收窄是真的；但它不是「白名单」，白名单这个词在代码里不存在 | `scripts/pipeline3.js:4580,4712,4744,4759,4827` |
 | 6 | 假 | 负 Y / 某个负坐标不是坐标系符号错；那条坐标是测试夹具字面 | `scripts/pipeline3.js:777-781` |
-| 7 | 真 | `coverage` 算完只进日志，此后无人读取，「过孔盘覆盖不足」假设没接过任何动作 | `scripts/pipeline3.js:4771,4773-4780,4782-4785` |
-| 8 | 真 | `rulesApplied` 只有一处赋值、不进 `_run.json`、不参与判定；136 次里 30 次为 false | `scripts/pipeline3.js:2069`（`rulesApplied` 全文仅出现在这段注释里，无任何读取/赋值） |
+| 7 | 真 | `coverage` 算完只进日志，此后无人读取，「过孔盘覆盖不足」假设没接过任何动作 | `scripts/pipeline3.js:4809,4811-4818,4820-4823` |
+| 8 | 真 | `rulesApplied` 只有一处赋值、不进 `_run.json`、不参与判定；136 次里 30 次为 false | `scripts/pipeline3.js:2107`（`rulesApplied` 全文仅出现在这段注释里，无任何读取/赋值） |
 | 9 | 假 | Slot Region 有 5 条独立处理路径；没有认领者的是另外两类违规 | `scripts/pipeline3.js` 的 `slotKeepout` / `slotPadGeometry` / `ensureGeoIdx` / `slotHoleUsed` / `noSideIsViaOrTrack` |
-| 10 | 真 | `_run.json` 写的是布局前的声明板框，扩板后从不回写 | `scripts/pipeline3.js:752-763,933-945,5392,5472`；`scripts/fabcheck.js:445-448` |
+| 10 | 真 | `_run.json` 写的是布局前的声明板框，扩板后从不回写 | `scripts/pipeline3.js:752-763,933-945,5430,5510`；`scripts/fabcheck.js:445-448` |
 | 11 | 部分真 | 重试阶梯里确实有预缩机制；但语料里 0 次收缩转移，收缩只发生在第一轮之前 | `run-all.ps1:593-606 "$estArea = [Math]::Max(480000, $compCount * 55000 + $connCount * 9000)"` |
 | 12 | 真 | 流水线不查图元绝对坐标出框，真正的判定在离线校验器里 | `scripts/pipeline3.js:884-949`（只查焊盘 bbox 与 `PAD_OFFBOARD_TOL`，不查图元绝对坐标）；`scripts/fabcheck.js:415,463-468` |
 | 13 | 真 | README 生成脚本用动态值算目录数，却把「两目录」写死在散文里 | `out/_probe/sync-readme-numbers.py:153-156`；`交付-README.md:44-45` |
 | 14 | 真 | `fabcheck` 四类结果都以 `id` 为第一键同台输出，正则数 `"id"` 会把阻断数放大 | `scripts/fabcheck.js:312-319,764-771,781-784` |
 | 15 | 真 | `_run.json.ok` 与「可下单」不是同一批：48 相等是巧合，集合不同 | `out/_probe/fab-census.json`；`scripts/fabcheck.js:764-771` |
-| 16 | 真 | 布线变体 7 份配置里有 5 份从来没被执行过（129/143 个目录只出现 `variants[0]`） | `scripts/pipeline3.js:1740,1814,1878-1883,1923` |
+| 16 | 真 | 布线变体 7 份配置里有 5 份从来没被执行过（129/143 个目录只出现 `variants[0]`） | `scripts/pipeline3.js:1740,1814,1878-1883,1961` |
 | 17 | 真 | 布线阶梯按「作业自报 state」判去留，7 份各烧满 120s 换来零走线，导出 0/6 全部 `budget` | `scripts/pipeline3.js:1814-1827,1844-1863,1878-1883` |
 | 18 | 真 | `outlineFit` 只比焊盘 bbox 尺寸不比位置：实测 122 mil 焊盘挂在板外，却报成「超 48 mil」 | `scripts/pipeline3.js:902-908,915-928,941-949` |
 | 19 | 真 | 天线净空带 240 mil 高、压住模组自己焊盘，`NO_WIRES` 封死出线（DRC 里 7 条 Prohibited Region） | `scripts/pipeline3.js:1021-1023,1079-1083,1101-1110,1124-1130` |
 | 20 | 真 | 同网表 1000 mil 布不通、1300 mil 布得通：7 份配置 0 条 vs 602 条，限制因素是板宽 | `designs/mic-esp32s3-v2.json`；`designs/mic-esp32s3-v3.json` |
 | 21 | 真 | `run-all.ps1` 用 `2>&1 \| Out-String` 把 stderr 并进 JSON，一次 6/6 产物齐全的构建被判成 `NON_JSON 未知输出` 并整轮重跑 | `run-all.ps1` 的四处 invoke 捕获点 |
-| 22 | 真 | 强轮上限 6 比 4 差：多两轮约 280s、DRC 收益 0，还把断连从 6 推到 105 | `scripts/pipeline3.js:1800-1802`（`MAX_ROUTE_ITERS`）、`scripts/pipeline3.js:1992-1998`（`routeIter` 落盘） |
-| 28 | 真 | 整轮净空回滚删掉 GND 缝合孔后没补回来，`clearanceRevertOk` 仍报 true：实测 4 个地孔换来 4 条新断连 | `scripts/pipeline3.js:3390-3403,3435-3505,3522-3557` |
+| 22 | 真 | 强轮上限 6 比 4 差：多两轮约 280s、DRC 收益 0，还把断连从 6 推到 105 | `scripts/pipeline3.js:1800-1802`（`MAX_ROUTE_ITERS`）、`scripts/pipeline3.js:2030-2036`（`routeIter` 落盘） |
+| 28 | 真 | 整轮净空回滚删掉 GND 缝合孔后没补回来，`clearanceRevertOk` 仍报 true：实测 4 个地孔换来 4 条新断连 | `scripts/pipeline3.js:3428-3441,3473-3543,3560-3595` |
 | 23 | 真 | `patchDrc` 两轮两败（33→56、62→84，均整轮撤回），`patchTotal` 恒 0 | `scripts/pipeline3.js` 的 `patchVerify` / `patchReverted` |
 | 24 | 真 | `doc-refs` 只判被引用那一行非空，不判内容还对不对 —— 插 70 行后它继续亮绿灯 | `test/doc-refs.mjs` |
 | 25 | 真 | 遥测改名只在成功路径上，失败那一轮的 `_run.json` / `_log.json` 被下一轮直接覆盖 | `run-all.ps1` 的 `_run-<idx>-<tag>` 改名块 |
 | 26 | 真 | 器件坐标被 `_placement` 钉死时，扩板重试是可证明的 no-op：面积 +56%，DRC 直方图逐位相同 | `designs/mic-esp32s3-v3.json` 的 `_placement`；`scripts/pipeline3.js` 的 `outlineFit.explicitFixed` |
 | 27 | 真 | `ensureGeoIdx` 漏了 pour / poured：`resolveByOwner` 里那个 `owner === 'pour'` 分支永远不可达 | `scripts/pipeline3.js` 的 `ensureGeoIdx` / `resolveByOwner` |
-| 29 | 真 | `clearanceReverted` 的字段名不含分母：`deleted`/`restored` 只数**走线**，`viaRestored` 只数**过孔** —— 实测 `{deleted:4, restored:2, viaRestored:2}` 与同份日志里`viaDeleted` ×4 并排出现，两个 4 指向完全不同的对象，读成「删 4 个孔只补回 2 个」（我本人就这么误判了一轮），而 `deleted` 数的 4 条是走线、跟孔无关 | `scripts/pipeline3.js:3390-3395,3408,3517,3522` |
+| 29 | 真 | `clearanceReverted` 的字段名不含分母：`deleted`/`restored` 只数**走线**，`viaRestored` 只数**过孔** —— 实测 `{deleted:4, restored:2, viaRestored:2}` 与同份日志里`viaDeleted` ×4 并排出现，两个 4 指向完全不同的对象，读成「删 4 个孔只补回 2 个」（我本人就这么误判了一轮），而 `deleted` 数的 4 条是走线、跟孔无关 | `scripts/pipeline3.js:3428-3433,3446,3555,3560` |
 | 30 | 真 | `preVia` 的「被包围 GND 焊盘」判据 `(hasUp&&hasDown)||(hasLeft&&hasRight)` 只问有没有邻居、不问焊盘多大：0.5mm 间距引脚（盘心 19.7 mil）天然左右都有邻居，于是在实测 10×24 mil 的焊盘上打了 19.7 mil 外径的孔，造出 4 条 `SMD Pad to Via cur=0` 硬短路 | `scripts/pipeline3.js` 的 preVia（按事件名 `epViaSkip` / `EP_VIA_NEED` 定位）；闸门 `test/epvia-size-gate.mjs` |
 | 31 | 真 | `decoupling_near_ic` 用 `ics.length < 2` 把「单 IC 网」整桶排除，而那一个排除同时放过了确实不在乎距离的（EN/BOOT 的 RC 延时）和**必须在乎距离的**（`IMU_CPOUT` / `IMU_REGOUT`）：实测 C7（2.2nF，MPU-6050 电荷泵）离 U5 **332 mil = 8.43 mm**，从未被任何判据看过 | `scripts/audit-placement.mjs` 的 `decoupling_near_ic`（按判据 id 定位）；新增判据 `bypass_cap_distance`；闸门 `test/placement-rules.mjs` |
 | 32 | 部分真 | `slotKeepout` 只查 Fill、`slotPadGeometry` 只查 SLOT 焊盘孔，而 DRC 报的那个 `Slot Region` 实际是 MEMS 麦克风封装内部的声孔；实测有走线压在它上（`cur=0` / `need=11.811`），而导出的钻孔文件在该位置**没有任何孔**。成立的那一半是铜与孔；「麦克风寂声」那一半依赖无法核实的端口朝向 | `scripts/pipeline3.js` 的 `slotKeepout` / `slotPadGeometry`；`out/_probe/MIC-ACOUSTIC-PORT-COVERED.md` |
@@ -63,7 +63,7 @@
 
 **现象。** 兜底补线循环（`for (const v of connErrs)`，`4586` 起、`4766` 收）里一共 **7 处 `continue`**。每一处都意味着「这条断连本轮不再往下走」。注意：其中一部分是**已经动过板**才收尾的（`3814` 跨层分支真的打了过孔），另一部分是真的什么都没做。
 
-**代码位置。** 典型的那一处 `scripts/pipeline3.js:4672-4674`：
+**代码位置。** 典型的那一处 `scripts/pipeline3.js:4710-4712`：
 
 ```js
 const edPos = ed.position;
@@ -75,13 +75,13 @@ if (!net || !pos) { log('patchNoNet', { err: String(ed.globalIndex || ''), obj1:
 
 | 行 | 条件 | 日志名 | 语料次数 |
 |---|---|---|---|
-| `pipeline3.js:4685` | 拿不到网名或位置 | `patchNoNet` | **0** |
-| `pipeline3.js:4717` | 两个图元查不到几何 | `patchNoGeo` | **0** |
-| `pipeline3.js:4712` | `closestPair` 返回空或距离非有限 | **没有日志** | **无法计数** |
-| `pipeline3.js:4761,4768` | 跨层分支收尾（打孔成功记 `patchedCrossLayer`、失败记 `patchCrossLayerNoObj`） | 两条都有 | **0 / 0** |
-| `pipeline3.js:4793` | 两对象已贴合仍不连通（跨层时先试过打孔） | `patchIslandPair` | **1** |
-| `pipeline3.js:4800` | `cp.d > 80`（80mil 上限） | `patchTooFar` | **653** |
-| `pipeline3.js:4839` | `create` 之后一个 id 都没拿到（已回滚） | `patchNoObj` | **0** |
+| `pipeline3.js:4723` | 拿不到网名或位置 | `patchNoNet` | **0** |
+| `pipeline3.js:4755` | 两个图元查不到几何 | `patchNoGeo` | **0** |
+| `pipeline3.js:4750` | `closestPair` 返回空或距离非有限 | **没有日志** | **无法计数** |
+| `pipeline3.js:4799,4806` | 跨层分支收尾（打孔成功记 `patchedCrossLayer`、失败记 `patchCrossLayerNoObj`） | 两条都有 | **0 / 0** |
+| `pipeline3.js:4831` | 两对象已贴合仍不连通（跨层时先试过打孔） | `patchIslandPair` | **1** |
+| `pipeline3.js:4838` | `cp.d > 80`（80mil 上限） | `patchTooFar` | **653** |
+| `pipeline3.js:4877` | `create` 之后一个 id 都没拿到（已回滚） | `patchNoObj` | **0** |
 
 **真正的问题在哪一行。** 不是最容易被注意到的 L4311，而是 **L4349**：
 
@@ -114,7 +114,7 @@ done
 
 **现象。** 缝合阶段画线失败时，catch 只记 `e.message` 的前 120 个字符。没有网名、没有端点坐标、没有图元 id。
 
-**代码位置。** `scripts/pipeline3.js:2526-2555`。try 块里唯一的 API 调用是 L2200 的 `eda.pcb_PrimitiveLine.create(...)`；L2207 已经有 `mId` 保护——代码是**读返回值**判断失败的，不是靠异常；L2224 的 catch 只有 `log('stitchErr', String(e && e.message).slice(0, 120))`。
+**代码位置。** `scripts/pipeline3.js:2564-2593`。try 块里唯一的 API 调用是 L2200 的 `eda.pcb_PrimitiveLine.create(...)`；L2207 已经有 `mId` 保护——代码是**读返回值**判断失败的，不是靠异常；L2224 的 catch 只有 `log('stitchErr', String(e && e.message).slice(0, 120))`。
 
 **语料里观测到什么。** `stitchErr` **37 次**，**全部字面等于** `Cannot read properties of undefined (reading 'primitiveId')`，分布在 7 个目录；每一条都紧跟在 `stitchAnchors` 之后、任何一条 `stitch` 成功之前。
 
@@ -132,7 +132,7 @@ grep -o "Cannot read properties of undefined (reading 'primitiveId')" out/*/_log
 
 **现象。** `clearanceRound` 同一行里印两个数：`violations`（板上还剩几处）和 `fixed`（本轮调用成功几次）。后者与前者不同源，看起来却像「修了 N 处、剩 M 处」。
 
-**代码位置。** `scripts/pipeline3.js:4393` 落盘 `{ round, violations: clears.length, fixed }`；L4030-4032 的注释原文：
+**代码位置。** `scripts/pipeline3.js:4431` 落盘 `{ round, violations: clears.length, fixed }`；L4030-4032 的注释原文：
 
 > 判据只看**板上结果**，不问动作成不成功：fixed 数的是"变更 API 接受了"，
 > 与"这处间距真的变好了"脱钩（本文件里 modify/delete 失败都是返回值不是异常，
@@ -157,9 +157,9 @@ grep -o '{"s":"clearanceNoProgress"[^}]*}' out/*/_log*.json
 
 **现象。** 判断「过孔盘有没有盖住线端」的那几个数，算出来、写进日志，然后就没有下文了。
 
-**代码位置。** `scripts/pipeline3.js:4782-4797`：L4734 `let coverage = null` → L4736-4743 算 `r = dia/2`、`dEnd`（末端到孔心的最小距离）、`covered` → L4745-4748 把 `coverage` 放进 `log('patchIslandPair', ...)` → L4749 `continue`。全文 `coverage` 只此一处赋值、一处构造、一处进日志（L4734 / L4742 / L4745），都在同一个块内，没有第四处读取。
+**代码位置。** `scripts/pipeline3.js:4820-4835`：L4734 `let coverage = null` → L4736-4743 算 `r = dia/2`、`dEnd`（末端到孔心的最小距离）、`covered` → L4745-4748 把 `coverage` 放进 `log('patchIslandPair', ...)` → L4749 `continue`。全文 `coverage` 只此一处赋值、一处构造、一处进日志（L4734 / L4742 / L4745），都在同一个块内，没有第四处读取。
 
-> 【重锚记录】上面这些 `L####` 与 `pipeline3.js:a-b` 是 2026-11-26 22:3x 按**内容**逐条重锚的。重锚实测发现：`pipeline3.js:4771-4786` 这一条当时是对的，但同一段里的裸 `L4408 / L4410-4417 / L4419-4422 / L4423` 已经陈旧约 315 行（它们是更早一版写的）。两种形式并存会让人以为同一段是同一次量的。
+> 【重锚记录】上面这些 `L####` 与 `pipeline3.js:a-b` 是 2026-11-26 22:3x 按**内容**逐条重锚的。重锚实测发现：`pipeline3.js:4809-4824` 这一条当时是对的，但同一段里的裸 `L4408 / L4410-4417 / L4419-4422 / L4423` 已经陈旧约 315 行（它们是更早一版写的）。两种形式并存会让人以为同一段是同一次量的。
 
 **语料里观测到什么。** `patchIslandPair` 仅 **1** 条，且带 `coverage` 字段。
 
@@ -609,7 +609,7 @@ routeIter {iter:3, stillUnconnected: 27, tracksAdded:155}   ← COMPLETION 保�
 
 ### 1. `skippedNoAnchor` 全为 0：字段是真的，「健康」是半结构性的
 
-**成立的那一半。** 字段真实存在并被写进日志：`scripts/pipeline3.js:2415` 声明 `let skipNoAnchor = 0, skipTooFar = 0`，L2183 在「断点离同层锚点超过 12mil」时自增，L2228 随 `stitchRound` 一起落盘。审计表里 **66 轮** `stitchRound` 的 `skippedNoAnchor` 全为 0。按同一判据在 2026-11-26 11:1x 对当前 56 个含 `_run.json` 的目录重跑一次（`--settle 180` 无关，这里是读盘统计），是 **78 轮、非零 0 次**——轮数变是因为语料被滚动过，结论同一个：一次都没触发过。
+**成立的那一半。** 字段真实存在并被写进日志：`scripts/pipeline3.js:2453` 声明 `let skipNoAnchor = 0, skipTooFar = 0`，L2183 在「断点离同层锚点超过 12mil」时自增，L2228 随 `stitchRound` 一起落盘。审计表里 **66 轮** `stitchRound` 的 `skippedNoAnchor` 全为 0。按同一判据在 2026-11-26 11:1x 对当前 56 个含 `_run.json` 的目录重跑一次（`--settle 180` 无关，这里是读盘统计），是 **78 轮、非零 0 次**——轮数变是因为语料被滚动过，结论同一个：一次都没触发过。
 
 > **行号于 2026-11-26T19:48 重锚过（+497）。** 本节原先写的是 `1651,1686,1697,1731`，`patchE`/`patchF` 往 `pipeline3.js` 里插了 497 行之后全部失效。重锚不是加个常数就完事：六个锚点逐个按**内容**核对过 —— `2148` 确是 `let skipNoAnchor = 0, skipTooFar = 0`、`2183` 确是 `myD > 12` 自增、`2194` 确是 `!other` 分支、`2228` 确是 `stitchRound` 落盘、`2171`/`2173` 确是 `pool.length < 2`/`islands.length < 2`。
 > **教训：** `test/doc-refs.mjs` 当时对本文其余十几处同样失效的引用**全部亮绿灯**，因为它只检查「被指到的那一行不是空的」。行号漂移后指向的往往是别人的代码，非空、合法、但完全无关。所以「引用能解析」不等于「引用指对了」—— 这条闸门的能力边界必须写明，不能拿它当引用正确性的证据。
@@ -640,7 +640,7 @@ grep -o '"skippedTooFar":[1-9]' out/*/_log*.json | wc -l      # 非零
 
 **成立的那一半。** 补线对象的筛选确实是逐级收窄的五道门：
 
-- `scripts/pipeline3.js:4553`：只认 `errorType === 'Connection Error'`；
+- `scripts/pipeline3.js:4591`：只认 `errorType === 'Connection Error'`；
 - L4637：还要有 `net` 与 `pos`；
 - L4668：还要 `o1`/`o2` 两个对象几何都取得到，否则 `patchNoGeo`；
 - L4684：`cp.d <= 1.0` 落入「孤岛/跨层」分支（跨层先打过孔，否则记 `patchIslandPair`）；

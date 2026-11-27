@@ -1798,6 +1798,29 @@ const countTracks = async () => {
 // 既然收益为 0、方差为正，"多跑几轮"就不是一个特性。
 // 预算方向不放松：LEFT 闸 / capRaw 闸 / 零新增闸 / 清零闸四道全部保留（见下方）。
 const MAX_ROUTE_ITERS = 4;
+
+// ---------- 变体排序：把「已经用尽」和「贵且无用」的变体挪到后面 ----------
+// 实测 2026-11-27（ESP32S3_Wireless_Mic_V5，两次运行，遥测见 route / routeNoOp 事件）：
+//   iter1 的 ground+pours 产出 +55 条走线，耗时 73.9s / 61.5s
+//   iter2 再跑**同一个** ground+pours ⇒ 0 条新增，却仍花 87.3s / 60.3s
+// 两次运行的布线作业总时间 209.5s / 201.0s，其中零/负产出 **111.5s / 100.6s** ——
+// 一半以上的布线时间是「跑完什么也没画」。
+// 规律不是「这个变体不行」（它上一次明明成功了），而是「同一个变体连续用，
+// 边际收益归零，而成本是完整的」。所以这里只做**排序**，不删变体：
+//   产出过 ⇒ -1（它已经把这批几何榨完了，下一轮排后面）
+//   贵且空转（≥30s 且 0 新增）⇒ -2（重罚）
+//   便宜空转（2.4s）⇒ 不动（探针很便宜，值得每轮再试）
+// 排后面的不会被跳过 —— 只是更可能被预算闸（left()<240000 / capRaw<capNeed）自然剪掉；
+// 而预算还够时它照样有机会跑。这样即使启发式判断错了，也不会丢掉一次真正的机会。
+const routeScore = {};
+function routeOrderOf(list, score) {
+  // 显式带下标做 tiebreak，不依赖 Array#sort 的稳定性保证。
+  return list
+    .map((v, i) => ({ v, i, s: (score && score[v.name]) || 0 }))
+    .sort((a, b) => (b.s - a.s) || (a.i - b.i))
+    .map((x) => x.v);
+}
+
 let prevUnconnected = null;
 for (let iter = 0; iter < MAX_ROUTE_ITERS; iter++) {
   // iter 3 起都是 COMPLETION 强轮。多轮强轮各自仍受 capRaw 约束，
@@ -1811,7 +1834,13 @@ for (let iter = 0; iter < MAX_ROUTE_ITERS; iter++) {
   let tracksAddedThisIter = 0;
   // 连续「超时且零新增走线」的次数。见下方 TIMEOUT 分支里的长注释。
   let timeoutNoOpStreak = 0;
-  for (const v of variants) {
+  // 每轮开跑前按分数排序（见上面 routeOrderOf 的实测依据）。
+  // 只有顺序真变了才记一条 routeOrder，否则每轮一条噪音日志。
+  const routeOrder = routeOrderOf(variants, routeScore);
+  if (routeOrder.map((x) => x.name).join('|') !== variants.map((x) => x.name).join('|')) {
+    log('routeOrder', { iter, order: routeOrder.map((x) => x.name), score: Object.assign({}, routeScore) });
+  }
+  for (const v of routeOrder) {
     // 预算闸：变体数从 5 增到 7，且带间距余量的配置更容易布不完。
     // 不设闸的话最坏情况是 7×(600~900s) 远超外部 590s 的 invoke 超时，
     // 超时＝幽灵调用（EDA 里作业还在跑，进程状态被污染，后续设计连环失败）。
@@ -1893,7 +1922,16 @@ for (let iter = 0; iter < MAX_ROUTE_ITERS; iter++) {
             // 空转：一个图元都没画。换下一份引擎配置 —— 这不是"重试同一个东西"。
             // keep=true 时已有铜不会被动，所以不会累加副作用。
             log('routeNoOp', { iter, variant: v.name, ms: r.ms, tracks: linesAfter });
+            // 贵的空转重罚，便宜的不动：2.4s 的探针每轮再试一次成本可以忽略，
+            // 而 87s 的空转必须挪到后面，让它被预算闸自然剪掉。
+            if (r.ms >= 30000) routeScore[v.name] = (routeScore[v.name] || 0) - 2;
           } else {
+            // 有产出：这个变体已经把当前几何能榨的榨完了。
+            // 实测两轮：iter1 产出 +55，iter2 再跑同一个变体 ⇒ 零产出却仍花 87.3s / 60.3s。
+            // 所以给它 -1，下一轮它排到后面 —— 不删，只是更可能被预算闸剪掉。
+            if (linesAdded !== null && linesAdded > 0) {
+              routeScore[v.name] = (routeScore[v.name] || 0) - 1;
+            }
             // 有产出（或读不出来，保守）：保持原有行为，不加轮次。
             break;
           }
