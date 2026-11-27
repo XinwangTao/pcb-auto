@@ -207,7 +207,15 @@ function Get-PipelineScript {
     exit 2
   } else {
     Log 'pipeline3.js 语法不通（可能正在编辑）-> 改用上一次完好备份' 'Yellow'
-    if (-not (Test-PipelineSyntax $ScriptBackup) -or $script:GateFailed -ne 'syntax') {
+    # 【先把「当前文件的失败原因」拿走】$script:GateFailed 是一个被副作用污染的变量：
+    # Test-PipelineSyntax 开头把它置成 'syntax'/'contract'，成功返回时**不复位**。
+    # 而下一行又用同一个函数去检查备份，于是「当前文件为何失败」这个事实被
+    # 备份的检查结果覆盖掉。实测 2026-11-27：备份两关全过 ⇒ GateFailed 被留成 'contract'
+    # ⇒ `-ne 'syntax'` 为真 ⇒ 整个条件恒为真 ⇒ **回退分支永远走不到**，而报文还会说
+    # 「备份同样没通过闸门」——一句假话，会把人引向修一个不存在的缺陷。
+    $curGateFailed = $script:GateFailed
+    $backupOk = Test-PipelineSyntax $ScriptBackup
+    if (-not $backupOk -or $curGateFailed -ne 'syntax') {
       # 备份也不能只是「语法过」：它必须同样通过契约闸门，否则回退到它毫无意义。
       Log '  备份同样没通过闸门（或它自己契约不通过），不能用它替跑。' 'Red'
       Log '  这不是环境问题：请先把 scripts\pipeline3.js 修到 syntax + 契约都过。' 'Red'
