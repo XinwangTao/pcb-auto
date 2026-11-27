@@ -85,5 +85,9 @@
     "CLAUDE.md",
     "GEMINI.md",
     "CITATION.cff"
-  ]
+  ],
+  "devDependencies": {
+    "acorn": "^8.19.0",
+    "eslint-scope": "^5.1.1"
+  }
 }
