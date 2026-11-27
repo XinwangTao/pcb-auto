@@ -19,7 +19,7 @@ pwsh -NoProfile -File video\scripts\make-v11.ps1 -Batch <HHmmss>
 
 | 素材 | 抽帧 | 与前一秒相同 | 结论 |
 |---|---|---|---|
-| `out/gui-v11-real.mp4`（新录 600 s） | 600 | 145 | 变化占 **75.8%** → 可用 |
+| `out/gui-v11-real.mp4`（新录 600 s） | 600 | 113 | 变化占 **81.2%**（framemd5）→ 可用 |
 | `video/public/real/05_route.mp4`（旧） | — | — | 第 0.5 s 就已全布通 → **不可用** |
 
 旧素材 `03_layout/04_pour/06_final` 首帧灰度差只有 1.3–3.0：同一张静止板。**静止冒充运动是最容易糊弄过去的一关。**
@@ -27,7 +27,7 @@ pwsh -NoProfile -File video\scripts\make-v11.ps1 -Batch <HHmmss>
 ## 2. 阶段定位：不看一遍猜，用里程碑时刻反推
 
 `out/frames/REAL_<ts>/*.png` 的 **mtime 减去录像起点**，就是每个阶段在录像里的秒数。
-实测 2026-11-27 10:07 那一轮（流水线 384.1 s）：
+实测 2026-11-27 10:07 那一轮（`rec-result.json` 自述 384.1 s，含建会话；内部计时略小，不同源不要并用）：
 
 | 秒 | 里程碑 |
 |---|---|
