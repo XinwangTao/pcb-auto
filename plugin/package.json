@@ -1,9 +1,30 @@
 {
   "name": "@pcb-auto/dsh-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Expose the pcb-auto pipeline as DeepSeek Harness tools: idea → design → board → fabrication verdict.",
+  "keywords": [
+    "dsh-plugin",
+    "pcb",
+    "eda",
+    "lceda",
+    "jlceda",
+    "kicad-alternative",
+    "gerber",
+    "bom",
+    "drce",
+    "automation"
+  ],
+  "homepage": "https://github.com/XinwangTao/pcb-auto#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XinwangTao/pcb-auto.git",
+    "directory": "plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/XinwangTao/pcb-auto/issues"
+  },
   "exports": {
     ".": "./index.js",
     "./locale/*.json": "./locale/*.json",
@@ -11,6 +32,7 @@
   },
   "files": [
     "index.js",
+    "locate-root.mjs",
     "cordis.patch.yml",
     "locale/*.json",
     "docs",

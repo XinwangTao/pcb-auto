@@ -24,7 +24,7 @@
 import { register } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, statSync, readdirSync } from 'node:fs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(join(HERE, '..'))
@@ -209,6 +209,64 @@ check('render 能把真实结果渲染成文本（模型看到的就是这个）
   assert(text.includes('普查'), '渲染里没有主旨')
   assert(/目录/.test(text), '渲染里没有目录数（分母）')
   return text.split('\n')[0].slice(0, 60)
+})
+
+// ── 打包完整性：`files` 里漏一个被 import 的模块，发布出去就是断的 ──────
+// 真实缺陷（2026-11-27 发现）：`index.js` 静态 import `./locate-root.mjs`，
+// 而 `package.json` 的 `files` 里没有它 ⇒ 按 files 打包后插件在别人机器上
+// 一加载就 `ERR_MODULE_NOT_FOUND`。本地永远复现不出来，因为本地是整个目录。
+// 这条检查把「被 import 的相对模块」逐个对回 `files`。
+check('打包完整性：被 import 的相对模块都在 package.json 的 files 里', () => {
+  const PLUGIN = join(ROOT, 'plugin')
+  const pkgPath = join(PLUGIN, 'package.json')
+  assert(existsSync(pkgPath), '缺 plugin/package.json')
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
+  const files = Array.isArray(pkg.files) ? pkg.files : []
+  assert(files.length > 0, 'package.json 没有 files 数组 —— 会把整个目录都发出去')
+
+  // files 条目 → 判定函数。目录名包含其下全部内容；其余按 glob 的 * 语义处理。
+  const toRel = (abs) => abs.slice(PLUGIN.length + 1).replace(/\\/g, '/')
+  const covered = (rel) => files.some((pat) => {
+    const p = pat.replace(/\\/g, '/')
+    if (!p.includes('*')) {
+      if (rel === p) return true
+      const abs = join(PLUGIN, p)
+      return existsSync(abs) && statSync(abs).isDirectory() && rel.startsWith(p + '/')
+    }
+    const rx = new RegExp('^' + p.split('*').map((s) => s.replace(/[.+^${}()|[\]\\]/g, '\\$&')).join('[^/]*') + '$')
+    return rx.test(rel)
+  })
+
+  // 从入口出发，递归收集相对 import（只跟 .js/.mjs；node: 与包名跳过）
+  const seen = new Set()
+  const missing = []
+  const entry = join(PLUGIN, 'index.js')
+  assert(existsSync(entry), '缺 plugin/index.js')
+  const walk = (abs) => {
+    const rel = toRel(abs)
+    if (seen.has(rel)) return
+    seen.add(rel)
+    const src = readFileSync(abs, 'utf8')
+    for (const m of src.matchAll(/from\s+'(\.\.?\/[^']+)'/g)) {
+      let dep = resolve(dirname(abs), m[1])
+      if (!dep.endsWith('.mjs') && !dep.endsWith('.js')) dep += '.mjs'
+      if (!existsSync(dep) && dep.endsWith('.mjs') && existsSync(dep.replace(/\.mjs$/, '.js'))) {
+        dep = dep.replace(/\.mjs$/, '.js')
+      }
+      assert(existsSync(dep), `import 的目标不存在：${m[1]}（来自 ${rel}）`)
+      const depRel = toRel(dep)
+      if (!covered(depRel)) missing.push(`${depRel}（被 ${rel} import，但 files 里没有）`)
+      walk(dep)
+    }
+  }
+  walk(entry)
+
+  assert(missing.length === 0, '以下模块会被漏掉：\n      ' + missing.join('\n      '))
+  // 入口与 dsh.bundle.patch 也必须真的存在，否则装上就是坏的
+  for (const k of [pkg.dsh && pkg.dsh.bundle && pkg.dsh.bundle.patch].filter(Boolean)) {
+    assert(existsSync(join(PLUGIN, k)), `dsh.bundle.patch 指向的文件不存在：${k}`)
+  }
+  return `${seen.size} 个模块，files 覆盖 ${files.length} 条规则`
 })
 
 console.log('\n────────────────────────────────────────────────────────────')
