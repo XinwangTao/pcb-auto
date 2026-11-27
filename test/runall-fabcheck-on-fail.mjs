@@ -76,11 +76,23 @@ chk(!/\.blockers\)\.Count|\.warnings\)\.Count/.test(block),
 chk(/summary\.blockers/.test(block), '必须取 fabcheck 自己算好的 summary.blockers 计数');
 
 // ── 动态：把真实块嵌进 stub 跑 ─────────────────────────────────────────────
-const pwsh = process.env.PCB_AUTO_PWSH
-  || ['C:\\Program Files\\PowerShell\\7\\pwsh.exe', 'pwsh'].find((p) => {
-    try { execFileSync(p, ['-NoProfile', '-Command', 'exit 0'], { stdio: 'ignore' }); return true; }
-    catch { return false; }
-  });
+// 【环境变量也必须真探】实测 2026-11-27：原来写的是
+//     const pwsh = process.env.PCB_AUTO_PWSH || [候选].find(探活)
+// —— 只要设了这个变量就**不再探活**，于是一个不存在的路径也被当真；
+// 后面 execFileSync 扛 ENOENT → 未捕获异常 → Node 以 **1** 结束，
+// 而 1 的含义是「发现了失败」。一个路径写错被报成了代码缺陷。
+function canRunPwsh(p) {
+  try { execFileSync(p, ['-NoProfile', '-Command', 'exit 0'], { stdio: 'ignore', timeout: 15000 }); return true; }
+  catch { return false; }
+}
+const wantedPwsh = process.env.PCB_AUTO_PWSH;
+let pwsh = null;
+if (wantedPwsh) {
+  if (canRunPwsh(wantedPwsh)) pwsh = wantedPwsh;
+  else bail(`PCB_AUTO_PWSH 指向的 pwsh 跑不起来：${wantedPwsh} —— 这是环境问题，不是闸门发现了缺陷`);
+} else {
+  pwsh = ['C:\\Program Files\\PowerShell\\7\\pwsh.exe', 'pwsh'].find(canRunPwsh) || null;
+}
 if (!pwsh) bail('找不到 pwsh 7 —— 无法嵌入执行（这条闸门不能用「跳过」冒充通过）');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'runall-fab-'));

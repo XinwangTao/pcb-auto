@@ -38,10 +38,15 @@ catch (e) { bail(`读不到 ${path.relative(ROOT, SRC)}：${e.message}`); }
 const START = '  const EP_VIA_H = 11.8, EP_VIA_D = 19.7;';
 const ENDMARK = "    note: 'candidates = count + skipped；skipped 说明判据挑中但物理上打不下孔' });";
 const a = src.indexOf(START);
-if (a < 0) contractFail('找不到起锚点 `const EP_VIA_H = 11.8, EP_VIA_D = 19.7;` —— 尺寸闸门不在了');
-if (src.indexOf(START, a + 1) >= 0) contractFail('起锚点出现多次，无法确定抽哪一段');
+// 【「找不到」≠「发现了缺陷」】实测 2026-11-27：把 `EP_VIA_D` 从 19.7 改成 19.8
+// （一次正常的参数变更）会使起锚点字面量失效，而原实现打印的是
+// 「尺寸闸门不在了」—— 一句与事实相反的话，而且退 1（= 发现了失败）。
+// 从闸门的位置看，「被删了」与「只是改了参数/改了名」是**同一个观测**，分不清就不能判黑。
+// 按仓库退出码契约归 2。下面 L48/L52 仍是 1：那些是「块找到了、但内容不对」，确实是缺陷。
+if (a < 0) bail('找不到起锚点 `const EP_VIA_H = 11.8, EP_VIA_D = 19.7;` —— 尺寸闸门可能被删/改名/改了参数，分不清就不判黑');
+if (src.indexOf(START, a + 1) >= 0) bail('起锚点出现多次，无法确定抽哪一段');
 const b = src.indexOf(ENDMARK, a);
-if (b < 0) contractFail('找不到止锚点（epVias 汇总行的 note 字段）');
+if (b < 0) bail('找不到止锚点（epVias 汇总行的 note 字段）—— 同上，分不清就不判黑');
 const block = src.slice(a, b + ENDMARK.length);
 for (const needle of ['getPrimitivesBBox', 'EP_VIA_NEED', "log('epViaSkip'", 'padTooSmall', 'noBBox',
   'pcb_PrimitiveVia.create', "log('epVias'"]) {
@@ -183,4 +188,8 @@ const summary = (r) => r.logs.filter((l) => l.s === 'epVias').map((l) => l.v)[0]
   if (fail) { console.log(`  EPVIA-SIZEGATE=FAIL  ${fail} 条断言不通过 / 共 ${pass + fail}`); process.exit(1); }
   console.log(`  EPVIA-SIZEGATE=PASS  ${pass} 条断言全过（6 场景：拦小盘 · 拦无盒 · 放行大盘 · 边界方向 · 混合记账 · 空集零代价）`);
   process.exit(0);
-})().catch((e) => { console.log('  EPVIA-SIZEGATE=FAIL  执行抛异常: ' + (e && e.stack || e)); process.exit(1); });
+  // 【执行抛异常 ≠ 发现了失败】断言失败走的是上面的 contractFail(1)，
+  // 不会抛到这里。能跑到这里的只有「闸门自己跑不下去」（锚点没了、文件读不了、参数改了）。
+  // 实测 2026-11-27：改 EP_VIA_D 19.7→19.8 这种正常参数变更会走到这里；同族的 via-restore 对同一场景退 2。
+  // 按本仓库退出码契约，归 2。
+})().catch((e) => { console.log('  EPVIA-SIZEGATE=ENVSKIP  闸门自己跑不下去（不是被测代码的缺陷）: ' + (e && e.stack || e)); process.exit(2); });

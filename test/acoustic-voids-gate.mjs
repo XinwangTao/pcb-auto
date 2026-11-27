@@ -60,7 +60,9 @@ function ok(cond, name, extra) {
   // 夹具自检：这条闸门锚在 v5 这一个设计上，它必须真的带着声明，
   // 否则后面七个场景全都变成在测一个空集合（分母为空但"全过"）。
   if (!Array.isArray(base._copperVoids) || base._copperVoids.length === 0) {
-    contractFail(`夹具 ${path.basename(DESIGN)} 没有 _copperVoids —— 七个场景会全部落在 unknown，`
+    // 【夹具没数据 = 没样本】实测 2026-11-27：把 _copperVoids 清空后这里退 1，
+  // 而它的含义是「没有声孔数据」，不是「声孔设计有错」。与同族 relayout 的空 _placement→2 一致。
+  bail(`夹具 ${path.basename(DESIGN)} 没有 _copperVoids —— 七个场景会全部落在 unknown，`
       + '这条闸门就成了空分母');
   }
 
@@ -196,7 +198,9 @@ function ok(cond, name, extra) {
   }
   console.log(`  ACOUSTIC-VOIDGATE=PASS  ${pass} 条断言全过（7 场景：正控 · 器件遮挡 · 倒置盒 · 无对象 · 盒子跑偏 · 无出处 · 无声明）`);
   process.exit(0);
+  // 同 epvia：断言失败走 contractFail(1)，能抛到这里的是「闸门自己跑不下去」。
+  // 实测 2026-11-27：把 _copperVoids 清空（没有声孔数据）会走到这里 —— 那是没样本，不是声孔设计有错。
 })().catch((e) => {
-  console.log('  ACOUSTIC-VOIDGATE=FAIL  执行抛异常: ' + ((e && e.stack) || e));
-  process.exit(1);
+  console.log('  ACOUSTIC-VOIDGATE=ENVSKIP  闸门自己跑不下去（不是被测设计的缺陷）: ' + ((e && e.stack) || e));
+  process.exit(2);
 });

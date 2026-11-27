@@ -32,7 +32,15 @@ const ROOT = resolve(join(HERE, '..'))
 // 必须在 import 插件之前注册。静态 import 会被提升，所以下面一律用动态 import。
 // 注意 register 的第一个参数是**相对说明符**，相对第二个参数（本文件）解析。
 // 传绝对 file:// URL 会被当成相对路径再拼一次（会得到 dsh-stubs/dsh-stubs/…）。
-register('./dsh-stubs/resolver.mjs', import.meta.url)
+// 【stubs 缺失是环境问题，不是契约失败】实测 2026-11-27：把 test/dsh-stubs/ 移走后，
+// 这行在模块加载时抛错 → 未捕获 → Node 以 **1** 结束，还甩一段
+// node:internal/modules/run_main 的栈。而「这台机器上没有夹具」应当是 2。
+try {
+  register('./dsh-stubs/resolver.mjs', import.meta.url)
+} catch (e) {
+  console.log('  PLUGIN=ENVSKIP  加载 test/dsh-stubs/resolver.mjs 失败（夹具缺失，不是插件的错）：' + (e && e.message))
+  process.exit(2)
+}
 
 let pass = 0
 const failures = []
