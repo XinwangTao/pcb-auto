@@ -46,9 +46,22 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "staticcheck exit=$LASTEXITCODE（契约闸门跑不起来，等于关闭）" }
           if ($out -match '解析器不可用') { throw "解析器仍不可用 —— npm install 没生效" }
 
-      - name: 部署前置检查（doctor 自身也要能跑）
+      # 【doctor 在 CI 上应当报「没有 EDA」——那不是故障，是 CI 的应然状态】
+      # 所以不能直接 `npm run doctor`（它会正确地 exit 1），也不能
+      # `continue-on-error`（那是把闸门关了）。正确做法：**断言它只因这一条而阻塞**。
+      # 这样 doctor 自身的回归（比如它开始报别的阻塞项）仍然会被抓到。
+      - name: doctor 在无 EDA 的 CI 上应只报 EDA 一条阻塞
         shell: pwsh
-        run: node scripts/preflight.mjs
+        run: |
+          $out = node scripts/preflight.mjs 2>&1 | Out-String
+          Write-Host $out
+          $code = $LASTEXITCODE
+          if ($code -ne 1) { throw "doctor exit=$code，期望 1（CI 上应因无 EDA 而阻塞）" }
+          if ($out -notmatch 'LCEDA') { throw "doctor 没有指出 LCEDA —— 阻塞原因不对" }
+          if ($out -notmatch '1 个阻塞项') {
+            throw "doctor 报了不止一个阻塞项 —— 说明 CI 环境里还有别的硬缺失，先看上面的输出"
+          }
+          Write-Host 'OK：doctor 只因「没有 EDA」一条阻塞，与 CI 的应然状态一致'
 
       - name: 整套闸门
         shell: pwsh
