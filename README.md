@@ -10,8 +10,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20server-blueviolet.svg)](mcp/server.mjs)
 [![Platform](https://img.shields.io/badge/platform-any%20OS%20%7C%20build%3A%20Windows-lightgrey.svg)](#每个操作需要什么)
+[![smoke](https://github.com/XinwangTao/pcb-auto/actions/workflows/smoke.yml/badge.svg)](https://github.com/XinwangTao/pcb-auto/actions/workflows/smoke.yml)
+[![gates](https://github.com/XinwangTao/pcb-auto/actions/workflows/gates.yml/badge.svg)](https://github.com/XinwangTao/pcb-auto/actions/workflows/gates.yml)
+[![release](https://img.shields.io/github/v/release/XinwangTao/pcb-auto?label=release)](https://github.com/XinwangTao/pcb-auto/releases/latest)
 
-**中文** | [English](README.en.md) | [演示片（31.6s）](https://github.com/XinwangTao/pcb-auto/releases/download/v1.0.0/ai-pcb-v9.mp4)
+**中文** | [English](README.en.md) | [演示片（27.0s）](https://github.com/XinwangTao/pcb-auto/releases/download/v1.1.0/demo.mp4)
 
 > **演示片里的画面不是动画示意** —— 每一帧都是嘉立创 EDA 画布上**真实生成的几何**：
 > 流水线在 9 个里程碑调用 EDA 自己的 `getCurrentRenderedAreaImage()` 取回画布图像，
