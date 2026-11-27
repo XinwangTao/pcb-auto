@@ -227,7 +227,7 @@ for (const e of entries) {
   })
 }
 
-const bCount = { verified: 0, paths: 0, red: 0 }
+const bCount = { verified: 0, paths: 0, red: 0, bytes: 0, anchored: 0 }
 for (const e of entries) {
   if (e.level !== 'verified') continue
   bCount.verified += 1
@@ -260,11 +260,69 @@ for (const e of entries) {
     }
 
     bCount.paths += 1
-    if (!existsSync(join(ROOT, rel))) {
+    const abs = join(ROOT, rel)
+    if (!existsSync(abs)) {
       bCount.red += 1
       problems.push({ check: 'B', id: e.id, why: `evidence 指向的路径在仓库里不存在：${rel}` })
+      continue
+    }
+    // 【「存在」不是证据】实测 2026-11-27（对抗性审查）：
+    //   evidence 改成 ['package.json'] → GREEN；改成一个 0 字节的空文件 → **仍 GREEN**。
+    // 只查 existsSync 的证据字段等于：随便指一个路径就能过。
+    let size = 0
+    let lineCount = null
+    try {
+      const buf = readFileSync(abs)
+      size = buf.length
+      lineCount = buf.toString('utf8').split('\n').length
+    } catch (err) {
+      bCount.red += 1
+      problems.push({ check: 'B', id: e.id, why: `evidence 读不了：${rel}（${err && err.message}）` })
+      continue
+    }
+    if (size === 0) {
+      bCount.red += 1
+      problems.push({ check: 'B', id: e.id, why: `evidence 是空文件（0 字节）：${rel} —— 空文件不能证明任何事` })
+      continue
+    }
+    bCount.bytes += size
+    // 带 `#L12-L34` 的必须能定位到真实行（只核存在会让锚点默默腐烂）
+    const anchor = rawPath.split('#')[1]
+    if (anchor) {
+      const m = /^L(\d+)(?:-L(\d+))?$/.exec(String(anchor).trim())
+      if (!m) {
+        bCount.red += 1
+        problems.push({ check: 'B', id: e.id, why: `evidence 锚点形式不认识（只支持 #L12 或 #L12-L34）：${rawPath}` })
+        continue
+      }
+      const a = Number(m[1])
+      const b = Number(m[2] || m[1])
+      if (a < 1 || b < a) {
+        bCount.red += 1
+        problems.push({ check: 'B', id: e.id, why: `evidence 锚点范围不合法：${rawPath}` })
+      } else if (b > lineCount) {
+        bCount.red += 1
+        problems.push({ check: 'B', id: e.id, why: `evidence 锚点越界：${rawPath}（文件只有 ${lineCount} 行）` })
+      } else {
+        bCount.anchored += 1
+      }
     }
   }
+}
+
+/* ────────────────────────── 零分母 ────────────────────────── */
+
+// 【没有对象 ≠ 没有问题】实测 2026-11-27（对抗性审查）：
+// 把 9 条能力的 level 全改成 pilot（合法值，且不在 BLOCKING 里）
+// ⇒ A 分母 aCount.checked=0、B 分母 bCount.verified=0
+// ⇒ 两个检查都“全绿”，CAPABILITY=PASS 9 条、exit 0。
+// **一张把所有能力降级的表反而更容易通过** —— 现在归 noSample、退 2。
+const noSample = []
+if (aCount.checked === 0) {
+  noSample.push('A 分母为 0：没有任何一条能力落在 ' + [...BLOCKING].join('/') + ' 里 —— 这不是「没有违规」')
+}
+if (bCount.verified === 0) {
+  noSample.push('B 分母为 0：没有任何一条 verified 能力 —— 没有证据可核')
 }
 
 /* ────────────────────────── 统计 + 输出 ────────────────────────── */
@@ -279,15 +337,20 @@ const dist = Object.entries(counts)
   .map(([l, n]) => `${l} ${n}`)
   .join(' / ')
 
-const exitCode = problems.length ? 1 : 0
+// 三态互斥：真有问题 → 1；没有样本 → 2；否则 0。
+const exitCode = problems.length ? 1 : (noSample.length ? 2 : 0)
 const summary = problems.length
   ? `CAPABILITY=FAIL ${problems.length} 个问题 / ${total} 条`
-  : `CAPABILITY=PASS ${total} 条（${dist}）`
+  : noSample.length
+    ? `CAPABILITY=ENVSKIP ${noSample.length} 项没有样本 —— 这不是通过`
+    : `CAPABILITY=PASS ${total} 条（${dist}）`
 
 if (JSON_OUT) {
   process.stdout.write(JSON.stringify({
     tool: 'capability-gate',
-    ok: problems.length === 0,
+    // ok 必须与退出码同义：没有样本时 ok 不能是 true（否则读 JSON 的人会得到与 exit 2 相反的结论）
+    ok: problems.length === 0 && noSample.length === 0,
+    noSample,
     exit: exitCode,
     file: REL,
     measured: true,
@@ -325,7 +388,14 @@ if (problems.length) {
   lines.push('  ── 失败 ──')
   for (const p of problems) lines.push(`  ✗ [${p.check}] ${p.id}  ${p.why}`)
 }
+if (noSample.length) {
+  lines.push('')
+  lines.push('  ── 没有样本（不是通过） ──')
+  for (const s of noSample) lines.push(`  ? ${s}`)
+}
 lines.push('')
+lines.push(`  证据强度：${bCount.paths} 个路径都存在且非空（合计 ${bCount.bytes} 字节），`
+  + ` ${bCount.anchored} 个带 #L 锚点且锚点在文件行数内`)
 lines.push(`  ${summary}`)
 
 process.stdout.write(lines.join('\n') + '\n')
