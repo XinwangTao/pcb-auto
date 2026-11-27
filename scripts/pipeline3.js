@@ -11,8 +11,12 @@
 const L = [];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const A = __CLI__.args;
-const log = (s, v) => L.push(v === undefined ? { s } : { s, v });
+// 【每条遥测都带 ms】T0 必须在 log 之前定义，否则 log 里引用它就是一个
+// 靠“没人提前调用”才不爆的 TDZ 引用。之前只有 phase() 打 ms，
+// 于是整条流水线的总耗时**无法归因到阶段** —— 而“这个修复阶段值不值得留”
+// 恰恰只能靠归因回答。实测 2026-11-27：136 条条目里 0 条带时间。
 const T0 = Date.now();
+const log = (s, v) => L.push(v === undefined ? { s, ms: Date.now() - T0 } : { s, v, ms: Date.now() - T0 });
 const phase = n => log('PHASE', { n, ms: Date.now() - T0 });
 
 // ---------- 总预算：外部 invoke --timeout 的镜像 ----------
