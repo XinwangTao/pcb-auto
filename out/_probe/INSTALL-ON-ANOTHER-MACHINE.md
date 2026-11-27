@@ -112,9 +112,44 @@ SMD Pad to Track=2; SMD Pad to Via=2; Slot Region to Track=1; Hole to Hole=2
 所以「7 条」不是随机数，是**加宽那条路的确定性后果**——这也正对上项目自己记录的
 「重试阶梯会让结果变差」。
 
+## 四之二、第四个问题：中文版 Windows 上子进程 JSON 解析不了（已修）
+
+对端长期报「下单资格（诊断用）未取得：fabcheck exit=0，输出不是 JSON」，
+而 `fabcheck` 直跑完全正常（13619 字、exit 0、stderr 为空）。造了一个普通的假象：
+“量具坏了”。真因是编码：
+
+```
+对端 pwsh 7.6.10   [Console]::OutputEncoding = gb2312/936（chcp 936）
+本机 pwsh 7.7.0    [Console]::OutputEncoding = utf-8/65001
+```
+
+GBK 控制台把子进程的 UTF-8 中文错误解码，`ConvertFrom-Json` 报：
+
+```
+After parsing a value an unexpected character was encountered: b.
+Path 'summary.line', line 21, position 3.
+```
+
+`summary.line` 是 JSON 里第一个含中文的字段（`可打样：0 阻断 / 4 项警告`）。
+
+修法（`3915534`）：run-all.ps1 在参数块之后立刻把
+`[Console]::OutputEncoding` / `$OutputEncoding` 切到 UTF-8 并设 `PYTHONIOENCODING=utf-8`。
+
+**为什么这个缺陷值得单独记**：中文版 Windows 的默认代码页就是 936，
+也就是说——**嘉立创 EDA 的主要用户群默认命中**；而作者机器恰好是 UTF-8，
+所以它在本机永远复现不出来。
+
+验证：修后对端完整构建报 `下单资格（诊断用）exit=0 verdict=PASS 阻断 0 / 警告 4`。
+新增 `test/console-encoding-gate.mjs`（第 18 关），双向证明：注掉那两行 → FAIL 3/6、exit 1；
+还原 → PASS 6/6、exit 0、逐字节复原。
+
+> 自己踩的坑：闸门第一版把正则写成匹配子串，于是把目标行**注释掉**之后闸门照样全绿
+> （`# [Console]::OutputEncoding = …` 里仍含那个子串）。已改成行首锚定 + `(?!#)` 排除注释。
+> **只匹配子串、不管是否生效的断言，是另一种假绿。**
+
 ## 五、还留着的两个问题（未修）
 
-1. **`fabcheck exit=0，输出不是 JSON`**：对端 run-all 多次报这个。本地正常。
+1. ~~`fabcheck exit=0，输出不是 JSON`~~（已修，见四之二）：：对端 run-all 多次报这个。本地正常。
    抗审者早就指出过 `fabcheck` 把 FAIL 报告写 stderr、包装器只读 stdout 的错配，
    这次在另一台机器上更明显。需要单独查。
 2. **`_log.json` 在对端 outDir 不在 Documents 时写不出来**：因为遥测文件的落盘走的也是
