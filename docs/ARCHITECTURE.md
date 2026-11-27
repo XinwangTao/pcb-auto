@@ -119,7 +119,7 @@ const isError = result.exitCode === 2
 | 4 | `placeParts` | `scripts/pipeline3.js:318` | 放器件 / 应用 `_placement` |
 | 5 | `connect` | `scripts/pipeline3.js:517` | 连线 + 网络符号 |
 | 6 | `netlistCheck` | `scripts/pipeline3.js:609` | 网表一致性 |
-| 7 | `pcbImport` | `scripts/pipeline3.js:647` | 原理图 → PCB |
+| 7 | `pcbImport` | `scripts/pipeline3.js:738` | 原理图 → PCB |
 | 8 | `autoLayout` | `scripts/pipeline3.js:678` | 自动布局 |
 | 9 | `preVia` | `scripts/pipeline3.js:1210` | 布线前打过孔 |
 | 10 | `copperPour` | `scripts/pipeline3.js:1285` | 铺铜（布线前一次） |
