@@ -120,6 +120,19 @@ node cli/pcb.mjs census --settle 180
 5. **文档里有 13 个已确认的错误**（6 处在网页、7+7 处在交付 README）。
    没有偷偷改掉，而是逐条公开在 `交付-README.md` 的「已知限制」里，并写明理由。
 6. 本仓库**不主张**任何 star 数、下载量或用户评价。
+7. **电气判据不在 `fabcheck` 里。** —— 这是一条**口径**，不是遗憾：
+   - **电气间距 / 短路 / 网表连通性** → 由 EDA 自己的 DRC 与独立复核
+     [`scripts/verify-drc.js`](scripts/verify-drc.js) 负责（后者在全新 headless 会话里重建覆铜后重查）；
+   - **产物可制造性**（层/孔/栏栅/比例/板框/坐标合法性）→ `fabcheck`；
+   - **能不能下单** = 两者的**合取**（`run-all` 的 `$finalOk`）。
+
+   `fabcheck` 的输出里永远带一条 `scope.electrical`，写明它不查那三件 ——
+   **所以它的 `PASS` 不能被读成「没有短路」**。反过来，若流水线自述的 DRC
+   还有叶子，`fabcheck` 现在会直接阻断（`drc.leaves.open`，单向：只用「有」否决，
+   绝不用「没有」背书）。这一条是 2026-11-27 补的：此前 `fabcheck` **完全不读 DRC**，
+   26 块自述有叶子的板拿到了 `verdict: PASS`。详见 `out/_probe/FABCHECK-NEVER-READ-DRC.md`。
+8. **布局器的尺寸表是「碰撞盒」而不是焊盘跨距**：`scripts/relayout.mjs` 的 `SIZES`
+   必须 ≥ 成品实测铜范围（它还要盖住本体），这条不变量由第 23 关钉着。
 
 **凭什么说这个更好、以及我哪里不如别人：[docs/WHY.md](docs/WHY.md)。**
 
