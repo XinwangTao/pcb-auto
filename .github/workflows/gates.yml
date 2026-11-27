@@ -57,7 +57,11 @@ jobs:
           Write-Host $out
           $code = $LASTEXITCODE
           if ($code -ne 1) { throw "doctor exit=$code，期望 1（CI 上应因无 EDA 而阻塞）" }
-          if ($out -notmatch 'LCEDA') { throw "doctor 没有指出 LCEDA —— 阻塞原因不对" }
+          # 【别把断言锁在一个只在成功时才出现的词上】实测 2026-11-27（CI 第一次跑）：
+          # 我写的是 `-notmatch 'LCEDA'`，而 doctor 失败时打的是解析器的原话
+          # 「找不到 嘉立创 EDA Pro 的 CLI（lceda-pro）」—— **没有 LCEDA 这个词**。
+          # 于是阻塞原因明明对，断言却报「没指出」。
+          if ($out -notmatch 'EDA Pro|lceda-pro') { throw "doctor 没有指出 EDA —— 阻塞原因不对" }
           if ($out -notmatch '1 个阻塞项') {
             throw "doctor 报了不止一个阻塞项 —— 说明 CI 环境里还有别的硬缺失，先看上面的输出"
           }
