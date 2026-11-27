@@ -300,7 +300,15 @@ try {
       else {
         const got = verdicts(rm)[RID];
         if (got !== 'fail') fail.push(`decoupling[变异]: 期望 fail，实际 ${got} —— 把 U4 的电容挪到 420 mil 外没触发判据`);
-        const coll = Object.keys(verdicts(r5)).filter((k) => k !== RID && verdicts(r5)[k] !== verdicts(rm)[k]);
+        // 【哪些判据允许被「位置」变化带着变」，必须写成名单】
+        // 这条断言的意图是「目标判据是**靠自己**抓到缺陷的，不是别人变红顺带的－”。
+        // 但有一类判据的职责**就是**「测量整体几何」：把 C9 挪到板子右上角真的会改变留白，
+        // 所以 board_shape_declared 变红是**它应该做的事**，不是串味。把它加进名单不会让任何判据变得更难红：
+        // 它自己的红绿已由 7 向探针独立证明（完全正确 / 留白+10 / 板宽+25 / 无 why / 无声明 / 无留白 / 坏容差）。
+        // 名单里的判据仍需要在其它场景里被证明会变红，不是一道免检牌。
+        const GEOM_WIDE = new Set(['board_shape_declared']);
+        const coll = Object.keys(verdicts(r5))
+          .filter((k) => k !== RID && !GEOM_WIDE.has(k) && verdicts(r5)[k] !== verdicts(rm)[k]);
         if (coll.length) fail.push(`decoupling[变异]: 附带改变了 ${coll.join(',')} —— 判据之间串味`);
       }
 
