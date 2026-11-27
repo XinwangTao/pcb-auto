@@ -103,8 +103,9 @@ function parseGerber(text) {
     if (m[4] !== '3') continue;
     const x = toMm(m[2], xd), y = toMm(m[3], yd);
     const { hw, hh } = halfOf(ap);
-    // 用焊盘的**四角**代表它占的铜，而不是用中心点。
-    pts.push({ x: x - hw, y: y - hh }, { x: x + hw, y: y - hh }, { x: x - hw, y: y + hh }, { x: x + hw, y: y + hh });
+    // 返回**焊盘本体**（中心 + 半宽），展开与否留给主流程定——
+    // 因为要先把过孔踢除，否则会把邻件包围盒撑大。
+    pts.push({ x, y, hw, hh });
   }
   return pts;
 }
@@ -186,7 +187,8 @@ for (const name of copperEntries) {
   const layerTop = /\.GTL$/.test(name) || /\.G1$/.test(name);
   let pts;
   try { pts = parseGerber(zip.get(name).toString('utf8')); } catch (e) { bail('解析 ' + name + ' 失败：' + e.message); }
-  for (const p of pts) points.push({ x: p.x, y: p.y, top: layerTop });
+  // hw/hh 必须一起搬过来：后面靠它们认过孔与展开四角。
+  for (const p of pts) points.push({ x: p.x, y: p.y, hw: p.hw, hh: p.hh, top: layerTop });
 }
 if (!points.length) bail('铜层里一个图元都没解析出来（格式变了？）');
 
@@ -202,11 +204,41 @@ for (const c of des) {
 }
 if (!pos.length) bail('没有可用的器件坐标');
 
+/* 【踢除过孔】实测 2026-11-27 的决定性实验（v5 板，全部器件在顶层）：
+ *   GTL 闪点 252 个，GBL 闪点 97 个，而 GBL 的 97 个**全部与 GTL 同坐标**。
+ * 过孔穿过两层，SMD 焊盘只在一层 —— 所以「同坐标在 ≥2 层出现」就是过孔/通孔焊盘。
+ * 通孔焊盘（排针/连接器）也会跨层，所以再加一条：**尺寸小**（最长边 ≤ 0.8 mm）才当过孔。
+ * 过孔典型 0.3–0.6 mm；通孔焊盘典型 ≥ 1.0 mm。这只是一条有物理依据的启发式，
+ * 所以把剔掉了多少个也输出出来，不让人去猜。
+ */
+const VIA_MAX_MM = 0.8;
+const padKey = (p) => Math.round(p.x * 200) + ',' + Math.round(p.y * 200); // 0.005 mm 粒度
+const layerCount = new Map();
+for (const p of points) layerCount.set(padKey(p), (layerCount.get(padKey(p)) || 0) + 1);
+let viasDropped = 0;
+const keep = [];
+for (const p of points) {
+  const maxDim = Math.max(p.hw, p.hh) * 2;
+  const multiLayer = (layerCount.get(padKey(p)) || 0) >= 2;
+  if (multiLayer && maxDim <= VIA_MAX_MM) { viasDropped++; continue; }
+  keep.push(p);
+}
+points.length = 0;
+for (const p of keep) {
+  points.push({ x: p.x - p.hw, y: p.y - p.hh, top: p.top },
+              { x: p.x + p.hw, y: p.y - p.hh, top: p.top },
+              { x: p.x - p.hw, y: p.y + p.hh, top: p.top },
+              { x: p.x + p.hw, y: p.y + p.hh, top: p.top });
+}
+
 // 把每个铜点归给最近的器件（同层优先），得到每个器件的铜包围盒
 // 【必须有半径】否则板子边缘的剩余焊盘会被归给远处那个最近的器件，把它撑大。
 // 10 mm 足以包住本仓库用到的所有封装（最大的是 ESP32-S3 模组 748 mil ≈ 19 mm 的对角，
 // 但 PnP 的 Mid 在封装中心，半径取 12 mm 就够）。
-const MAX_R_MM = 12;
+// 【半径必须大于最大封装的对角】实测 2026-11-27：取 12mm 时 ESP32-S3 模组（18×25.5mm）
+// 的焊盘被截掉一半，高度只量到 514 mil（实际应 ~1000）。过孔已经被双层判据踢除，
+// 所以放大半径比之前安全。模组对角 ≈ 15.6mm，取 24mm 留余量。
+const MAX_R_MM = 24;
 const boxes = new Map();
 for (const pt of points) {
   let best = null; let bestD = Infinity;
@@ -257,6 +289,7 @@ if (opt.json) {
     outDir: path.relative(ROOT, outDir).replace(/\\/g, '/'),
     copperLayers: copperEntries,
     copperPoints: points.length,
+    viasDropped,
     componentsInPnp: pos.length,
     measured: result,
   }, null, 2));
@@ -266,7 +299,7 @@ if (opt.json) {
 console.log('');
 console.log('  ── 从成品 Gerber 反量的铜范围 ──');
 console.log(`  设计 ${path.relative(ROOT, designPath)}  产物 ${path.relative(ROOT, outDir)}`);
-console.log(`  铜层 ${copperEntries.join(', ')}；铜点 ${points.length} 个；对上的器件 ${pos.length} 个`);
+console.log(`  铜层 ${copperEntries.join(', ')}；铜点 ${points.length} 个；对上的器件 ${pos.length} 个；踢除过孔 ${viasDropped} 个`);
 console.log('');
 console.log('  ' + 'LCSC'.padEnd(12) + 'w(mil)'.padStart(8) + 'h(mil)'.padStart(8) + '  样本  位号');
 for (const r of result) {
