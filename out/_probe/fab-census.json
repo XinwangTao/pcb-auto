@@ -1,39 +1,39 @@
 {
   "generated_for": "pcb-auto 交付物可打样性普查",
-  "measured_at": "2026-11-26T12:26:06+08:00",
+  "measured_at": "2026-11-27T18:03:38+08:00",
   "corpus_scope": "作者机器上 out\\ 下带 _run.json 的产物目录。这些数字**不是这份代码的属性**，而是一次测量。",
   "not_a_property_of_code": "全新克隆里 out\\ 是空的，跑同一条命令会得到 0 个目录 —— 那是正确答案，不是失败。要复现这些数字，得先跑出产物。",
   "reproduce": "node cli/pcb.mjs census --settle 180",
-  "fabcheck_sha256_12": "75FC39894C1B",
+  "fabcheck_sha256_12": "30CBAC29A8FC",
   "all": {
-    "n": 56,
-    "fab_ok": 53,
-    "fab_blocked": 3,
+    "n": 80,
+    "fab_ok": 54,
+    "fab_blocked": 26,
     "fab_error": 0
   },
   "self_ok_true": {
-    "n": 48,
-    "fab_ok": 48,
+    "n": 53,
+    "fab_ok": 53,
     "fab_blocked": 0,
     "fab_error": 0
   },
   "self_ok_false": {
-    "n": 8,
-    "fab_ok": 5,
-    "fab_blocked": 3,
+    "n": 27,
+    "fab_ok": 1,
+    "fab_blocked": 26,
     "fab_error": 0
   },
   "by_batch": {
     "(无)": {
       "all": {
-        "n": 2,
-        "fab_ok": 2,
-        "fab_blocked": 0,
+        "n": 4,
+        "fab_ok": 3,
+        "fab_blocked": 1,
         "fab_error": 0
       },
       "self_ok_true": {
-        "n": 2,
-        "fab_ok": 2,
+        "n": 3,
+        "fab_ok": 3,
         "fab_blocked": 0,
         "fab_error": 0
       }
@@ -54,14 +54,28 @@
     },
     "20261126": {
       "all": {
-        "n": 47,
-        "fab_ok": 44,
-        "fab_blocked": 3,
+        "n": 67,
+        "fab_ok": 43,
+        "fab_blocked": 24,
         "fab_error": 0
       },
       "self_ok_true": {
-        "n": 39,
-        "fab_ok": 39,
+        "n": 42,
+        "fab_ok": 42,
+        "fab_blocked": 0,
+        "fab_error": 0
+      }
+    },
+    "20261127": {
+      "all": {
+        "n": 2,
+        "fab_ok": 1,
+        "fab_blocked": 1,
+        "fab_error": 0
+      },
+      "self_ok_true": {
+        "n": 1,
+        "fab_ok": 1,
         "fab_blocked": 0,
         "fab_error": 0
       }
@@ -71,10 +85,14 @@
   "in_flight": [],
   "blocked_but_self_ok": [],
   "blocker_ids": {
-    "gerber.coord.outside": 13,
-    "pnp.outside": 3,
+    "drc.leaves.open": 26,
+    "gerber.coord.outside": 20,
+    "file.missing": 6,
+    "pnp.outside": 4,
+    "drill.outside": 3,
     "gerber.copper.thin": 2,
-    "drill.outside": 2
+    "antenna.keepout.copper": 2,
+    "netlist.parse": 1
   },
   "rows": [
     {
@@ -84,6 +102,10 @@
       "fab_exit": 1,
       "blockers": [
         {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 18 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        },
+        {
           "id": "gerber.coord.outside",
           "msg": "GTL 有 23 个图元落在板框外（板子做不出来/会被裁掉）"
         },
@@ -109,17 +131,17 @@
         },
         {
           "id": "drill.outside",
-          "msg": "15 个孔落在板框外"
+          "msg": "15 个孔落在板框外（槽按两个端点判）"
         },
         {
           "id": "pnp.outside",
           "msg": "5 个器件中心在板框外（贴不上/板子装不下）"
         }
       ],
-      "n_blockers": 8,
+      "n_blockers": 9,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T07:40:08",
-      "age_s": 17158.6
+      "age_s": 123810.6
     },
     {
       "dir": "AI_OLED_底板_5p5g6m-20261126-092206",
@@ -128,6 +150,10 @@
       "fab_exit": 1,
       "blockers": [
         {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 18 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        },
+        {
           "id": "gerber.coord.outside",
           "msg": "GTL 有 23 个图元落在板框外（板子做不出来/会被裁掉）"
         },
@@ -153,17 +179,17 @@
         },
         {
           "id": "drill.outside",
-          "msg": "15 个孔落在板框外"
+          "msg": "15 个孔落在板框外（槽按两个端点判）"
         },
         {
           "id": "pnp.outside",
           "msg": "5 个器件中心在板框外（贴不上/板子装不下）"
         }
       ],
-      "n_blockers": 8,
+      "n_blockers": 9,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T12:12:07",
-      "age_s": 839.6
+      "age_s": 107491.6
     },
     {
       "dir": "AI_RP2040_系统-20261125-033939",
@@ -172,9 +198,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 4,
+      "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:52:56",
-      "age_s": 19990.2
+      "age_s": 126642.2
     },
     {
       "dir": "AI_RP2040_系统_13pefer-20261126-070027",
@@ -185,7 +211,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:06:41",
-      "age_s": 19165.5
+      "age_s": 125817.6
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-045127",
@@ -196,7 +222,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:47",
-      "age_s": 19459.6
+      "age_s": 126111.7
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-045629",
@@ -207,7 +233,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:50",
-      "age_s": 19456.3
+      "age_s": 126108.3
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-075235",
@@ -218,7 +244,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:58:43",
-      "age_s": 16043.8
+      "age_s": 122695.8
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-082505",
@@ -229,7 +255,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:28:49",
-      "age_s": 14237.4
+      "age_s": 120889.4
     },
     {
       "dir": "AI_RP2040_系统_15pqy38-20261126-082852",
@@ -240,7 +266,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:32:25",
-      "age_s": 14021.0
+      "age_s": 120673.0
     },
     {
       "dir": "AI_传感器___LDO_10pus72-20261126-080459",
@@ -251,7 +277,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:07:17",
-      "age_s": 15529.4
+      "age_s": 122181.4
     },
     {
       "dir": "AI_传感器___LDO_11p4flb-20261126-083741",
@@ -262,7 +288,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:40:15",
-      "age_s": 13551.5
+      "age_s": 120203.5
     },
     {
       "dir": "AI_传感器___LDO_16p2sh2-20261126-084018",
@@ -273,7 +299,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:43:03",
-      "age_s": 13382.9
+      "age_s": 120034.9
     },
     {
       "dir": "AI_传感器___LDO_9pq32s-20261126-025214",
@@ -284,7 +310,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:00:35",
-      "age_s": 19531.8
+      "age_s": 126183.8
     },
     {
       "dir": "AI_传感器___充电___显示_16pck03-20261125-112943",
@@ -293,9 +319,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 5,
+      "n_warnings": 6,
       "newest_mtime": "2026-11-26T06:53:01",
-      "age_s": 19985.6
+      "age_s": 126637.7
     },
     {
       "dir": "AI_传感器___充电___显示_18p4sgg-20261126-083239",
@@ -306,7 +332,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T08:37:38",
-      "age_s": 13708.8
+      "age_s": 120360.8
     },
     {
       "dir": "AI_传感器___充电___显示_19pia69-20261126-025434",
@@ -317,18 +343,23 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:00:35",
-      "age_s": 19530.9
+      "age_s": 126182.9
     },
     {
       "dir": "AI_传感器___充电___显示_19ptbuz-20261126-055041",
       "batch": "20261126",
       "self_ok": false,
-      "fab_exit": 0,
-      "blockers": [],
-      "n_blockers": 0,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 1 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T07:02:06",
-      "age_s": 19440.2
+      "age_s": 126092.2
     },
     {
       "dir": "AI_传感器___充电___显示_20pvd4t-20261126-080720",
@@ -339,7 +370,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:16:43",
-      "age_s": 14963.2
+      "age_s": 121615.2
     },
     {
       "dir": "AI_传感器模块-20261125-040723",
@@ -348,9 +379,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 5,
+      "n_warnings": 6,
       "newest_mtime": "2026-11-26T06:52:57",
-      "age_s": 19988.9
+      "age_s": 126640.9
     },
     {
       "dir": "AI_传感器模块_6peia7-20261126-074817",
@@ -361,7 +392,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:52:29",
-      "age_s": 16417.1
+      "age_s": 123069.1
     },
     {
       "dir": "AI_传感器模块_6psjho-20261125-111305",
@@ -370,9 +401,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 4,
+      "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:53:00",
-      "age_s": 19986.8
+      "age_s": 126638.8
     },
     {
       "dir": "AI_传感器模块_7pfcbz-20261126-044333",
@@ -383,7 +414,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:41",
-      "age_s": 19465.4
+      "age_s": 126117.4
     },
     {
       "dir": "AI_传感器模块_7pfcbz-20261126-075846",
@@ -394,7 +425,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:02:39",
-      "age_s": 15807.6
+      "age_s": 122459.7
     },
     {
       "dir": "AI_传感器模块_7pfcbz-20261126-081646",
@@ -405,7 +436,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:21:08",
-      "age_s": 14698.7
+      "age_s": 121350.7
     },
     {
       "dir": "AI_稳压板_6pe2os-20261126-074403",
@@ -416,7 +447,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:48:14",
-      "age_s": 16672.7
+      "age_s": 123324.7
     },
     {
       "dir": "AI_稳压板_7pf5gw-20261126-070858",
@@ -427,7 +458,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:13:06",
-      "age_s": 18780.2
+      "age_s": 125432.2
     },
     {
       "dir": "AI_纯分立-20261125-041749",
@@ -436,9 +467,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 4,
+      "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:52:58",
-      "age_s": 19987.8
+      "age_s": 126639.8
     },
     {
       "dir": "AI_纯分立_17py4dl-20261126-064538",
@@ -446,6 +477,10 @@
       "self_ok": false,
       "fab_exit": 1,
       "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 45 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        },
         {
           "id": "gerber.coord.outside",
           "msg": "GTL 有 73 个图元落在板框外（板子做不出来/会被裁掉）"
@@ -463,10 +498,10 @@
           "msg": "17 个器件中心在板框外（贴不上/板子装不下）"
         }
       ],
-      "n_blockers": 4,
+      "n_blockers": 5,
       "n_warnings": 4,
       "newest_mtime": "2026-11-26T07:02:31",
-      "age_s": 19415.4
+      "age_s": 126067.4
     },
     {
       "dir": "AI_纯分立_19pl4cd-20261126-041030",
@@ -477,7 +512,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:13",
-      "age_s": 19493.0
+      "age_s": 126145.0
     },
     {
       "dir": "AI_纯分立_20p4chz-20261126-041636",
@@ -488,7 +523,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:24",
-      "age_s": 19482.6
+      "age_s": 126134.6
     },
     {
       "dir": "AI_纯分立_3pnlif-20261126-064200",
@@ -499,7 +534,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:23",
-      "age_s": 19423.5
+      "age_s": 126075.5
     },
     {
       "dir": "AI_纯分立_4pm9kw-20261126-074011",
@@ -510,7 +545,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:44:00",
-      "age_s": 16926.3
+      "age_s": 123578.3
     },
     {
       "dir": "AI_纯分立_6p7j98-20261126-044729",
@@ -521,7 +556,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:44",
-      "age_s": 19462.7
+      "age_s": 126114.7
     },
     {
       "dir": "AI_纯分立_6p7j98-20261126-082111",
@@ -532,7 +567,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:25:02",
-      "age_s": 14464.1
+      "age_s": 121116.1
     },
     {
       "dir": "AI_纯分立_9p271i-20261126-070644",
@@ -543,7 +578,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:08:55",
-      "age_s": 19031.2
+      "age_s": 125683.2
     },
     {
       "dir": "AI_锂电池充电板_10prplo-20261126-065757",
@@ -554,7 +589,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:00:24",
-      "age_s": 19542.5
+      "age_s": 126194.5
     },
     {
       "dir": "AI_锂电池充电板_7pbt8q-20261125-123130",
@@ -563,9 +598,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 5,
+      "n_warnings": 6,
       "newest_mtime": "2026-11-26T06:53:02",
-      "age_s": 19984.4
+      "age_s": 126636.5
     },
     {
       "dir": "AI_锂电池充电板_7pepkp-20261126-024947",
@@ -576,7 +611,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:00:34",
-      "age_s": 19532.7
+      "age_s": 126184.7
     },
     {
       "dir": "AI_锂电池充电板_8pynvf-20261126-080242",
@@ -587,29 +622,39 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T08:04:56",
-      "age_s": 15670.3
+      "age_s": 122322.3
     },
     {
       "dir": "Crystal_RTC_Clock-20261126-051342",
       "batch": "20261126",
       "self_ok": false,
-      "fab_exit": 0,
-      "blockers": [],
-      "n_blockers": 0,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 11 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T07:01:59",
-      "age_s": 19446.9
+      "age_s": 126098.9
     },
     {
       "dir": "Crystal_RTC_Clock-20261126-085027",
       "batch": "20261126",
       "self_ok": false,
-      "fab_exit": 0,
-      "blockers": [],
-      "n_blockers": 0,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 78 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T09:09:09",
-      "age_s": 11817.8
+      "age_s": 118469.8
     },
     {
       "dir": "ESP32C3_Minimal-20261126-050915",
@@ -620,7 +665,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:01:56",
-      "age_s": 19450.2
+      "age_s": 126102.2
     },
     {
       "dir": "ESP32C3_Minimal-20261126-084735",
@@ -631,7 +676,406 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:50:24",
-      "age_s": 12942.3
+      "age_s": 119594.3
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic-20261126-134738",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 5,
+      "newest_mtime": "2026-11-26T14:08:15",
+      "age_s": 100523.1
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic-20261126-140310",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 47 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 3,
+      "newest_mtime": "2026-11-26T14:25:55",
+      "age_s": 99463.6
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V2-20261126-152721",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 131 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        },
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTL 有 178 个图元落在板框外（板子做不出来/会被裁掉）"
+        },
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GBL 有 1 个图元落在板框外（板子做不出来/会被裁掉）"
+        },
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTS 有 291 个图元落在板框外（板子做不出来/会被裁掉）"
+        },
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTP 有 170 个图元落在板框外（板子做不出来/会被裁掉）"
+        },
+        {
+          "id": "antenna.keepout.copper",
+          "msg": "天线净空带内有 19 个铜图元（走线/铺铜/焊盘）：天线被铜遮挡，实测效率会掉"
+        },
+        {
+          "id": "drill.outside",
+          "msg": "2 个孔落在板框外（槽按两个端点判）"
+        },
+        {
+          "id": "pnp.outside",
+          "msg": "1 个器件中心在板框外（贴不上/板子装不下）"
+        }
+      ],
+      "n_blockers": 8,
+      "n_warnings": 5,
+      "newest_mtime": "2026-11-26T15:36:25",
+      "age_s": 95233.8
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V2-20261126-154422",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "file.missing",
+          "msg": "缺必需文件 Gerber.zip"
+        },
+        {
+          "id": "file.missing",
+          "msg": "缺必需文件 BOM.xlsx"
+        },
+        {
+          "id": "file.missing",
+          "msg": "缺必需文件 PnP.csv"
+        },
+        {
+          "id": "file.missing",
+          "msg": "缺必需文件 Netlist.json"
+        },
+        {
+          "id": "file.missing",
+          "msg": "缺必需文件 Board.pdf"
+        },
+        {
+          "id": "file.missing",
+          "msg": "缺 TestPoints.csv / TestPoints.xlsx（测试点报告）"
+        },
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 105 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        },
+        {
+          "id": "netlist.parse",
+          "msg": "Netlist.json 解析失败: \"undefined\" is not valid JSON"
+        }
+      ],
+      "n_blockers": 8,
+      "n_warnings": 0,
+      "newest_mtime": "2026-11-26T16:15:49",
+      "age_s": 92869.0
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V3-20261126-162010",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 62 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        },
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTL 有 6 个图元落在板框外（板子做不出来/会被裁掉）"
+        },
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTS 有 6 个图元落在板框外（板子做不出来/会被裁掉）"
+        },
+        {
+          "id": "gerber.coord.outside",
+          "msg": "GTP 有 6 个图元落在板框外（板子做不出来/会被裁掉）"
+        },
+        {
+          "id": "antenna.keepout.copper",
+          "msg": "天线净空带内有 19 个铜图元（走线/铺铜/焊盘）：天线被铜遮挡，实测效率会掉"
+        }
+      ],
+      "n_blockers": 5,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T16:30:08",
+      "age_s": 92010.0
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V3-20261126-163653",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 33 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T17:09:44",
+      "age_s": 89634.8
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V3-20261126-171654",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 33 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 3,
+      "newest_mtime": "2026-11-26T17:44:11",
+      "age_s": 87567.5
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V3-20261126-175901",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 33 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T18:43:17",
+      "age_s": 84021.6
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V4-20261126-185013",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 5 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T19:21:35",
+      "age_s": 81722.9
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V4-20261126-192608",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 7 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T19:33:58",
+      "age_s": 80980.6
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-193938",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 20 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T19:49:21",
+      "age_s": 80057.2
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-195631",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 20 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T20:05:51",
+      "age_s": 79067.8
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-201359",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 26 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T20:21:44",
+      "age_s": 78114.6
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-203952",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 26 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T20:50:22",
+      "age_s": 76396.7
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-210140",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 5 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T21:09:27",
+      "age_s": 75251.6
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-211421",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 5 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T21:27:49",
+      "age_s": 74149.3
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-214236",
+      "batch": "20261126",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 2 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-26T21:51:30",
+      "age_s": 72727.9
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-222113",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2,
+      "newest_mtime": "2026-11-26T22:30:48",
+      "age_s": 70370.7
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-230443",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2,
+      "newest_mtime": "2026-11-26T23:17:50",
+      "age_s": 67548.4
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261126-231945",
+      "batch": "20261126",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2,
+      "newest_mtime": "2026-11-26T23:31:00",
+      "age_s": 66758.3
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261127-005256",
+      "batch": "20261127",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 2,
+      "newest_mtime": "2026-11-27T01:05:56",
+      "age_s": 61061.9
+    },
+    {
+      "dir": "ESP32S3_Wireless_Mic_V5-20261127-115941",
+      "batch": "20261127",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 7 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-27T12:12:44",
+      "age_s": 21053.9
     },
     {
       "dir": "LED_RGB_Indicator-20261126-063048",
@@ -642,7 +1086,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:15",
-      "age_s": 19431.3
+      "age_s": 126083.3
     },
     {
       "dir": "NegTest_TinyBoard-20261125-025440",
@@ -651,9 +1095,36 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 5,
+      "n_warnings": 6,
       "newest_mtime": "2026-11-26T06:52:55",
-      "age_s": 19991.5
+      "age_s": 126643.5
+    },
+    {
+      "dir": "REAL_100737",
+      "batch": "",
+      "self_ok": true,
+      "fab_exit": 0,
+      "blockers": [],
+      "n_blockers": 0,
+      "n_warnings": 4,
+      "newest_mtime": "2026-11-27T10:13:32",
+      "age_s": 28206.0
+    },
+    {
+      "dir": "REAL_143856",
+      "batch": "",
+      "self_ok": false,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 30 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
+      "n_warnings": 3,
+      "newest_mtime": "2026-11-26T14:45:33",
+      "age_s": 98285.4
     },
     {
       "dir": "RP2040_Minimal-20261126-063249",
@@ -664,7 +1135,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:18",
-      "age_s": 19428.7
+      "age_s": 126080.7
     },
     {
       "dir": "RP2040_QSPI_Flash-20261126-063608",
@@ -675,7 +1146,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:20",
-      "age_s": 19426.1
+      "age_s": 126078.1
     },
     {
       "dir": "SHT30_Header8-20261126-035337",
@@ -686,7 +1157,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:01:09",
-      "age_s": 19496.9
+      "age_s": 126148.9
     },
     {
       "dir": "SHT30_I2C_TempHumidity-20261126-050157",
@@ -697,7 +1168,7 @@
       "n_blockers": 0,
       "n_warnings": 2,
       "newest_mtime": "2026-11-26T07:01:53",
-      "age_s": 19453.2
+      "age_s": 126105.2
     },
     {
       "dir": "SHT30_I2C_TempHumidity-20261126-084306",
@@ -708,7 +1179,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T08:47:32",
-      "age_s": 13114.8
+      "age_s": 119766.8
     },
     {
       "dir": "SHT30_LDO_Module-20261126-061250",
@@ -719,7 +1190,7 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:12",
-      "age_s": 19434.0
+      "age_s": 126086.1
     },
     {
       "dir": "SHT30_Module_Full-20261126-060859",
@@ -730,29 +1201,39 @@
       "n_blockers": 0,
       "n_warnings": 1,
       "newest_mtime": "2026-11-26T07:02:09",
-      "age_s": 19437.0
+      "age_s": 126089.1
     },
     {
       "dir": "USBC_Power_ESD-20261126-053328",
       "batch": "20261126",
       "self_ok": false,
-      "fab_exit": 0,
-      "blockers": [],
-      "n_blockers": 0,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 1 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T07:02:03",
-      "age_s": 19443.4
+      "age_s": 126095.5
     },
     {
       "dir": "USBC_Power_ESD-20261126-090912",
       "batch": "20261126",
       "self_ok": false,
-      "fab_exit": 0,
-      "blockers": [],
-      "n_blockers": 0,
+      "fab_exit": 1,
+      "blockers": [
+        {
+          "id": "drc.leaves.open",
+          "msg": "流水线自述的 DRC 还有 4 条叶子未消 —— 产物即使格式完好也不能下单（电气层面的硬事实）"
+        }
+      ],
+      "n_blockers": 1,
       "n_warnings": 3,
       "newest_mtime": "2026-11-26T09:21:59",
-      "age_s": 11046.9
+      "age_s": 117698.9
     },
     {
       "dir": "d11-exp",
@@ -761,9 +1242,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 4,
+      "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:56:08",
-      "age_s": 19798.0
+      "age_s": 126450.0
     },
     {
       "dir": "d11-exp-2558",
@@ -772,9 +1253,9 @@
       "fab_exit": 0,
       "blockers": [],
       "n_blockers": 0,
-      "n_warnings": 4,
+      "n_warnings": 5,
       "newest_mtime": "2026-11-26T06:56:11",
-      "age_s": 19795.4
+      "age_s": 126447.4
     }
   ]
 }
