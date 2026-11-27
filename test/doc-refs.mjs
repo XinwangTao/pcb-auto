@@ -82,9 +82,17 @@ function mdFiles() {
     gitLines(['-c', 'core.quotepath=false', ...args], { root: ROOT, maxBuffer: 32 << 20 })
   // 未跟踪的也要算：`docs/FAILURES.md` 进仓库时就是未跟踪状态，
   // 只用 ls-files 会把它整个漏掉，而它恰好是最需要核的那份。
+  // 【llms.txt 也要扫】isPublished() 已经把 llms.txt 当成发布文档，
+  // 但这里只收 *.md —— 所以 llms.txt 里的引用**从来没被核过**，
+  // isPublished 里那一衄 llms.txt 分支是死代码（今天 llms.txt 恰好 0 处引用，
+  // 所以这个盲点不报错，只是永远不生效）。
+  // 实测 2026-11-27（对抗性审查）：同一句坏引用写进 llms.txt → exit 0，
+  // 写进 docs/ → exit 1。一个闸门对它自己声明要核的文件是瞎的。
   const all = [
     ...git(['ls-files', '*.md']),
     ...git(['ls-files', '-o', '--exclude-standard', '*.md']),
+    ...git(['ls-files', 'llms.txt']),
+    ...git(['ls-files', '-o', '--exclude-standard', 'llms.txt']),
   ].filter(Boolean)
   // 不扫 out/ 和 video/（产物与渲染工程），但**不排除 examples/**
   return [...new Set(all)].filter(
@@ -279,10 +287,18 @@ for (const doc of docs) {
 /* ────────────────────────── FAILURES.md 分类对账 ────────────────────────── */
 
 const tallyProblems = []
+// 【读不到输入不许沉默】原来整段对账被 if (existsSync(p)) 包着，
+// 文件不在就**一条问题也不记**，于是删掉 docs/FAILURES.md 反而让闸门更容易通过。
+// 实测 2026-11-27（对抗性审查）：移走 FAILURES.md → 对账消失 + 59 处引用消失
+// ⇒ 分母 121→62 ⇒ DOCREFS=PASS。一个闸门因为少了输入而变绿，是最坏的形状。
+// 现在归到 noSample（退 2 = 没有样本），与 syntax-gate 的 NO-SAMPLE 同一口径。
+const noSample = []
 {
   const doc = 'docs/FAILURES.md'
   const p = join(ROOT, doc)
-  if (existsSync(p)) {
+  if (!existsSync(p)) {
+    noSample.push(doc + ' 不存在 —— 分类对账没有样本（这不是「对账通过」）')
+  } else {
     const text = readFileSync(p, 'utf8')
     const order = ['真', '部分真', '假', '未证实']
     const m = text.match(/\*\*(\d+) 真 \/ (\d+) 部分真 \/ (\d+) 假 \/ (\d+) 未证实\*\*/)
@@ -370,11 +386,14 @@ const selfProblems = []
       selfProblems.push('不带锚点的引用被解析出了锚点 —— 正则会误吃正文里的引号')
     }
   }
+  // 【零分母归到 noSample】这两条本来进 selfProblems（退 1 = 发现了失败），
+  // 但它们的真实含义是「没有样本」：没有引用不是「引用都对」，也不是「引用都错」。
+  // 按仓库的退出码契约归 2，与 syntax-gate 的 NO-SAMPLE 一致。
   if (totalRefs === 0) {
-    selfProblems.push('0 处引用。这不是「全部通过」，是没有样本 —— 扫描范围或正则坏了')
+    noSample.push('0 处引用。这不是「全部通过」，是没有样本 —— 扫描范围或正则坏了')
   }
   if (publishedRefs === 0) {
-    selfProblems.push('发布文档里 0 处引用。`docs/FAILURES.md` 明确有很多处，说明文件发现环节坏了')
+    noSample.push('发布文档里 0 处引用。docs/FAILURES.md 明确有很多处，说明文件发现环节坏了')
   }
 }
 
@@ -398,8 +417,11 @@ section('烂引用（发布文档，必须修）', hard)
 section('烂引用（分析记录，历史事实，不拦提交）', soft)
 section('分类对账', tallyProblems.map((p) => ({ doc: 'docs/FAILURES.md', ref: '—', why: p })))
 section('闸门自身问题', selfProblems.map((s) => ({ doc: '(self)', ref: '—', why: s })))
+section('没有样本（不是通过，也不是失败）', noSample.map((s) => ({ doc: '(sample)', ref: '—', why: s })))
 
-if (!hard.length && !tallyProblems.length && !selfProblems.length) {
+// 【无样本时不能打勾】实测 2026-11-27：移走 FAILURES.md 后这行仍打印「62 处引用全部指到非空的行」，
+// 紧跟着又打一行 ENVSKIP —— 同一份输出里两个相反的结论。裁定只能有一句。
+if (!hard.length && !tallyProblems.length && !selfProblems.length && !noSample.length) {
   console.log(
     `\n  ✓ 发布文档的 ${publishedRefs} 处引用全部指到非空的行`
     + `（其中 ${anchoredRefs} 处还核对了内容锚点，其余只验到「非空」），分类与计数一致`
@@ -412,9 +434,12 @@ console.log(
   `\n  ${
     bad
       ? `DOCREFS=FAIL  发布文档 ${hard.length} 处 + 对账 ${tallyProblems.length} 处 + 闸门自身 ${selfProblems.length} 处`
-      : `DOCREFS=PASS  发布文档 ${publishedRefs} 处引用有效`
-        + `（${anchoredRefs} 处核对了内容锚点）`
-        + (soft.length ? `；分析记录 ${soft.length} 处历史引用已腐烂（WARN）` : '')
+      : noSample.length
+        ? `DOCREFS=ENVSKIP  ${noSample.length} 项没有样本 —— 这不是通过，也不是发现了错误`
+        : `DOCREFS=PASS  发布文档 ${publishedRefs} 处引用有效`
+          + `（${anchoredRefs} 处核对了内容锚点）`
+          + (soft.length ? `；分析记录 ${soft.length} 处历史引用已腐烂（WARN）` : '')
   }`,
 )
-process.exit(bad ? 1 : 0)
+// 退出码：真有错 → 1；没有样本 → 2；否则 0。三态互斥，不允许同时成立。
+process.exit(bad ? 1 : (noSample.length ? 2 : 0))
